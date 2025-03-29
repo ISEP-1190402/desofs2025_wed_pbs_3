@@ -14,7 +14,7 @@ user and access data.
 
 | Resource      | Link                                          |
 |---------------|-----------------------------------------------|
-| Documentation | [Click Here](~/Documentation/Documentation.md) |
+| Documentation | [Click Here](Documentation/Documentation.md) |
 
 ## Team Composition
 
