@@ -11,9 +11,9 @@
 - **FR3.** The user shall be able to view the list of available books.
 - **FR4.** The user shall be able to search for books by title, author, publisher, or category.
 - **FR5.** The user shall be able to view detailed information about a specific book.
-- **FR6.** The user shall be able to rent a book if copies are available.
+- **FR6.** The user shall be able to rent a book if copies are available. There shall be a limit on the number of books a user can rent at the same time.
 - **FR7.** The user shall be able to view their personal rental history.
-- **FR8.** The user shall be able to rate books they have previously rented.
+- **FR8.** The user shall be able to rate books they have previously rented. Each user may rate a book only once per rental.
 - **FR9.** The user shall be able to suggest new books for the library to acquire.
 
 ### Library Manager
