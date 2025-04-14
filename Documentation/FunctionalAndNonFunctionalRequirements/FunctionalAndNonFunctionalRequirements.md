@@ -7,7 +7,7 @@
 ### User
 
 - **FR1.** The user shall be able to register and authenticate within the application.
-- **FR2.** The user shall be able to change his profile anytime (password and MFA-associated email address). When the MFA email is changed, a notification must be sent to the registered email address associated with the account to alert the user of this change.
+- **FR2.** The user shall be able to change their profile anytime (password and MFA-associated email address). When the MFA email is changed, a notification must be sent to the registered email address associated with the account to alert the user of this change.
 - **FR3.** The user shall be able to view the list of available books.
 - **FR4.** The user shall be able to search for books by title, author, publisher, or category.
 - **FR5.** The user shall be able to view detailed information about a specific book.
