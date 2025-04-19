@@ -1522,13 +1522,6 @@
               "type": "tm.Text",
               "name": "Library Online \nRental System / \nSyslog System",
               "hasOpenThreats": false
-            },
-            "tools": {
-              "items": [
-                "boundary",
-                "button-remove"
-              ],
-              "name": null
             }
           },
           {
@@ -1552,6 +1545,7 @@
             },
             "visible": true,
             "shape": "process",
+            "zIndex": 18,
             "ports": {
               "groups": {
                 "top": {
@@ -1635,7 +1629,6 @@
               ]
             },
             "id": "7d32aaff-9c43-43b1-8e55-c4e950669448",
-            "zIndex": 18,
             "data": {
               "type": "tm.Process",
               "name": "KeyCloak",
