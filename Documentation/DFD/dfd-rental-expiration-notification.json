@@ -1,0 +1,1384 @@
+{
+  "version": "2.4.1",
+  "summary": {
+    "title": "Rental Expiration Notification",
+    "owner": "1190402 António Fernandes, 1200928 Carla Barbosa, 1230172 Carlos Rodrigues, 1222598 Jorge Almeida, 1230202 Nuno Figueiredo",
+    "description": "DFD for automatic notifications sent to users when their book rental is about to expire.",
+    "id": 2
+  },
+  "detail": {
+    "contributors": [
+      {
+        "name": "1190402 António Fernandes"
+      },
+      {
+        "name": "1200928 Carla Barbosa"
+      },
+      {
+        "name": "1230172 Carlos Rodrigues"
+      },
+      {
+        "name": "1222598 Jorge Almeida"
+      },
+      {
+        "name": "1230202 Nuno Figueiredo"
+      }
+    ],
+    "diagrams": [
+      {
+        "id": 2,
+        "title": "Rental Expiration Notification",
+        "diagramType": "DFD",
+        "version": "2.4.1",
+        "description": "Automated alert system to notify users of upcoming book rental expirations.",
+        "cells": [
+          {
+            "position": {
+              "x": 230,
+              "y": 210
+            },
+            "size": {
+              "width": 80,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "User"
+              }
+            },
+            "visible": true,
+            "shape": "actor",
+            "zIndex": 0,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "ee0b68f6-e25e-41b1-8896-599ca0330093"
+                },
+                {
+                  "group": "right",
+                  "id": "d289b103-ffd1-40bc-bc77-695c6ea255ac"
+                },
+                {
+                  "group": "bottom",
+                  "id": "34bf84b2-2526-4157-b9e9-73271d87568e"
+                },
+                {
+                  "group": "left",
+                  "id": "bd397ad8-b27d-4ea2-a5f4-cab0799508c2"
+                }
+              ]
+            },
+            "id": "user-1",
+            "data": {
+              "type": "tm.Actor",
+              "name": "User"
+            }
+          },
+          {
+            "position": {
+              "x": 550,
+              "y": 300
+            },
+            "size": {
+              "width": 120,
+              "height": 70
+            },
+            "attrs": {
+              "text": {
+                "text": "Background Scheduler"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 0,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "62777863-75e5-4984-a4a1-189b91d2342d"
+                },
+                {
+                  "group": "right",
+                  "id": "904f3169-7eeb-4f25-b6e4-f32c4e111cc5"
+                },
+                {
+                  "group": "bottom",
+                  "id": "655166e8-2d0a-47ea-804a-f203d065b05a"
+                },
+                {
+                  "group": "left",
+                  "id": "f857502c-0a91-44f0-bad1-4f73ef10c760"
+                }
+              ]
+            },
+            "id": "scheduler",
+            "data": {
+              "type": "tm.Process",
+              "name": "Background Scheduler",
+              "description": "Queries database for rentals expiring soon.",
+              "hasOpenThreats": false
+            }
+          },
+          {
+            "position": {
+              "x": 200,
+              "y": 360
+            },
+            "size": {
+              "width": 120,
+              "height": 70
+            },
+            "attrs": {
+              "text": {
+                "text": "Notification Service"
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 0,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "7ea864e9-4811-4617-9034-1e6cf64fb853"
+                },
+                {
+                  "group": "right",
+                  "id": "e789f2e7-aafc-45a7-acf0-041a5ac94650"
+                },
+                {
+                  "group": "bottom",
+                  "id": "3660393b-ed16-4d3d-b283-e80bc492fe66"
+                },
+                {
+                  "group": "left",
+                  "id": "793bcbbd-26bb-444e-bbc6-2d59c84c68ef"
+                }
+              ]
+            },
+            "id": "notifier",
+            "data": {
+              "type": "tm.Process",
+              "name": "Notification Service",
+              "description": "Sends email/SMS to users."
+            }
+          },
+          {
+            "position": {
+              "x": 930,
+              "y": 295
+            },
+            "size": {
+              "width": 100,
+              "height": 80
+            },
+            "attrs": {
+              "text": {
+                "text": "Database"
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 0,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "58cd9783-deb3-4c81-99e1-7d97e6937d65"
+                },
+                {
+                  "group": "right",
+                  "id": "dfef4cb5-eecf-4e76-a0b9-284b648b9469"
+                },
+                {
+                  "group": "bottom",
+                  "id": "bfc4517a-2299-4b90-be37-5f19bed3ef30"
+                },
+                {
+                  "group": "left",
+                  "id": "7b4cd305-8c58-4e43-8cbd-07749ff4fac5"
+                }
+              ]
+            },
+            "id": "db",
+            "data": {
+              "type": "tm.Process",
+              "name": "Database"
+            }
+          },
+          {
+            "position": {
+              "x": 540,
+              "y": 670
+            },
+            "size": {
+              "width": 100,
+              "height": 80
+            },
+            "attrs": {
+              "text": {
+                "text": "Syslog System"
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 0,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "05cd58c9-94cf-4b00-881b-93215d24502b"
+                },
+                {
+                  "group": "right",
+                  "id": "7eb7ec57-8b65-48ce-85b1-bdc921751a78"
+                },
+                {
+                  "group": "bottom",
+                  "id": "ef087f36-02db-4134-9214-1336acb6ff2c"
+                },
+                {
+                  "group": "left",
+                  "id": "72e98143-7561-454b-9a19-0281feee889f"
+                }
+              ]
+            },
+            "id": "syslog",
+            "data": {
+              "type": "tm.Process",
+              "name": "Syslog System"
+            }
+          },
+          {
+            "position": {
+              "x": 550,
+              "y": 460
+            },
+            "size": {
+              "width": 120,
+              "height": 80
+            },
+            "attrs": {
+              "text": {
+                "text": "Library Online Rental System"
+              },
+              "body": {
+                "stroke": "#333333",
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "process",
+            "zIndex": 0,
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "cd9be737-89da-4ed9-baf0-3a0bc346fd8c"
+                },
+                {
+                  "group": "right",
+                  "id": "8f851377-0397-4467-922c-922c940524b9"
+                },
+                {
+                  "group": "bottom",
+                  "id": "b4467947-93d9-479b-8634-de355b6ddd7f"
+                },
+                {
+                  "group": "left",
+                  "id": "3444dccb-6563-45da-800b-4bdf9b867cc8"
+                }
+              ]
+            },
+            "id": "lib-system",
+            "data": {
+              "type": "tm.Process",
+              "name": "Library Online Rental System",
+              "hasOpenThreats": false
+            }
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Rentals expiring query result",
+              "description": "Query for rentals expiring in 1 day",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": []
+            },
+            "labels": [
+              "Rentals expiring query result"
+            ],
+            "id": "flow-1",
+            "source": {
+              "cell": "scheduler"
+            },
+            "target": {
+              "cell": "db"
+            },
+            "vertices": [
+              {
+                "x": 750,
+                "y": 370
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Retrieve rentals expiring query\n",
+              "description": "List of users and rental expiration details",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": []
+            },
+            "labels": [
+              "Retrieve rentals expiring query\n"
+            ],
+            "id": "flow-2",
+            "source": {
+              "cell": "db"
+            },
+            "target": {
+              "cell": "scheduler"
+            },
+            "vertices": [
+              {
+                "x": 800,
+                "y": 270
+              },
+              {
+                "x": 750,
+                "y": 270
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Notification trigger",
+              "description": "Send alert to user",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": []
+            },
+            "labels": [
+              "Notification trigger"
+            ],
+            "id": "flow-3",
+            "source": {
+              "cell": "scheduler"
+            },
+            "target": {
+              "cell": "notifier"
+            },
+            "vertices": [
+              {
+                "x": 450,
+                "y": 390
+              },
+              {
+                "x": 430,
+                "y": 390
+              },
+              {
+                "x": 370,
+                "y": 410
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Rental Expiration Notice",
+              "description": "Email or SMS sent to user",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": true,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": []
+            },
+            "labels": [
+              "Rental Expiration Notice"
+            ],
+            "id": "flow-4",
+            "source": {
+              "cell": "notifier"
+            },
+            "target": {
+              "cell": "user-1"
+            }
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Data",
+              "description": "",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": []
+            },
+            "labels": [
+              "Data"
+            ],
+            "id": "0fab1bb8-22ee-4a3a-acd0-5db43ace0acf",
+            "source": {
+              "cell": "db",
+              "port": "dfef4cb5-eecf-4e76-a0b9-284b648b9469"
+            },
+            "target": {
+              "cell": "963b39e3-eaa7-4e58-ab65-4d666dfd54f0",
+              "port": "1f91a011-f3df-4126-bc41-4dc72f596c46"
+            },
+            "vertices": [
+              {
+                "x": 1110,
+                "y": 290
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Data",
+              "description": "",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": []
+            },
+            "labels": [
+              "Data"
+            ],
+            "id": "cc1c95b4-a7c1-4378-9b54-5994abdaa0bc",
+            "source": {
+              "cell": "963b39e3-eaa7-4e58-ab65-4d666dfd54f0",
+              "port": "1f91a011-f3df-4126-bc41-4dc72f596c46"
+            },
+            "target": {
+              "cell": "db",
+              "port": "dfef4cb5-eecf-4e76-a0b9-284b648b9469"
+            },
+            "vertices": [
+              {
+                "x": 1120,
+                "y": 370
+              }
+            ]
+          },
+          {
+            "shape": "trust-boundary-curve",
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Boundary",
+              "name": "",
+              "description": "",
+              "isTrustBoundary": true,
+              "hasOpenThreats": false
+            },
+            "labels": [
+              ""
+            ],
+            "id": "boundary-1",
+            "source": {
+              "x": 450,
+              "y": 250
+            },
+            "target": {
+              "x": 430,
+              "y": 580
+            },
+            "vertices": [
+              {
+                "x": 400,
+                "y": 330
+              },
+              {
+                "x": 380,
+                "y": 400
+              },
+              {
+                "x": 380,
+                "y": 460
+              },
+              {
+                "x": 420,
+                "y": 560
+              }
+            ]
+          },
+          {
+            "shape": "trust-boundary-curve",
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Boundary",
+              "name": "",
+              "description": "",
+              "isTrustBoundary": true,
+              "hasOpenThreats": false
+            },
+            "labels": [
+              ""
+            ],
+            "id": "39cec0a1-0e11-4492-b3ff-5688761bc40e",
+            "source": {
+              "x": 420,
+              "y": 620
+            },
+            "target": {
+              "x": 810,
+              "y": 640
+            },
+            "vertices": [
+              {
+                "x": 540,
+                "y": 580
+              },
+              {
+                "x": 710,
+                "y": 580
+              },
+              {
+                "x": 770,
+                "y": 600
+              }
+            ]
+          },
+          {
+            "shape": "trust-boundary-curve",
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Boundary",
+              "name": "",
+              "description": "",
+              "isTrustBoundary": true,
+              "hasOpenThreats": false
+            },
+            "labels": [
+              ""
+            ],
+            "id": "8a9538c2-6ab5-400a-a5b5-5507b0d5e2af",
+            "source": {
+              "x": 920,
+              "y": 170
+            },
+            "target": {
+              "x": 940,
+              "y": 480
+            },
+            "vertices": [
+              {
+                "x": 900,
+                "y": 320
+              }
+            ]
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "Operation logs\n",
+              "description": "",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": []
+            },
+            "labels": [
+              "Operation logs\n"
+            ],
+            "id": "d7e3e4e7-f340-49a1-bb91-513b91c3bc5b",
+            "source": {
+              "cell": "lib-system",
+              "port": "b4467947-93d9-479b-8634-de355b6ddd7f"
+            },
+            "target": {
+              "cell": "syslog",
+              "port": "05cd58c9-94cf-4b00-881b-93215d24502b"
+            },
+            "vertices": []
+          },
+          {
+            "shape": "flow",
+            "attrs": {
+              "line": {
+                "stroke": "#333333",
+                "targetMarker": {
+                  "name": "block"
+                },
+                "sourceMarker": {
+                  "name": ""
+                },
+                "strokeDasharray": null
+              }
+            },
+            "width": 200,
+            "height": 100,
+            "zIndex": 10,
+            "connector": "smooth",
+            "data": {
+              "type": "tm.Flow",
+              "name": "New notification sent log",
+              "description": "",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isBidirectional": false,
+              "isEncrypted": false,
+              "isPublicNetwork": false,
+              "protocol": "",
+              "threats": []
+            },
+            "labels": [
+              "New notification sent log"
+            ],
+            "id": "4920100b-ba5f-448c-aa54-d4d4a086e4e0",
+            "source": {
+              "x": 260,
+              "y": 430
+            },
+            "target": {
+              "cell": "lib-system",
+              "port": "3444dccb-6563-45da-800b-4bdf9b867cc8"
+            }
+          },
+          {
+            "position": {
+              "x": 1203,
+              "y": 300
+            },
+            "size": {
+              "width": 120,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "Database Files"
+              },
+              "topLine": {
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              },
+              "bottomLine": {
+                "strokeWidth": 1.5,
+                "strokeDasharray": null
+              }
+            },
+            "visible": true,
+            "shape": "store",
+            "ports": {
+              "groups": {
+                "top": {
+                  "position": "top",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "right": {
+                  "position": "right",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "bottom": {
+                  "position": "bottom",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                },
+                "left": {
+                  "position": "left",
+                  "attrs": {
+                    "circle": {
+                      "r": 4,
+                      "magnet": true,
+                      "stroke": "#5F95FF",
+                      "strokeWidth": 1,
+                      "fill": "#fff",
+                      "style": {
+                        "visibility": "hidden"
+                      }
+                    }
+                  }
+                }
+              },
+              "items": [
+                {
+                  "group": "top",
+                  "id": "0f20f9cd-29a2-420d-99a6-76d5469248ee"
+                },
+                {
+                  "group": "right",
+                  "id": "7a83d9a7-6047-41b9-b5fc-8c9c4d4956b4"
+                },
+                {
+                  "group": "bottom",
+                  "id": "bb24bf1e-790e-403b-b0e8-62e375d6f5bb"
+                },
+                {
+                  "group": "left",
+                  "id": "1f91a011-f3df-4126-bc41-4dc72f596c46"
+                }
+              ]
+            },
+            "id": "963b39e3-eaa7-4e58-ab65-4d666dfd54f0",
+            "zIndex": 11,
+            "data": {
+              "type": "tm.Store",
+              "name": "Database Files",
+              "description": "",
+              "outOfScope": false,
+              "reasonOutOfScope": "",
+              "hasOpenThreats": false,
+              "isALog": false,
+              "isEncrypted": false,
+              "isSigned": false,
+              "storesCredentials": false,
+              "storesInventory": false,
+              "threats": []
+            }
+          },
+          {
+            "position": {
+              "x": 800,
+              "y": 630
+            },
+            "size": {
+              "width": 112.5,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "Library Online\nRental System /\nSyslog System\nBoundary"
+              }
+            },
+            "visible": true,
+            "shape": "td-text-block",
+            "id": "7f3c7397-f015-4ef2-b4cb-de06b28d5847",
+            "zIndex": 12,
+            "data": {
+              "type": "tm.Text",
+              "name": "Library Online\nRental System /\nSyslog System\nBoundary",
+              "hasOpenThreats": false
+            }
+          },
+          {
+            "position": {
+              "x": 427.5,
+              "y": 191
+            },
+            "size": {
+              "width": 112.5,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "External Communication\nBoundary"
+              }
+            },
+            "visible": true,
+            "shape": "td-text-block",
+            "id": "27fb500e-f212-4729-a47a-8f9e48c16924",
+            "zIndex": 13,
+            "data": {
+              "type": "tm.Text",
+              "name": "External Communication\nBoundary",
+              "hasOpenThreats": false
+            }
+          },
+          {
+            "position": {
+              "x": 1000,
+              "y": 470
+            },
+            "size": {
+              "width": 112.5,
+              "height": 60
+            },
+            "attrs": {
+              "text": {
+                "text": "Library Online Rental System / Database Boundary"
+              }
+            },
+            "visible": true,
+            "shape": "td-text-block",
+            "id": "bcdd6022-bb4e-46f2-89a2-9bb20a1a7f0c",
+            "zIndex": 14,
+            "data": {
+              "type": "tm.Text",
+              "name": "Library Online Rental System / Database Boundary",
+              "hasOpenThreats": false
+            }
+          }
+        ]
+      }
+    ],
+    "diagramTop": 3,
+    "reviewer": "1190402 António Fernandes, 1200928 Carla Barbosa, 1230172 Carlos Rodrigues, 1222598 Jorge Almeida, 1230202 Nuno Figueiredo",
+    "threatTop": 0
+  }
+}
