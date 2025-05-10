@@ -13,6 +13,11 @@ public class ISBN
 
     public string BookISBN { get; }
 
+    public override int GetHashCode()
+    {
+        return BookISBN.GetHashCode();
+    }
+
 
     public string GetBookDescription()
     {
