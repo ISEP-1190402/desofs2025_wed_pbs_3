@@ -2,18 +2,15 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class Description
 {
-    public string BookDescription { get; private set; }
-
-
     public Description(string bookDescription)
     {
-        if (string.IsNullOrEmpty(bookDescription))
-        {
-            throw new ArgumentException("Description cannot be null or empty");
-        }
-
-        this.BookDescription = bookDescription.Trim();
+        if (string.IsNullOrEmpty(bookDescription)) throw new ArgumentException("Description cannot be null or empty");
+        if (bookDescription.Length > 1000)
+            throw new ArgumentException("Description cannot have more than 1000 characters");
+        BookDescription = bookDescription.Trim();
     }
+
+    public string BookDescription { get; }
 
 
     public string GetBookDescription()
@@ -26,14 +23,14 @@ public class Description
     {
         return new Description(bookDescription);
     }
-    
+
     public override bool Equals(object? obj)
     {
         if (this == obj) return true;
 
         if (obj == null || obj.GetType() != GetType()) return false;
 
-        var that = (Description) obj;
+        var that = (Description)obj;
 
         return BookDescription.ToUpper().Equals(that.BookDescription.ToUpper());
     }

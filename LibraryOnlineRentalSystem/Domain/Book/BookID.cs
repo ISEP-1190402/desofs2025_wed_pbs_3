@@ -1,6 +1,5 @@
-﻿namespace LibraryOnlineRentalSystem.Domain.Book
+﻿namespace LibraryOnlineRentalSystem.Domain.Book;
+
+public class BookID
 {
-    public class BookID
-    {
-    }
 }

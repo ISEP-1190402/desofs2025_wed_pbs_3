@@ -1,8 +1,5 @@
-﻿namespace LibraryOnlineRentalSystem.Domain.Book
+﻿namespace LibraryOnlineRentalSystem.Domain.Book;
+
+public class Book
 {
-    public class Book
-    {
-
-
-    }
 }

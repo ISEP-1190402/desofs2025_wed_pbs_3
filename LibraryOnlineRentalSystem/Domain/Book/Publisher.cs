@@ -2,18 +2,16 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class Publisher
 {
-    public string PublisherName { get; private set; }
-
-
     public Publisher(string name)
     {
-        if (string.IsNullOrEmpty(name))
-        {
-            throw new ArgumentException("Publisher cannot be null or empty");
-        }
+        if (string.IsNullOrEmpty(name)) throw new ArgumentException("Publisher cannot be null or empty");
 
-        this.PublisherName = name.Trim();
+        if (name.Length > 50) throw new ArgumentException("Publisher cannot have more than 50 characters");
+
+        PublisherName = name.Trim();
     }
+
+    public string PublisherName { get; }
 
 
     public string GetBookPublisher()
