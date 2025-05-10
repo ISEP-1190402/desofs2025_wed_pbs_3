@@ -39,4 +39,9 @@ public class Description
     {
         return $"{BookDescription}";
     }
+
+    public override int GetHashCode()
+    {
+        return BookDescription.GetHashCode();
+    }
 }

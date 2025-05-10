@@ -38,4 +38,9 @@ public class Category
     {
         return $"{BookCategoryName}";
     }
+
+    public override int GetHashCode()
+    {
+        return BookCategoryName.GetHashCode();
+    }
 }

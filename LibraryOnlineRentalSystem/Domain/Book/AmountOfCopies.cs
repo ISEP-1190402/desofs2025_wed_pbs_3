@@ -38,4 +38,9 @@ public class AmountOfCopies
     {
         return $"{BookAmountOfCopies.ToString()}";
     }
+
+    public override int GetHashCode()
+    {
+        return BookAmountOfCopies.GetHashCode();
+    }
 }

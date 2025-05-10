@@ -40,4 +40,9 @@ public class Publisher
     {
         return $"{PublisherName}";
     }
+
+    public override int GetHashCode()
+    {
+        return PublisherName.GetHashCode();
+    }
 }

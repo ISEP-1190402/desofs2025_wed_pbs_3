@@ -38,4 +38,9 @@ public class Author
     {
         return $"{BookAuthor}";
     }
+
+    public override int GetHashCode()
+    {
+        return BookAuthor.GetHashCode();
+    }
 }
