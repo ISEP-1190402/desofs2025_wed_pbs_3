@@ -2,18 +2,16 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class ISBN
 {
-    public string BookISBN { get; private set; }
-
-
     public ISBN(string isbn)
     {
-        if (string.IsNullOrEmpty(isbn))
-        {
-            throw new ArgumentException("ISBN cannot be null or empty");
-        }
+        if (string.IsNullOrEmpty(isbn)) throw new ArgumentException("ISBN cannot be null or empty");
 
-        this.BookISBN = isbn.Trim();
+        if (!IsISBNValid(isbn)) throw new ArgumentException("Invalid ISBN");
+
+        BookISBN = isbn.Trim();
     }
+
+    public string BookISBN { get; }
 
 
     public string GetBookDescription()
@@ -26,14 +24,14 @@ public class ISBN
     {
         return new ISBN(isbn);
     }
-    
+
     public override bool Equals(object? obj)
     {
         if (this == obj) return true;
 
         if (obj == null || obj.GetType() != GetType()) return false;
 
-        var that = (ISBN) obj;
+        var that = (ISBN)obj;
 
         return BookISBN.ToUpper().Equals(that.BookISBN.ToUpper());
     }
@@ -41,5 +39,11 @@ public class ISBN
     public override string ToString()
     {
         return $"{BookISBN}";
+    }
+
+    public static bool IsISBNValid(string isbnToTest)
+    {
+        // TODO - ISBN VALIDATION METHOD
+        return false;
     }
 }
