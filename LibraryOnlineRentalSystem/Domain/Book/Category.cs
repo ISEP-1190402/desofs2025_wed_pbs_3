@@ -2,18 +2,14 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class Category
 {
-    public string BookCategoryName { get; private set; }
-
-
     public Category(string name)
     {
-        if (string.IsNullOrEmpty(name))
-        {
-            throw new ArgumentException("Category cannot be null or empty");
-        }
+        if (string.IsNullOrEmpty(name)) throw new ArgumentException("Category cannot be null or empty");
 
-        this.BookCategoryName = name.Trim();
+        BookCategoryName = name.Trim();
     }
+
+    public string BookCategoryName { get; }
 
 
     public string GetBookCategoryName()
@@ -41,5 +37,10 @@ public class Category
     public override string ToString()
     {
         return $"{BookCategoryName}";
+    }
+
+    public override int GetHashCode()
+    {
+        return BookCategoryName.GetHashCode();
     }
 }

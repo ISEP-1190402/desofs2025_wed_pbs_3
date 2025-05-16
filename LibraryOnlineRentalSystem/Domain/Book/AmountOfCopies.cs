@@ -2,18 +2,14 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class AmountOfCopies
 {
-    public int BookAmountOfCopies { get; private set; }
-
-
     public AmountOfCopies(int numberOfCopies)
     {
-        if (numberOfCopies<0)
-        {
-            throw new ArgumentException("Stock cannot be negative");
-        }
+        if (numberOfCopies < 0) throw new ArgumentException("Stock cannot be negative");
 
-        this.BookAmountOfCopies = numberOfCopies;
+        BookAmountOfCopies = numberOfCopies;
     }
+
+    public int BookAmountOfCopies { get; }
 
 
     public int GetBookAmountOfCopies()
@@ -41,5 +37,10 @@ public class AmountOfCopies
     public override string ToString()
     {
         return $"{BookAmountOfCopies.ToString()}";
+    }
+
+    public override int GetHashCode()
+    {
+        return BookAmountOfCopies.GetHashCode();
     }
 }
