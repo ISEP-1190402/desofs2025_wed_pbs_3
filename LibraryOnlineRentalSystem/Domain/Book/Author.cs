@@ -1,10 +1,10 @@
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
-public class Author
+public class Author : IValueObject
 {
     public Author(string author)
     {
-        if (string.IsNullOrEmpty(author)) throw new ArgumentException("Author cannot be null or empty");
+        if (string.IsNullOrEmpty(author)) throw new BusinessRulesException("Author cannot be null or empty");
 
         BookAuthor = author.Trim();
     }

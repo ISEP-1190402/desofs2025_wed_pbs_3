@@ -1,12 +1,12 @@
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
-public class Publisher
+public class Publisher : IValueObject
 {
     public Publisher(string name)
     {
-        if (string.IsNullOrEmpty(name)) throw new ArgumentException("Publisher cannot be null or empty");
+        if (string.IsNullOrEmpty(name)) throw new BusinessRulesException("Publisher cannot be null or empty");
 
-        if (name.Length > 50) throw new ArgumentException("Publisher cannot have more than 50 characters");
+        if (name.Length > 50) throw new BusinessRulesException("Publisher cannot have more than 50 characters");
 
         PublisherName = name.Trim();
     }

@@ -1,12 +1,12 @@
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
-public class ISBN
+public class ISBN : IValueObject
 {
     public ISBN(string isbn)
     {
-        if (string.IsNullOrEmpty(isbn)) throw new ArgumentException("ISBN cannot be null or empty");
+        if (string.IsNullOrEmpty(isbn)) throw new BusinessRulesException("ISBN cannot be null or empty");
 
-        if (!IsISBNValid(isbn)) throw new ArgumentException("Invalid ISBN");
+        if (!IsISBNValid(isbn)) throw new BusinessRulesException("Invalid ISBN");
 
         BookISBN = isbn.Trim();
     }
