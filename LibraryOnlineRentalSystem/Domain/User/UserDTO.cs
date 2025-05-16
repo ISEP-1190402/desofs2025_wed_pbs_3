@@ -4,8 +4,6 @@ public class UserDTO
 {
     public Guid Id { get; set; }
 
-    //public int? ClientNumber { get; set; }
-
     public string Name { get; set; }
     
     public string UserName { get; set; }
@@ -20,6 +18,8 @@ public class UserDTO
     
     public string PhoneNumber { get; set; }
 
+    //public UserDTO() { }
+
 
     public UserDTO(Guid Id, string name, string email, Guid roleId, string nif, string username, string biography, string phoneNumber)
     {
@@ -30,5 +30,6 @@ public class UserDTO
         this.PhoneNumber = phoneNumber;
         this.Nif = nif;
         this.Biography = biography;
+        this.UserName = username;
     }
 }

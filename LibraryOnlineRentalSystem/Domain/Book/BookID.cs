@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using LibraryOnlineRentalSystem.Domain.Shared;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
 

@@ -1,3 +1,5 @@
+using LibraryOnlineRentalSystem.Domain.Shared;
+
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class Publisher : IValueObject

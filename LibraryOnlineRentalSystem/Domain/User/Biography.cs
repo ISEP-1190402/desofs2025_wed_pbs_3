@@ -1,3 +1,5 @@
+using LibraryOnlineRentalSystem.Domain.Shared;
+
 namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class Biography: ICloneable, IValueObject

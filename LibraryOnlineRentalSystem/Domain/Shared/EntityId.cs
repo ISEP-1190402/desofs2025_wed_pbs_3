@@ -1,4 +1,4 @@
-namespace LibraryOnlineRentalSystem.Domain;
+namespace LibraryOnlineRentalSystem.Domain.Shared;
 
 public abstract class EntityId : IEquatable<EntityId>, IComparable<EntityId>
 {

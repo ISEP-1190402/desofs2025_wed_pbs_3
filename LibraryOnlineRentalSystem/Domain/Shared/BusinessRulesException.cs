@@ -1,4 +1,4 @@
-namespace LibraryOnlineRentalSystem.Domain;
+namespace LibraryOnlineRentalSystem.Domain.Shared;
 
 public class BusinessRulesException : Exception
 {

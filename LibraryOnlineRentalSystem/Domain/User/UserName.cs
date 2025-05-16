@@ -1,3 +1,5 @@
+using LibraryOnlineRentalSystem.Domain.Shared;
+
 namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class UserName : ICloneable, IValueObject
