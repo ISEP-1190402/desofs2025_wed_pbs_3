@@ -1,10 +1,10 @@
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
-public class Description
+public class Description : IValueObject
 {
     public Description(string bookDescription)
     {
-        if (string.IsNullOrEmpty(bookDescription)) throw new ArgumentException("Description cannot be null or empty");
+        if (string.IsNullOrEmpty(bookDescription)) throw new BusinessRulesException("Description cannot be null or empty");
         if (bookDescription.Length > 1000)
             throw new ArgumentException("Description cannot have more than 1000 characters");
         BookDescription = bookDescription.Trim();

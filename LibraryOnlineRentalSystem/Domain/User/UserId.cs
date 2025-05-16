@@ -8,13 +8,13 @@ public class UserId : EntityId
     public UserId(Guid value) : base(value)
     {
 
-        if (value == Guid.Empty) throw new BusinessRuleValidationException("Guid cannot be null or empty.");
+        if (value == Guid.Empty) throw new BusinessRulesException("Guid cannot be null or empty.");
     }
     [JsonConstructor]
 
     public UserId(String value) : base(value)
     {
-        if (String.IsNullOrEmpty(value)) throw new BusinessRuleValidationException("Guid cannot be null or empty.");
+        if (String.IsNullOrEmpty(value)) throw new BusinessRulesException("Guid cannot be null or empty.");
     }
 
     override

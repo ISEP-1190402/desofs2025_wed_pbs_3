@@ -1,10 +1,10 @@
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
-public class AmountOfCopies
+public class AmountOfCopies : IValueObject
 {
     public AmountOfCopies(int numberOfCopies)
     {
-        if (numberOfCopies < 0) throw new ArgumentException("Stock cannot be negative");
+        if (numberOfCopies < 0) throw new BusinessRulesException("Stock cannot be negative");
 
         BookAmountOfCopies = numberOfCopies;
     }

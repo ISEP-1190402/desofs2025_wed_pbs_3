@@ -13,10 +13,10 @@ public class Biography: ICloneable, IValueObject
         biography = biography.Trim();
 
         if (biography.Length > 150)
-            throw new BusinessRuleValidationException("Description cannot exceed 150 characters.");
+            throw new BusinessRulesException("Description cannot exceed 150 characters.");
         
         if (!biography.All(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)))
-            throw new BusinessRuleValidationException("Biography cannot contain emojis or special characters.");
+            throw new BusinessRulesException("Biography cannot contain emojis or special characters.");
 
         this.biography = biography;
     }

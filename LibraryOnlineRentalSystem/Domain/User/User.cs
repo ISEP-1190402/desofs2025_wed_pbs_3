@@ -7,29 +7,30 @@ public class User: Entity<UserId>, IAggregateRoot {
     public User(Name name, Email email, RoleId roleId, UserName userName, PhoneNumber  phoneNumber, NIF nif, Biography biography)
     {
         if (roleId == null)
-            throw new BusinessRuleValidationException("Every user requires a role.");
+            throw new BusinessRulesException("Every user requires a role.");
 
         this.Id = new UserId(Guid.NewGuid());
         this.Name = (Name)name.Clone();
         this.UserName = (UserName)userName.Clone();
         this.Email = (Email)email.Clone();
-        this.PhoneNumber = (PhoneNumber)phoneNumber.Clone();
+    /**    this.PhoneNumber = (PhoneNumber)phoneNumber.Clone();
         this.RoleId = roleId;
         this.Nif = (NIF)nif.Clone();
         this.Biography = (Biography)biography.Clone();
+        **/ //to fix
     }
     public User(string id, Name name, Email email, RoleId roleId, UserName userName, PhoneNumber  phoneNumber, NIF nif, Biography biography)
     {
         if (roleId == null)
-            throw new BusinessRuleValidationException("Every user requires a role.");
+            throw new BusinessRulesException("Every user requires a role.");
 
         this.Id = new UserId(Guid.Parse(id));
         this.Name = (Name)name.Clone();
         this.UserName = (UserName)userName.Clone();
         this.Email = (Email)email.Clone();
-        this.PhoneNumber = (PhoneNumber)phoneNumber.Clone();
+      /**  this.PhoneNumber = (PhoneNumber)phoneNumber.Clone();
         this.RoleId = roleId;
-        this.Nif = (NIF)nif.Clone();
+        this.Nif = (NIF)nif.Clone();**/ //to FIX
         this.Biography = (Biography)biography.Clone();
     }
     public Name Name { get; private set; }
@@ -60,9 +61,8 @@ public class User: Entity<UserId>, IAggregateRoot {
     public void ChangeRoleId(RoleId roleId)
     {
         if (roleId == null)
-            throw new BusinessRuleValidationException("Every user requires a role.");
+            throw new BusinessRulesException("Every user requires a role.");
         this.RoleId = roleId;
     }
 
-}
 }

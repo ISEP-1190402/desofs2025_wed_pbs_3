@@ -6,9 +6,9 @@ public class Name : ICloneable, IValueObject
     {
         if (string.IsNullOrEmpty(name)) throw new ArgumentNullException(nameof(name));
         name = name.Trim();
-        if (name.Any(char.IsDigit) || name.Any(char.IsNumber)) throw new BusinessRuleValidationException("The name cannot be alphanumeric or numeric.");
-        if (name.Any(char.IsSymbol) || name.Any(char.IsPunctuation)) throw new BusinessRuleValidationException("The name cannot have special characters.");
-        if (name.Length > 60) throw new BusinessRuleValidationException("The name cannot have more than 60 characters.");
+        if (name.Any(char.IsDigit) || name.Any(char.IsNumber)) throw new BusinessRulesException("The name cannot be alphanumeric or numeric.");
+        if (name.Any(char.IsSymbol) || name.Any(char.IsPunctuation)) throw new BusinessRulesException("The name cannot have special characters.");
+        if (name.Length > 60) throw new BusinessRulesException("The name cannot have more than 60 characters.");
         this.name = name;
     }
 

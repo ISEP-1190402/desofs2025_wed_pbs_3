@@ -17,7 +17,7 @@ namespace LibraryOnlineRentalSystem.Domain.User;
             MatchCollection m = Regex.Matches(email, detectPattern,RegexOptions.IgnoreCase);
             if (m.Count != 1)
             {
-                throw new BusinessRuleValidationException("The email is not valid");
+                throw new BusinessRulesException("The email is not valid");
             }
         }
 
