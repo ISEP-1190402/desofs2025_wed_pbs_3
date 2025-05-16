@@ -1,10 +1,10 @@
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
-public class Category
+public class Category : IValueObject
 {
     public Category(string name)
     {
-        if (string.IsNullOrEmpty(name)) throw new ArgumentException("Category cannot be null or empty");
+        if (string.IsNullOrEmpty(name)) throw new BusinessRulesException("Category cannot be null or empty");
 
         BookCategoryName = name.Trim();
     }
