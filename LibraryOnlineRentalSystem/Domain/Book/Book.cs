@@ -29,4 +29,10 @@ public class Book : Entity<BookID>, IAggregateRoot
     public Description Description { get; private set; }
     public ISBN Isbn { get; private set; }
     public Publisher Publisher { get; private set; }
+
+    public BookDTO toDTO()
+    {
+        return new BookDTO(Id.Value.ToString(), AmountOfCopies.GetBookAmountOfCopies(), Author.GetBookAuthor(),
+            Category.GetBookCategoryName(), Description.GetBookDescription(), Isbn.GetISBN(), Publisher.GetBookPublisher());
+    }
 }

@@ -21,7 +21,7 @@ public class ISBN : IValueObject
     }
 
 
-    public string GetBookDescription()
+    public string GetISBN()
     {
         return BookISBN;
     }
