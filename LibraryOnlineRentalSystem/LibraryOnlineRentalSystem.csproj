@@ -22,4 +22,8 @@
         <Compile Remove="Controllers\AuthController.cs"/>
     </ItemGroup>
 
+    <ItemGroup>
+      <Folder Include="Unit Tests\" />
+    </ItemGroup>
+
 </Project>

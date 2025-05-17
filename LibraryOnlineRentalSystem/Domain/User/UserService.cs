@@ -9,20 +9,20 @@ namespace LibraryOnlineRentalSystem.Domain.User
         private readonly IUserRepository _userRepository;
         //private readonly IRoleRepository _roleRepository;
         private readonly IWorkUnity _workUnit;
-        private readonly IKeycloakService _keycloakService;
+        //private readonly IKeycloakService _keycloakService;
         private readonly IAuditLogger _auditLogger;
 
         public UserService(
             IUserRepository userRepository,
             //IRoleRepository roleRepository,
             IWorkUnity workUnit,
-            IKeycloakService keycloakService,
+            //IKeycloakService keycloakService,
             IAuditLogger auditLogger)
         {
             _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
             //_roleRepository = roleRepository ?? throw new ArgumentNullException(nameof(roleRepository));
             _workUnit = workUnit ?? throw new ArgumentNullException(nameof(workUnit));
-            _keycloakService = keycloakService ?? throw new ArgumentNullException(nameof(keycloakService));
+            //_keycloakService = keycloakService ?? throw new ArgumentNullException(nameof(keycloakService));
             _auditLogger = auditLogger ?? throw new ArgumentNullException(nameof(auditLogger));
         }
 
@@ -133,14 +133,14 @@ namespace LibraryOnlineRentalSystem.Domain.User
 
         private void ValidatePhoneNumber(string phoneNumber)
         {
-            // Validação básica (ajuste conforme necessidades)
+        
             if (string.IsNullOrWhiteSpace(phoneNumber) || phoneNumber.Length < 8)
                 throw new BusinessRulesException("Invalid phone number");
         }
 
         private void ValidateNIF(string nif)
         {
-            // Validação básica para NIF português
+       
             if (string.IsNullOrWhiteSpace(nif) || nif.Length != 9 || !nif.All(char.IsDigit))
                 throw new BusinessRulesException("NIF must be a 9-digit number");
         }
@@ -161,11 +161,11 @@ namespace LibraryOnlineRentalSystem.Domain.User
         Task<User> GetUserByIdAsync(string userId);
     }
 
-    public interface IKeycloakService
-    {
-        Task<string> RegisterUserAsync(string username, string email, bool enabled);
-        Task UpdateUserEmailAsync(string keycloakUserId, string newEmail);
-    }
+    //public interface IKeycloakService
+    //{
+     //   Task<string> RegisterUserAsync(string username, string email, bool enabled);
+       // Task UpdateUserEmailAsync(string keycloakUserId, string newEmail);
+    //}
 
     public interface IAuditLogger
     {
