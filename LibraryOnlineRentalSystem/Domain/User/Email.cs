@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using LibraryOnlineRentalSystem.Domain.Shared;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
@@ -13,9 +14,9 @@ namespace LibraryOnlineRentalSystem.Domain.User;
         private void ValidateEmail(string email)
         {
             string detectPattern =
-                @"^[^@\s]+@[^@\s]+\.[^@\s]+$";
+                    @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$";
             MatchCollection m = Regex.Matches(email, detectPattern,RegexOptions.IgnoreCase);
-            if (m.Count != 1)
+            if (!Regex.IsMatch(email, detectPattern, RegexOptions.IgnoreCase))
             {
                 throw new BusinessRulesException("The email is not valid");
             }

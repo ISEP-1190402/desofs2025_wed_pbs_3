@@ -1,4 +1,5 @@
 ﻿using LibraryOnlineRentalSystem.Domain.Role;
+using LibraryOnlineRentalSystem.Domain.Shared;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
@@ -13,11 +14,11 @@ public class User: Entity<UserId>, IAggregateRoot {
         this.Name = (Name)name.Clone();
         this.UserName = (UserName)userName.Clone();
         this.Email = (Email)email.Clone();
-    /**    this.PhoneNumber = (PhoneNumber)phoneNumber.Clone();
+        this.PhoneNumber = (PhoneNumber)phoneNumber.Clone();
         this.RoleId = roleId;
         this.Nif = (NIF)nif.Clone();
         this.Biography = (Biography)biography.Clone();
-        **/ //to fix
+        
     }
     public User(string id, Name name, Email email, RoleId roleId, UserName userName, PhoneNumber  phoneNumber, NIF nif, Biography biography)
     {
@@ -28,9 +29,9 @@ public class User: Entity<UserId>, IAggregateRoot {
         this.Name = (Name)name.Clone();
         this.UserName = (UserName)userName.Clone();
         this.Email = (Email)email.Clone();
-      /**  this.PhoneNumber = (PhoneNumber)phoneNumber.Clone();
+        this.PhoneNumber = (PhoneNumber)phoneNumber.Clone();
         this.RoleId = roleId;
-        this.Nif = (NIF)nif.Clone();**/ //to FIX
+        this.Nif = (NIF)nif.Clone();
         this.Biography = (Biography)biography.Clone();
     }
     public Name Name { get; private set; }
