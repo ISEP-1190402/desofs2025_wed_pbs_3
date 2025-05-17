@@ -27,4 +27,24 @@ public class BookService
         var bookDTO = book.toDTO();
         return bookDTO;
     }
+
+    public async Task<BookDTO> AddBook(NewBookDTO bookToAddDto)
+    {
+        var id=_bookRepository.GetAllAsync().Result.Count + 1+"";
+
+        var AddedBook= new Book(id,bookToAddDto.AmountOfCopies,bookToAddDto.Author,bookToAddDto.Category,
+            bookToAddDto.Description,bookToAddDto.Isbn,bookToAddDto.Publisher);
+
+            
+        await _bookRepository.AddAsync(AddedBook);
+
+        await _workUnity.CommitAsync();
+
+        return AddedBook.toDTO();
+    }
+    
+    
+    
+    
+    
 }

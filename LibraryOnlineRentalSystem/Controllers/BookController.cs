@@ -1,4 +1,5 @@
 using LibraryOnlineRentalSystem.Domain.Book;
+using LibraryOnlineRentalSystem.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
 
 namespace LibraryOnlineRentalSystem.Controllers;
@@ -33,4 +34,21 @@ public class BookController : ControllerBase
         if (response == null) return NotFound();
         return response;
     }
+    
+    // POST: api/Book
+    [HttpPost]
+    public async Task<ActionResult<BookDTO>> CreateBook (NewBookDTO BookToAddDto)
+    {
+        try
+        {
+            var bookToAdd = await _bookService.AddBook(BookToAddDto);
+            return bookToAdd;
+        }
+        catch (BusinessRulesException ex)
+        {
+            return BadRequest(new {ex.Message});
+        }
+    }
+    
+    
 }

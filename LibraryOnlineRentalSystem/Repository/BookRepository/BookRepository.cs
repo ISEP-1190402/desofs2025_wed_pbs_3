@@ -8,5 +8,6 @@ public class BookRepository : GeneralRepository<Book, BookID>,
 {
     public BookRepository(LibraryDbContext context) : base(context.Books)
     {
+        
     }
 }
