@@ -1,4 +1,4 @@
-namespace LibraryOnlineRentalSystem.Domain.Shared;
+namespace LibraryOnlineRentalSystem.Domain.Common;
 
 public abstract class Entity<TEntityId> where TEntityId : EntityId
 {

@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using LibraryOnlineRentalSystem.Domain.Shared;
+using LibraryOnlineRentalSystem.Domain.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
@@ -8,31 +8,30 @@ public class UserId : EntityId
     [JsonConstructor]
     public UserId(Guid value) : base(value)
     {
-
         if (value == Guid.Empty) throw new BusinessRulesException("Guid cannot be null or empty.");
     }
-    [JsonConstructor]
 
-    public UserId(String value) : base(value)
+    [JsonConstructor]
+    public UserId(string value) : base(value)
     {
-        if (String.IsNullOrEmpty(value)) throw new BusinessRulesException("Guid cannot be null or empty.");
+        if (string.IsNullOrEmpty(value)) throw new BusinessRulesException("Guid cannot be null or empty.");
     }
 
     override
-        protected Object createFromString(String text)
+        protected object createFromString(string text)
     {
         return new Guid(text);
     }
 
     override
-        public String AsString()
+        public string AsString()
     {
-        Guid obj = (Guid)base.ObjValue;
+        var obj = (Guid)ObjValue;
         return obj.ToString();
     }
+
     public Guid AsGuid()
     {
-        return (Guid)base.ObjValue;
+        return (Guid)ObjValue;
     }
 }
-

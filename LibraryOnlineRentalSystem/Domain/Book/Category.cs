@@ -1,4 +1,4 @@
-using LibraryOnlineRentalSystem.Domain.Shared;
+using LibraryOnlineRentalSystem.Domain.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
 

@@ -1,4 +1,4 @@
-using LibraryOnlineRentalSystem.Domain.Shared;
+using LibraryOnlineRentalSystem.Domain.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
@@ -17,10 +17,10 @@ public class NIF : ICloneable, IValueObject
         this.nif = nif;
     }
 
-    public string nif { get; private set; }
+    public string nif { get; }
 
     public object Clone()
     {
-        return new NIF(this.nif);
+        return new NIF(nif);
     }
 }

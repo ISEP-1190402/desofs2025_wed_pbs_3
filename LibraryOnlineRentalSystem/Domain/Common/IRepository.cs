@@ -1,4 +1,4 @@
-namespace LibraryOnlineRentalSystem.Domain.Shared;
+namespace LibraryOnlineRentalSystem.Domain.Common;
 
 public interface IRepository<TEntity, TEntityId>
 {

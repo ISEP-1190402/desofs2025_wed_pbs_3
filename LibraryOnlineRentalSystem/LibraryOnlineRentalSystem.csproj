@@ -10,6 +10,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+        <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.0.5"/>
         <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0"/>
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2"/>
     </ItemGroup>
@@ -17,7 +18,7 @@
     <ItemGroup>
         <Compile Remove="WeatherForecast.cs"/>
         <Compile Remove="Controllers\WeatherForecastController.cs"/>
-        <Compile Remove="Controllers\AuthController.cs" />
+        <Compile Remove="Controllers\AuthController.cs"/>
     </ItemGroup>
 
 </Project>
