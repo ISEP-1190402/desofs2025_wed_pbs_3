@@ -25,18 +25,3 @@ user and access data.
 | 1230172 | Carlos Rodrigues  | M1B   |
 | 1222598 | Jorge Almeida     | M1B   |
 | 1230202 | Nuno Figueiredo   | M1B   |
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

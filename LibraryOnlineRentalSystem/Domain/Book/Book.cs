@@ -1,4 +1,5 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel.Design;
+using System.Text.Json.Serialization;
 using LibraryOnlineRentalSystem.Domain.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
@@ -20,6 +21,7 @@ public class Book : Entity<BookID>, IAggregateRoot
         Description = new Description(description);
         Isbn = new ISBN(isbn);
         Publisher = new Publisher(publisher);
+        Active = true;
     }
 
     public BookID Id { get; private set; }
@@ -29,4 +31,22 @@ public class Book : Entity<BookID>, IAggregateRoot
     public Description Description { get; private set; }
     public ISBN Isbn { get; private set; }
     public Publisher Publisher { get; private set; }
+    public bool Active { get; private set; }
+
+    public bool isBookDeleted()
+    {
+        return !Active;
+    }
+
+    public void deleteBook()
+    {
+        Active = false;
+    }
+
+    public BookDTO toDTO()
+    {
+        return new BookDTO(Id.Value.ToString(), AmountOfCopies.GetBookAmountOfCopies(), Author.GetBookAuthor(),
+            Category.GetBookCategoryName(), Description.GetBookDescription(), Isbn.GetISBN(),
+            Publisher.GetBookPublisher());
+    }
 }
