@@ -1,6 +1,8 @@
+using LibraryOnlineRentalSystem.Domain.Common;
+
 namespace LibraryOnlineRentalSystem.Domain.User;
 
-public class Biography: ICloneable, IValueObject
+public class Biography : ICloneable, IValueObject
 {
     public Biography(string biography)
     {
@@ -14,18 +16,18 @@ public class Biography: ICloneable, IValueObject
 
         if (biography.Length > 150)
             throw new BusinessRulesException("Description cannot exceed 150 characters.");
-        
+
         if (!biography.All(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)))
             throw new BusinessRulesException("Biography cannot contain emojis or special characters.");
 
         this.biography = biography;
     }
 
-    public string biography { get; private set; }
+    public string biography { get; }
+
     public object Clone()
     {
-        
-        Biography biography = new Biography(this.biography);
+        var biography = new Biography(this.biography);
         return biography;
     }
 }

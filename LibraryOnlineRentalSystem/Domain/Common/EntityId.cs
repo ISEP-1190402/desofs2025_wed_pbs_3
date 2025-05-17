@@ -1,7 +1,15 @@
-namespace LibraryOnlineRentalSystem.Domain;
+namespace LibraryOnlineRentalSystem.Domain.Common;
 
 public abstract class EntityId : IEquatable<EntityId>, IComparable<EntityId>
 {
+    protected EntityId(object value)
+    {
+        if (value.GetType() == typeof(string))
+            ObjValue = createFromString((string)value);
+        else
+            ObjValue = value;
+    }
+
     protected object ObjValue { get; }
 
     public string Value
@@ -14,12 +22,20 @@ public abstract class EntityId : IEquatable<EntityId>, IComparable<EntityId>
         }
     }
 
-    protected EntityId(object value)
+    public int CompareTo(EntityId other)
     {
-        if (value.GetType() == typeof(string))
-            ObjValue = createFromString((string)value);
-        else
-            ObjValue = value;
+        if (other == null)
+            return -1;
+        return Value.CompareTo(other.Value);
+    }
+
+    public bool Equals(EntityId other)
+    {
+        if (other == null)
+            return false;
+        if (GetType() != other.GetType())
+            return false;
+        return Value == other.Value;
     }
 
 
@@ -39,34 +55,17 @@ public abstract class EntityId : IEquatable<EntityId>, IComparable<EntityId>
         return Value.GetHashCode();
     }
 
-    public bool Equals(EntityId other)
-    {
-        if (other == null)
-            return false;
-        if (GetType() != other.GetType())
-            return false;
-        return Value == other.Value;
-    }
-
-    public int CompareTo(EntityId other)
-    {
-        if (other == null)
-            return -1;
-        return Value.CompareTo(other.Value);
-    }
-
     public static bool operator ==(EntityId obj1, EntityId obj2)
     {
         if (Equals(obj1, null))
         {
-            if (Equals(obj2, null))
-            {
-                return true;
-            }
+            if (Equals(obj2, null)) return true;
             return false;
         }
+
         return obj1.Equals(obj2);
     }
+
     public static bool operator !=(EntityId x, EntityId y)
     {
         return !(x == y);

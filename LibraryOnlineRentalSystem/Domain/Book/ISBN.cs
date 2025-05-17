@@ -1,3 +1,5 @@
+using LibraryOnlineRentalSystem.Domain.Common;
+
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class ISBN : IValueObject

@@ -1,4 +1,5 @@
 ﻿using System.Text.Json.Serialization;
+using LibraryOnlineRentalSystem.Domain.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
@@ -9,25 +10,25 @@ public class BookID : EntityId
     {
     }
 
-    public BookID(String value) : base(value)
+    public BookID(string value) : base(value)
     {
     }
 
     override
-        protected Object createFromString(String text)
+        protected object createFromString(string text)
     {
         return new Guid(text);
     }
 
     override
-        public String AsString()
+        public string AsString()
     {
-        Guid obj = (Guid)base.ObjValue;
+        var obj = (Guid)ObjValue;
         return obj.ToString();
     }
 
     public Guid AsGuid()
     {
-        return (Guid)base.ObjValue;
+        return (Guid)ObjValue;
     }
 }
