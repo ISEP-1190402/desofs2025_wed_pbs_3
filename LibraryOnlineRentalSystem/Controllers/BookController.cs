@@ -28,6 +28,8 @@ public class BookController : ControllerBase
 
 
     // GET: api/Book/{id}
+    [HttpGet("{id}")]
+
     public async Task<ActionResult<BookDTO>> GetByIdAsync(string id)
     {
         var response = await _bookService.GetBookByID(id);
