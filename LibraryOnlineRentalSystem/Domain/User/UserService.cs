@@ -17,6 +17,29 @@ public class UserService
         _workUnit = workUnit;
         _auditLogger = auditLogger;
     }
+    
+    public async Task CreateUserAsync(NewUserDTO req)
+    {
+        if (await _userRepository.GetByEmailAsync(req.Email) != null)
+            throw new BusinessRulesException("Email already in use");
+
+        if (await _userRepository.GetByUsernameAsync(req.UserName) != null)
+            throw new BusinessRulesException("Username already in use");
+
+        var user = new User(
+            req.Name,
+            req.Email,
+            req.RoleId,
+            req.UserName,
+            req.PhoneNumber,
+            req.Nif,
+            req.Biography
+        );
+
+        await _userRepository.AddAsync(user);
+        await _workUnit.CommitAsync();
+        await _auditLogger.LogAsync($"User {req.UserName} created manually", "UserCreation");
+    }
 
     public async Task<UserDTO?> GetUserByIdAsync(Guid id)
     {

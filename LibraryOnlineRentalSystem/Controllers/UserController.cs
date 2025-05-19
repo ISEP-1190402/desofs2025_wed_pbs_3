@@ -31,7 +31,15 @@ public class UserController : ControllerBase
         var users = await _userService.GetAllUsersAsync();
         return Ok(users);
     }
-
+    
+    [HttpPost]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CreateUser([FromBody] NewUserDTO request)
+    {
+        await _userService.CreateUserAsync(request);
+        return Ok("User created.");
+    }
+   
     [HttpPut("{id}")]
     [Authorize]
     public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
