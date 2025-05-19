@@ -93,8 +93,11 @@ namespace LibraryOnlineRentalSystem
             services.AddTransient<IWorkUnity, WorkUnity>();
             services.AddTransient<BookService>();
             services.AddTransient<IBookRepository, BookRepository>();
+            //User
+            // User
             services.AddTransient<UserService>();
             services.AddTransient<IUserRepository, UserRepository>();
+
         }
 
         public void ConfigureCors(IServiceCollection services)

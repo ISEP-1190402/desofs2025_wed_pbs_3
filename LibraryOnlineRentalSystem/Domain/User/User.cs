@@ -37,8 +37,7 @@ public class User : Entity<UserId>, IAggregateRoot
     public PhoneNumber PhoneNumber { get; private set; }
     public NIF Nif { get; private set; }
     public Biography Biography { get; private set; }
-
-    // Métodos de alteração segura (mutações controladas)
+    
     public void ChangeBiography(string biography)
     {
         Biography = new Biography(biography);
