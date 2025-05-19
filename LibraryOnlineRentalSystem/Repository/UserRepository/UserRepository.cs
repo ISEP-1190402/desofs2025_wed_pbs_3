@@ -2,7 +2,6 @@ using LibraryOnlineRentalSystem.Domain.User;
 using LibraryOnlineRentalSystem.Repository.Common;
 using Microsoft.EntityFrameworkCore;
 
-
 namespace LibraryOnlineRentalSystem.Repository.UserRepository;
 
 public class UserRepository : GeneralRepository<User, UserId>, IUserRepository

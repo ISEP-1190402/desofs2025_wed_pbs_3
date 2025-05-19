@@ -11,6 +11,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 namespace LibraryOnlineRentalSystem
 {
@@ -36,6 +38,26 @@ namespace LibraryOnlineRentalSystem
             //ConfigureCors(services);
             ConfigureMyServices(services);
 
+            // Add Keycloak Authentication
+            services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.Authority = Configuration["Keycloak:Authority"];
+                options.Audience = Configuration["Keycloak:Audience"];
+                options.RequireHttpsMetadata = false; // Set to true in production
+                options.TokenValidationParameters = new TokenValidationParameters
+                {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true
+                };
+            });
+
             services.AddControllers().AddNewtonsoftJson();
 
             // Apenas Swashbuckle para Swagger
@@ -50,6 +72,8 @@ namespace LibraryOnlineRentalSystem
             app.UseStaticFiles();
             app.UseRouting();
             app.UseCors("AllowAll");
+            
+            app.UseAuthentication();
             app.UseAuthorization();
 
             // Swagger deve vir antes do endpoints
@@ -62,8 +86,6 @@ namespace LibraryOnlineRentalSystem
             });
 
             app.UseEndpoints(endpoints => { endpoints.MapControllers(); });
-
-            app.UseAuthentication();
         }
 
         public void ConfigureMyServices(IServiceCollection services)
