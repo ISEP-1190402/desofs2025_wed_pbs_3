@@ -21,12 +21,12 @@ public class UserRepository : GeneralRepository<User, UserId>, IUserRepository
 
     public async Task<User?> GetByEmailAsync(string email)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.Email.email == email);
+        return await _context.Users.FirstOrDefaultAsync(u => u.Email.EmailAddress == email);
     }
 
     public async Task<User?> GetByUsernameAsync(string username)
     {
-        return await _context.Users.FirstOrDefaultAsync(u => u.UserName.username == username);
+        return await _context.Users.FirstOrDefaultAsync(u => u.UserName.Tag == username);
     }
 
     public async Task<List<User>> GetAllAsync()

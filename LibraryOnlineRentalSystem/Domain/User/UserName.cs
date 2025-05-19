@@ -13,14 +13,31 @@ public class UserName : ICloneable, IValueObject
         if (username.Length > 30) throw new BusinessRulesException("The name cannot be longer than 30 characters.");
         if (username.StartsWith("_") || username.EndsWith("_"))
             throw new BusinessRulesException("The username cannot start or end with special character _.");
-        this.username = username;
+        this.Tag = username;
     }
 
-    public string username { get; }
+    public string Tag { get; }
 
     public object Clone()
     {
-        var username = new UserName(this.username);
-        return username;
+        return new UserName(this.Tag);
+    }
+
+    public override string ToString()
+    {
+        return Tag;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (this == obj) return true;
+        if (obj is not UserName other) return false;
+
+        return Tag.Equals(other.Tag, StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    public override int GetHashCode()
+    {
+        return Tag.ToLowerInvariant().GetHashCode();
     }
 }

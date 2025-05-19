@@ -48,11 +48,11 @@ public class UserService
 
         return new UserDTO(
             user.Id.AsGuid(),
-            user.Name.name,
-            user.Email.email,
+            user.Name.FullName,
+            user.Email.EmailAddress,
             user.RoleId.AsGuid(),
-            user.Nif.nif,
-            user.UserName.username,
+            user.Nif.TaxID,
+            user.UserName.Tag,
             user.Biography.biography,
             user.PhoneNumber.Number
         );
@@ -63,11 +63,11 @@ public class UserService
         var users = await _userRepository.GetAllAsync();
         return users.Select(user => new UserDTO(
             user.Id.AsGuid(),
-            user.Name.name,
-            user.Email.email,
+            user.Name.FullName,
+            user.Email.EmailAddress,
             user.RoleId.AsGuid(),
-            user.Nif.nif,
-            user.UserName.username,
+            user.Nif.TaxID,
+            user.UserName.Tag,
             user.Biography.biography,
             user.PhoneNumber.Number
         )).ToList();

@@ -18,17 +18,17 @@ public class ConfigUserEntityType : IEntityTypeConfiguration<User>
             .IsRequired();
 
         builder.OwnsOne(u => u.Name)
-            .Property(n => n.name)
+            .Property(n => n.FullName)
             .HasColumnName("Name")
             .IsRequired();
 
         builder.OwnsOne(u => u.Email)
-            .Property(e => e.email)
+            .Property(e => e.EmailAddress)
             .HasColumnName("Email")
             .IsRequired();
 
         builder.OwnsOne(u => u.UserName)
-            .Property(un => un.username)
+            .Property(un => un.Tag)
             .HasColumnName("UserName")
             .IsRequired();
 
@@ -38,7 +38,7 @@ public class ConfigUserEntityType : IEntityTypeConfiguration<User>
             .IsRequired();
 
         builder.OwnsOne(u => u.Nif)
-            .Property(n => n.nif)
+            .Property(n => n.TaxID)
             .HasColumnName("NIF")
             .IsRequired();
 
