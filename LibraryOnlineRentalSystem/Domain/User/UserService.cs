@@ -1,4 +1,9 @@
+using LibraryOnlineRentalSystem.Domain.User;
 using LibraryOnlineRentalSystem.Domain.Common;
+using LibraryOnlineRentalSystem.Domain.Role;
+using static LibraryOnlineRentalSystem.Controllers.UserController;
+
+
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
@@ -53,7 +58,7 @@ public class UserService
             user.RoleId.AsGuid(),
             user.Nif.TaxID,
             user.UserName.Tag,
-            user.Biography.biography,
+            user.Biography.Description,
             user.PhoneNumber.Number
         );
     }
@@ -68,38 +73,44 @@ public class UserService
             user.RoleId.AsGuid(),
             user.Nif.TaxID,
             user.UserName.Tag,
-            user.Biography.biography,
+            user.Biography.Description,
             user.PhoneNumber.Number
         )).ToList();
     }
 
-    public async Task UpdateUserAsync(Guid id, object request)
+    public async Task UpdateUserAsync(Guid id, UpdateUserRequest request)
     {
-        dynamic req = request;
         var user = await _userRepository.GetByIdAsync(new UserId(id));
         if (user == null)
             throw new BusinessRulesException("User not found");
 
-        if (req.Biography != null)
-            user.ChangeBiography(req.Biography);
+        if (request.Biography != null)
+            user.ChangeBiography(request.Biography);
 
-        if (req.PhoneNumber != null)
-            user.ChangePhoneNumber(req.PhoneNumber);
+        if (request.PhoneNumber != null)
+            user.ChangePhoneNumber(request.PhoneNumber);
 
-        if (req.RoleId != null)
-            user.ChangeRoleId(req.RoleId);
+        if (request.RoleId != null)
+            user.ChangeRoleId(request.RoleId);
+
+        if (request.Name != null)
+            user.ChangeName(request.Name);
+
+        if (request.Email != null)
+            user.ChangeEmail(request.Email);
 
         await _workUnit.CommitAsync();
         await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
     }
 
-    public async Task DeleteUserAsync(Guid id)
-    {
-        var user = await _userRepository.GetByIdAsync(new UserId(id));
-        if (user == null) return;
+
+    //public async Task DeleteUserAsync(Guid id)
+    //{
+     //   var user = await _userRepository.GetByIdAsync(new UserId(id));
+       // if (user == null) return;
 
         //_userRepository.Delete(user);
-        await _workUnit.CommitAsync();
-        await _auditLogger.LogAsync($"User {id} deleted.", "UserDeletion");
-    }
+       // await _workUnit.CommitAsync();
+      //  await _auditLogger.LogAsync($"User {id} deleted.", "UserDeletion");
+    //}
 }

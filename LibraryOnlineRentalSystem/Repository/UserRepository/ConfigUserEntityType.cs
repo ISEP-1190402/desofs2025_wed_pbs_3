@@ -43,7 +43,7 @@ public class ConfigUserEntityType : IEntityTypeConfiguration<User>
             .IsRequired();
 
         builder.OwnsOne(u => u.Biography)
-            .Property(b => b.biography)
+            .Property(b => b.Description)
             .HasColumnName("Biography");
 
         builder.Property(u => u.RoleId)

@@ -8,11 +8,11 @@ public class Biography : ICloneable, IValueObject
     {
         if (string.IsNullOrWhiteSpace(biography))
         {
-            this.biography = string.Empty;
+            this.Description = string.Empty;
             return;
         }
 
-        biography = biography.Trim();
+        Description = biography.Trim();
 
         if (biography.Length > 150)
             throw new BusinessRulesException("Description cannot exceed 150 characters.");
@@ -20,14 +20,31 @@ public class Biography : ICloneable, IValueObject
         if (!biography.All(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)))
             throw new BusinessRulesException("Biography cannot contain emojis or special characters.");
 
-        this.biography = biography;
+        this.Description = biography;
     }
 
-    public string biography { get; }
+    public string Description { get; }
 
     public object Clone()
     {
-        var biography = new Biography(this.biography);
-        return biography;
+        return new UserName(this.Description);
+    }
+
+    public override string ToString()
+    {
+        return Description;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (this == obj) return true;
+        if (obj is not Biography other) return false;
+
+        return Description.Equals(other.Description, StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    public override int GetHashCode()
+    {
+        return Description.ToLowerInvariant().GetHashCode();
     }
 }

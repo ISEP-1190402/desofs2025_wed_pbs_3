@@ -53,9 +53,9 @@ public class User : Entity<UserId>, IAggregateRoot
         PhoneNumber = new PhoneNumber(phoneNumber);
     }
 
-    public void ChangeUserName(string userName)
+    public void ChangeName(string name)
     {
-        UserName = new UserName(userName);
+        Name = new Name(name);
     }
 
     public void ChangeRoleId(string roleId)
