@@ -1,11 +1,11 @@
-sast:
-  name: SAST Scan (Semgrep)
-  runs-on: ubuntu-latest
+  sast:
+    name: SAST Scan (Semgrep)
+    runs-on: ubuntu-latest
 
-  steps:
-    - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Run Semgrep Scan
-      uses: returntocorp/semgrep-action@v1
-      with:
-        config: "auto"
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: "auto"
