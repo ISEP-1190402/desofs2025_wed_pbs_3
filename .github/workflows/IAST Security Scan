@@ -1,0 +1,70 @@
+name: .NET
+
+on:
+  push:
+    branches: [ "development" ]
+  pull_request:
+    branches: [ "development" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: LibraryOnlineRentalSystem
+    - name: Build
+      run: dotnet build --no-restore
+      working-directory: LibraryOnlineRentalSystem
+    - name: Test
+      run: dotnet test --no-build --verbosity normal
+      working-directory: LibraryOnlineRentalSystem
+
+  iast:
+    name: IAST Security Scan
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore
+      working-directory: LibraryOnlineRentalSystem
+
+    - name: Build
+      run: dotnet build --no-restore
+      working-directory: LibraryOnlineRentalSystem
+
+    - name: Download Contrast .NET Agent
+      run: |
+        mkdir contrast
+        curl -L -o contrast/contrast.net.zip https://downloads.contrastsecurity.com/artifactory/agent/dotnet/latest/contrast.net.zip
+        unzip contrast/contrast.net.zip -d contrast
+      shell: bash
+
+    - name: Set Contrast environment variables
+      run: |
+        echo "CONTRAST__API__URL=https://app.contrastsecurity.com/Contrast" >> $GITHUB_ENV
+        echo "CONTRAST__API__API_KEY=${{ secrets.CONTRAST_API_KEY }}" >> $GITHUB_ENV
+        echo "CONTRAST__API__SERVICE_KEY=${{ secrets.CONTRAST_SERVICE_KEY }}" >> $GITHUB_ENV
+        echo "CONTRAST__API__USER_NAME=${{ secrets.CONTRAST_USER_NAME }}" >> $GITHUB_ENV
+        echo "CONTRAST__APPLICATION__NAME=LibraryRentalSystem" >> $GITHUB_ENV
+
+    - name: Run Tests with Contrast Agent
+      run: |
+        ./contrast/ContrastRunner \
+          --app LibraryRentalSystem \
+          -- dotnet test --no-build --verbosity normal
+      working-directory: LibraryOnlineRentalSystem
