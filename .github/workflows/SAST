@@ -1,27 +1,11 @@
-  sast:
-    name: SAST Scan (CodeQL)
-    runs-on: ubuntu-latest
-    permissions:
-      actions: read
-      contents: read
-      security-events: write
+sast:
+  name: SAST Scan (Semgrep)
+  runs-on: ubuntu-latest
 
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'csharp' ]
+  steps:
+    - uses: actions/checkout@v4
 
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
-
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+    - name: Run Semgrep Scan
+      uses: returntocorp/semgrep-action@v1
       with:
-        languages: ${{ matrix.language }}
-
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v3
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+        config: "auto"
