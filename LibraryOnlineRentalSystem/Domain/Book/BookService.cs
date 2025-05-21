@@ -1,3 +1,4 @@
+using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Repository.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
@@ -5,9 +6,9 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 public class BookService
 {
     private readonly IBookRepository _bookRepository;
-    private readonly WorkUnity _workUnity;
+    private readonly IWorkUnity _workUnity;
 
-    public BookService(IBookRepository bookRepository, WorkUnity workUnity)
+    public BookService(IBookRepository bookRepository, IWorkUnity workUnity)
     {
         _bookRepository = bookRepository;
         _workUnity = workUnity;
@@ -32,15 +33,15 @@ public class BookService
     {
         var id=_bookRepository.GetAllAsync().Result.Count + 1+"";
 
-        var AddedBook= new Book(id,bookToAddDto.AmountOfCopies,bookToAddDto.Author,bookToAddDto.Category,
+        var addedBook= new Book(id,bookToAddDto.AmountOfCopies,bookToAddDto.Author,bookToAddDto.Category,
             bookToAddDto.Description,bookToAddDto.Isbn,bookToAddDto.Publisher);
 
             
-        await _bookRepository.AddAsync(AddedBook);
+        await _bookRepository.AddAsync(addedBook);
 
         await _workUnity.CommitAsync();
 
-        return AddedBook.toDTO();
+        return addedBook.toDTO();
     }
     
     

@@ -4,6 +4,9 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class UserName : ICloneable, IValueObject
 {
+    public UserName()
+    {
+    } 
     public UserName(string username)
     {
         if (string.IsNullOrEmpty(username)) throw new ArgumentNullException(nameof(username));

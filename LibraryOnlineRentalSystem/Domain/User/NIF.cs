@@ -4,6 +4,9 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class NIF : ICloneable, IValueObject
 {
+    public NIF()
+    {
+    } 
     public NIF(string nif)
     {
         if (string.IsNullOrEmpty(nif))

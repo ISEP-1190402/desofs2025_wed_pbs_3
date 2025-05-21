@@ -5,30 +5,45 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class BookID : EntityId
 {
+    
     [JsonConstructor]
-    public BookID(Guid value) : base(value)
-    {
-    }
-
     public BookID(string value) : base(value)
     {
+        bookID = value;
     }
 
+    private string bookID { get; }
     override
         protected object createFromString(string text)
     {
-        return new Guid(text);
+        return text;
     }
 
     override
         public string AsString()
     {
-        var obj = (Guid)ObjValue;
+        var obj = ObjValue;
         return obj.ToString();
     }
 
-    public Guid AsGuid()
+    public override bool Equals(object? obj)
     {
-        return (Guid)ObjValue;
+        if (this == obj) return true;
+
+        if (obj == null || obj.GetType() != GetType()) return false;
+
+        var that = (BookID) obj;
+
+        return this.Equals(that.bookID);
     }
+
+    public override string ToString()
+    {
+        return $"{bookID}";
+    }
+    
+    
+    
+    
+    
 }

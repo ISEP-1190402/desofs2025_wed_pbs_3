@@ -4,6 +4,9 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class Name : ICloneable, IValueObject
 {
+    public Name()
+    {
+    } 
     public string FullName { get; }
 
     public Name(string name)

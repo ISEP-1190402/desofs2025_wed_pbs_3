@@ -5,6 +5,9 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class Email : ICloneable, IValueObject
 {
+    public Email()
+    {
+    } 
     public string EmailAddress { get; }
 
     public Email(string email)

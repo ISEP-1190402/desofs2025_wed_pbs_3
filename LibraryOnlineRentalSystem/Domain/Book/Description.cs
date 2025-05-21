@@ -4,6 +4,9 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class Description : IValueObject
 {
+    public Description()
+    {
+    } 
     public Description(string bookDescription)
     {
         if (string.IsNullOrEmpty(bookDescription))

@@ -4,6 +4,9 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class PhoneNumber : ICloneable, IValueObject
 {
+    public PhoneNumber()
+    {
+    } 
     public PhoneNumber(string number)
     {
         if (string.IsNullOrWhiteSpace(number))

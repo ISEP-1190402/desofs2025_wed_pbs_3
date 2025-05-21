@@ -4,6 +4,9 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class Category : IValueObject
 {
+    public Category()
+    {
+    } 
     public Category(string name)
     {
         if (string.IsNullOrEmpty(name)) throw new BusinessRulesException("Category cannot be null or empty");

@@ -4,6 +4,9 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class Publisher : IValueObject
 {
+    public Publisher()
+    {
+    } 
     public Publisher(string name)
     {
         if (string.IsNullOrEmpty(name)) throw new BusinessRulesException("Publisher cannot be null or empty");
