@@ -12,18 +12,21 @@ public class UserService
     private readonly IWorkUnity _workUnit;
     private readonly IAuditLogger _auditLogger;
     private readonly IRoleRepository _roleRepository;
+    private readonly PasswordService _passwordService;
     private const string DEFAULT_USER_ROLE_NAME = "User";
 
     public UserService(
         IUserRepository userRepository,
         IWorkUnity workUnit,
         IAuditLogger auditLogger,
-        IRoleRepository roleRepository)
+        IRoleRepository roleRepository,
+        PasswordService passwordService)
     {
         _userRepository = userRepository;
         _workUnit = workUnit;
         _auditLogger = auditLogger;
         _roleRepository = roleRepository;
+        _passwordService = passwordService;
     }
     
     public async Task CreateUserAsync(NewUserDTO req)
@@ -38,19 +41,31 @@ public class UserService
         if (userRole == null)
             throw new BusinessRulesException("Default user role not found");
 
-        var user = new User(
-            req.Name,
-            req.Email,
-            userRole.Id.AsString(),
-            req.UserName,
-            req.PhoneNumber,
-            req.Nif,
-            req.Biography
-        );
+        try
+        {
+            // Hash the password
+            var hashedPassword = _passwordService.HashPassword(req.Password);
 
-        await _userRepository.AddAsync(user);
-        await _workUnit.CommitAsync();
-        await _auditLogger.LogAsync($"User {req.UserName} created manually", "UserCreation");
+            // Create user in our database with hashed password
+            var user = new User(
+                req.Name,
+                req.Email,
+                userRole.Id.AsString(),
+                req.UserName,
+                req.PhoneNumber,
+                req.Nif,
+                req.Biography,
+                hashedPassword
+            );
+
+            await _userRepository.AddAsync(user);
+            await _workUnit.CommitAsync();
+            await _auditLogger.LogAsync($"User {req.UserName} created successfully", "UserCreation");
+        }
+        catch (Exception ex)
+        {
+            throw new BusinessRulesException("Failed to create user: " + ex.Message);
+        }
     }
 
     public async Task<UserDTO?> GetUserByIdAsync(Guid id)

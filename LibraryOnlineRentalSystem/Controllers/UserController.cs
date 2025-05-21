@@ -42,7 +42,7 @@ public class UserController : ControllerBase
         try
         {
             await _userService.CreateUserAsync(request);
-            return Ok("User registered successfully.");
+            return Ok(new { message = "User registered successfully" });
         }
         catch (BusinessRulesException ex)
         {

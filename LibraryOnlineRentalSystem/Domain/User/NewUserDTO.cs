@@ -8,10 +8,11 @@ public class NewUserDTO
     public string PhoneNumber { get; set; }
     public string Nif { get; set; }
     public string Biography { get; set; }
+    public string Password { get; set; }
     
     public NewUserDTO() { }
     
-    public NewUserDTO(string name, string email, string roleId, string userName, string phoneNumber, string nif, string biography)
+    public NewUserDTO(string name, string email, string roleId, string userName, string phoneNumber, string nif, string biography, string password)
     {
         Name = name;
         Email = email;
@@ -19,6 +20,7 @@ public class NewUserDTO
         PhoneNumber = phoneNumber;
         Nif = nif;
         Biography = biography;
+        Password = password;
     }
 }
 

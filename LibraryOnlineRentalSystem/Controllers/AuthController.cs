@@ -1,33 +1,44 @@
 using Microsoft.AspNetCore.Mvc;
+using LibraryOnlineRentalSystem.Domain.User;
 
-namespace LibraryOnlineRentalSystem.Controllers
+namespace LibraryOnlineRentalSystem.Controllers;
+
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
 {
-    [ApiController]
-    [Route("[controller]")]
-    public class WeatherForecastController : ControllerBase
+    private readonly AuthService _authService;
+
+    public AuthController(AuthService authService)
     {
-        private static readonly string[] Summaries = new[]
-        {
-            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-        };
+        _authService = authService;
+    }
 
-        private readonly ILogger<WeatherForecastController> _logger;
-
-        public WeatherForecastController(ILogger<WeatherForecastController> logger)
+    [HttpPost("auth")]
+    public async Task<ActionResult<AuthResponseDTO>> Auth([FromBody] AuthRequestDTO request)
+    {
+        try
         {
-            _logger = logger;
+            var response = await _authService.AuthAsync(request);
+            return Ok(response);
         }
-
-        [HttpGet(Name = "GetWeatherForecast")]
-        public IEnumerable<WeatherForecast> Get()
+        catch (Exception ex)
         {
-            return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-            {
-                Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
-            .ToArray();
+            return BadRequest(new { message = "Invalid username or password" });
+        }
+    }
+
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AuthResponseDTO>> RefreshToken([FromBody] RefreshTokenRequestDTO request)
+    {
+        try
+        {
+            var response = await _authService.RefreshTokenAsync(request.RefreshToken);
+            return Ok(response);
+        }
+        catch (Exception ex)
+        {
+            return BadRequest(new { message = "Invalid refresh token" });
         }
     }
 }
