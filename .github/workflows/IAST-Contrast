@@ -1,0 +1,50 @@
+name: .NET + Contrast IAST
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  contrast-iast:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore e Build
+      run: |
+        dotnet restore LibraryOnlineRentalSystem
+        dotnet build LibraryOnlineRentalSystem --no-restore
+
+    - name: Baixar e configurar Contrast Agent
+      run: |
+        curl -L https://cdn.contrastsecurity.com/agents/installer.sh | bash
+        mkdir -p .contrast
+        mv contrast-dotnet-core-agent/* .contrast
+
+    - name: Rodar app com agente Contrast
+      env:
+        CORECLR_PROFILER: '{36032161-FFC0-4B61-B559-F6C5D41BAE5A}'
+        CORECLR_ENABLE_PROFILING: '1'
+        CORECLR_PROFILER_PATH: './.contrast/ContrastProfiler.so'
+        CONTRAST__API__URL: 'https://app.contrastsecurity.com'
+        CONTRAST__API__API_KEY: ${{ secrets.CONTRAST_API_KEY }}
+        CONTRAST__API__SERVICE_KEY: ${{ secrets.CONTRAST_SERVICE_KEY }}
+        CONTRAST__API__USER_NAME: jsa@iep.pt
+        CONTRAST__API__ORGANIZATION_ID: ${{ secrets.CONTRAST_ORG_ID }}
+        CONTRAST__APPLICATION__NAME: 'LibraryOnlineRentalSystem'
+      run: |
+        dotnet run --project LibraryOnlineRentalSystem &
+        sleep 30
+
+    - name: Simular tráfego na aplicação
+      run: |
+        curl http://localhost:5000/ || echo "App não respondeu"
