@@ -2,8 +2,7 @@ using LibraryOnlineRentalSystem.Domain.User;
 using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Domain.Role;
 using static LibraryOnlineRentalSystem.Controllers.UserController;
-
-
+using LibraryOnlineRentalSystem.Repository.RoleRepository;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
@@ -12,15 +11,19 @@ public class UserService
     private readonly IUserRepository _userRepository;
     private readonly IWorkUnity _workUnit;
     private readonly IAuditLogger _auditLogger;
+    private readonly IRoleRepository _roleRepository;
+    private const string DEFAULT_USER_ROLE_NAME = "User";
 
     public UserService(
         IUserRepository userRepository,
         IWorkUnity workUnit,
-        IAuditLogger auditLogger)
+        IAuditLogger auditLogger,
+        IRoleRepository roleRepository)
     {
         _userRepository = userRepository;
         _workUnit = workUnit;
         _auditLogger = auditLogger;
+        _roleRepository = roleRepository;
     }
     
     public async Task CreateUserAsync(NewUserDTO req)
@@ -31,10 +34,14 @@ public class UserService
         if (await _userRepository.GetByUsernameAsync(req.UserName) != null)
             throw new BusinessRulesException("Username already in use");
 
+        var userRole = await _roleRepository.GetByNameAsync(DEFAULT_USER_ROLE_NAME);
+        if (userRole == null)
+            throw new BusinessRulesException("Default user role not found");
+
         var user = new User(
             req.Name,
             req.Email,
-            req.RoleId,
+            userRole.Id.AsString(),
             req.UserName,
             req.PhoneNumber,
             req.Nif,

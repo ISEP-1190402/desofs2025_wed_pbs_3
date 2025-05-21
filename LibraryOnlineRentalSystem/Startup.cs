@@ -4,6 +4,7 @@ using LibraryOnlineRentalSystem.Domain.User;
 using LibraryOnlineRentalSystem.Repository.BookRepository;
 using LibraryOnlineRentalSystem.Repository.Common;
 using LibraryOnlineRentalSystem.Repository.UserRepository;
+using LibraryOnlineRentalSystem.Repository.RoleRepository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.AspNetCore.Builder;
@@ -97,7 +98,8 @@ namespace LibraryOnlineRentalSystem
             // User
             services.AddTransient<UserService>();
             services.AddTransient<IUserRepository, UserRepository>();
-
+            services.AddTransient<IRoleRepository, RoleRepository>();
+            services.AddTransient<IAuditLogger, AuditLogger>();
         }
 
         public void ConfigureCors(IServiceCollection services)

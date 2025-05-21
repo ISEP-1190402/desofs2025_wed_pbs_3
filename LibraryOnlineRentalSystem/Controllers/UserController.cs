@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using LibraryOnlineRentalSystem.Domain.User;
+using LibraryOnlineRentalSystem.Domain.Common;
+using LibraryOnlineRentalSystem.Repository.RoleRepository;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -10,10 +12,12 @@ namespace LibraryOnlineRentalSystem.Controllers;
 public class UserController : ControllerBase
 {
     private readonly UserService _userService;
+    private readonly IRoleRepository _roleRepository;
 
-    public UserController(UserService userService)
+    public UserController(UserService userService, IRoleRepository roleRepository)
     {
         _userService = userService;
+        _roleRepository = roleRepository;
     }
 
     [HttpGet("{id}")]
@@ -32,12 +36,33 @@ public class UserController : ControllerBase
         return Ok(users);
     }
     
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] NewUserDTO request)
+    {
+        try
+        {
+            await _userService.CreateUserAsync(request);
+            return Ok("User registered successfully.");
+        }
+        catch (BusinessRulesException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     [HttpPost]
     [Authorize(Roles = "Admin")]
     public async Task<IActionResult> CreateUser([FromBody] NewUserDTO request)
     {
-        await _userService.CreateUserAsync(request);
-        return Ok("User created.");
+        try
+        {
+            await _userService.CreateUserAsync(request);
+            return Ok("User created successfully.");
+        }
+        catch (BusinessRulesException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
    
     [HttpPut("{id}")]
