@@ -31,10 +31,15 @@ jobs:
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Restore dependencies
-        run: dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
+        working-directory: ./LibraryOnlineRentalSystem
+        run: dotnet restore LibraryOnlineRentalSystem.sln
 
       - name: Build
-        run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-incremental
+        working-directory: ./LibraryOnlineRentalSystem
+        run: dotnet build LibraryOnlineRentalSystem.sln --no-incremental
+
+      - name: Check MSBuild version
+        run: msbuild -version
 
       - name: End SonarCloud Analysis
         working-directory: ./LibraryOnlineRentalSystem
