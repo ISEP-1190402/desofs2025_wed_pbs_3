@@ -45,7 +45,7 @@ jobs:
           -o sonar-report.json
 
       - name: Upload Sonar report
-        uses: actions/upload-artifact@v3.1.3
+        uses: actions/upload-artifact@56d24c3cb72404c94c79a4bd2d98d43462a4f2d0
         with:
           name: sonar-report
           path: sonar-report.json
