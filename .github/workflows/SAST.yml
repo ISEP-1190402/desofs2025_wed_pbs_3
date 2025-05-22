@@ -19,14 +19,15 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Setup SonarCloud scanner
-        uses: SonarSource/sonarcloud-github-action@master
-        with:
-          args: >
-            begin
-            /k:"jorgealmeidadeveloper"
-            /o:"JorgeAlmeidaDeveloper"
-            /d:sonar.login=${{ secrets.SONAR_TOKEN }}
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Start SonarCloud Analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"jorgealmeidadeveloper" \
+            /o:"JorgeAlmeidaDeveloper" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Restore dependencies
         run: dotnet restore
