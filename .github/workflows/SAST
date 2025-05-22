@@ -19,23 +19,30 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      - name: Setup SonarCloud scanner
-        uses: SonarSource/sonarcloud-github-action@master
-        with:
-          args: >
-            begin
-            /k:"jorgealmeidadeveloper"
-            /o:"JorgeAlmeidaDeveloper"
-            /d:sonar.login=${{ secrets.SONAR_TOKEN }}
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Start SonarCloud Analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"jorgealmeidadeveloper" \
+            /o:"JorgeAlmeidaDeveloper" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Restore dependencies
         run: dotnet restore
 
       - name: Build
-        run: dotnet build --no-restore
+        run: dotnet build --no-restore --configuration Release
 
-      - name: Run SonarCloud analysis
-        run: dotnet sonarscanner end /d:sonar.login=${{ secrets.SONAR_TOKEN }}
+      - name: End SonarCloud Analysis
+        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Generate JSON report from SonarCloud API
+        run: |
+          curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
+          "https://sonarcloud.io/api/issues/search?componentKeys=jorgealmeidadeveloper" \
+        -o sonar-report.json
 
       - name: Upload Sonar report
         uses: actions/upload-artifact@v3
