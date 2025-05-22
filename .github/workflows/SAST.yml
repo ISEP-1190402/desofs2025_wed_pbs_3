@@ -36,7 +36,9 @@ jobs:
         run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-incremental
 
       - name: End SonarCloud Analysis
-        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+        run: |
+          dotnet sonarscanner end \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Generate JSON report from SonarCloud API
         run: |
