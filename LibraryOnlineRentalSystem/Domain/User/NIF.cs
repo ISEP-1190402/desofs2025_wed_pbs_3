@@ -12,7 +12,7 @@ public class NIF : ICloneable, IValueObject
         if (string.IsNullOrEmpty(nif))
             throw new ArgumentNullException(nameof(nif));
 
-        TaxID = nif.Trim();
+        nif = nif.Trim();
 
         if (nif.Length != 9 || !nif.All(char.IsDigit))
             throw new BusinessRulesException("The NIF must contain exactly 9 digits.");

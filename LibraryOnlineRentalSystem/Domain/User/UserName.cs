@@ -10,13 +10,14 @@ public class UserName : ICloneable, IValueObject
     public UserName(string username)
     {
         if (string.IsNullOrEmpty(username)) throw new ArgumentNullException(nameof(username));
+        username=username.Trim();
         if (!username.Any(c => char.IsLetter(c)) || username.Any(c => !char.IsLetterOrDigit(c) && c != '_'))
             throw new BusinessRulesException(
                 "The name cannot be alphanumeric or numeric or have special characters except _.");
         if (username.Length > 30) throw new BusinessRulesException("The name cannot be longer than 30 characters.");
         if (username.StartsWith("_") || username.EndsWith("_"))
             throw new BusinessRulesException("The username cannot start or end with special character _.");
-        this.Tag = username;
+        Tag = username;
     }
 
     public string Tag { get; }

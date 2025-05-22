@@ -15,7 +15,7 @@ public class Biography : ICloneable, IValueObject
             return;
         }
 
-        Description = biography.Trim();
+        biography = biography.Trim();
 
         if (biography.Length > 150)
             throw new BusinessRulesException("Description cannot exceed 150 characters.");
@@ -23,14 +23,14 @@ public class Biography : ICloneable, IValueObject
         if (!biography.All(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)))
             throw new BusinessRulesException("Biography cannot contain emojis or special characters.");
 
-        this.Description = biography;
+        Description = biography;
     }
 
     public string Description { get; }
 
     public object Clone()
     {
-        return new UserName(this.Description);
+        return new Biography(this.Description);
     }
 
     public override string ToString()

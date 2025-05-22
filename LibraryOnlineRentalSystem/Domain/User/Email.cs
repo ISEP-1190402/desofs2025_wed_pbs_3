@@ -12,6 +12,7 @@ public class Email : ICloneable, IValueObject
 
     public Email(string email)
     {
+        email = email.Trim();
         ValidateEmail(email);
         EmailAddress = email;
     }
