@@ -63,6 +63,10 @@ public class User : Entity<UserId>, IAggregateRoot
 
     public void ChangeRoleId(string roleId)
     {
-        RoleId = new RoleId(roleId);
+        if (!Guid.TryParse(roleId, out var parsedRoleId))
+            throw new BusinessRulesException("Invalid Role ID format.");
+
+        RoleId = new RoleId(parsedRoleId); // RoleId = new RoleId(roleId); 
+
     }
 }
