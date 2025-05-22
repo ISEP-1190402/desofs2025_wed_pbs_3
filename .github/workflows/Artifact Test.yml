@@ -1,0 +1,17 @@
+name: Artifact Test
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  test-artifact:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create test file
+        run: echo "Hello World" > hello.txt
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-file
+          path: hello.txt
