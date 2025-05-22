@@ -23,6 +23,7 @@ jobs:
         run: dotnet tool install --global dotnet-sonarscanner
 
       - name: Start SonarCloud Analysis
+        working-directory: ./LibraryOnlineRentalSystem
         run: |
           dotnet sonarscanner begin \
             /k:"jorgealmeidadeveloper" \
@@ -30,12 +31,15 @@ jobs:
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Restore dependencies
+        working-directory: ./LibraryOnlineRentalSystem
         run: dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
 
       - name: Build
+        working-directory: ./LibraryOnlineRentalSystem
         run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-incremental
 
       - name: End SonarCloud Analysis
+        working-directory: ./LibraryOnlineRentalSystem
         run: |
           dotnet sonarscanner end \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
