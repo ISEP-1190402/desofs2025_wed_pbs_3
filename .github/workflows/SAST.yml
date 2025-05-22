@@ -27,7 +27,7 @@ jobs:
         run: |
           dotnet sonarscanner begin \
             /k:"jorgealmeidadeveloper" \
-            /o:"JorgeAlmeidaDeveloper" \
+            /o:"jorgealmeidadeveloper" \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Restore dependencies
