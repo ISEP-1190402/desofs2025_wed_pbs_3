@@ -39,7 +39,7 @@ jobs:
         run: dotnet build LibraryOnlineRentalSystem.sln --no-incremental
 
       - name: Check MSBuild version
-        run: msbuild -version
+        run: dotnet msbuild -version
 
       - name: End SonarCloud Analysis
         working-directory: ./LibraryOnlineRentalSystem
