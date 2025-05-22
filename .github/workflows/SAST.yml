@@ -31,11 +31,9 @@ jobs:
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Restore dependencies
-        working-directory: ./LibraryOnlineRentalSystem
         run: dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
 
       - name: Build
-        working-directory: ./LibraryOnlineRentalSystem
         run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-incremental
 
       - name: End SonarCloud Analysis
