@@ -30,10 +30,10 @@ jobs:
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
 
       - name: Build
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-incremental
 
       - name: End SonarCloud Analysis
         run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
