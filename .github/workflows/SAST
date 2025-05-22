@@ -36,3 +36,9 @@ jobs:
 
       - name: Run SonarCloud analysis
         run: dotnet sonarscanner end /d:sonar.login=${{ secrets.SONAR_TOKEN }}
+
+      - name: Upload Sonar report
+        uses: actions/upload-artifact@v3
+        with:
+          name: sonar-report
+          path: sonar-report.json
