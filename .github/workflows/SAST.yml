@@ -42,7 +42,7 @@ jobs:
         run: |
           curl -s -u "${{ secrets.SONAR_TOKEN }}:" \
           "https://sonarcloud.io/api/issues/search?componentKeys=jorgealmeidadeveloper" \
-        -o sonar-report.json
+          -o sonar-report.json
 
       - name: Upload Sonar report
         uses: actions/upload-artifact@v3
