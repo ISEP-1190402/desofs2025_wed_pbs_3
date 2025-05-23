@@ -49,21 +49,6 @@ public class UserController : ControllerBase
             return BadRequest(new { message = ex.Message });
         }
     }
-
-    [HttpPost]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> CreateUser([FromBody] NewUserDTO request)
-    {
-        try
-        {
-            await _userService.CreateUserAsync(request);
-            return Ok("User created successfully.");
-        }
-        catch (BusinessRulesException ex)
-        {
-            return BadRequest(new { message = ex.Message });
-        }
-    }
    
     [HttpPut("{id}")]
     [Authorize]
