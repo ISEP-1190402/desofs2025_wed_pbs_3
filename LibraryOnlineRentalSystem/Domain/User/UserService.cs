@@ -48,6 +48,7 @@ public class UserService
 
             // Create user in our database with hashed password
             var user = new User(
+                Guid.NewGuid().ToString(),
                 req.Name,
                 req.Email,
                 userRole.Id.AsString(),
