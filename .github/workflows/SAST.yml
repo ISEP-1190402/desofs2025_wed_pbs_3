@@ -1,4 +1,4 @@
-name: .NET SAST with SonarClouD
+name: .NET SAST with SonarCloud
 
 on:
   push:
