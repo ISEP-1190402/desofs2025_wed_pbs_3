@@ -12,12 +12,10 @@ namespace LibraryOnlineRentalSystem.Controllers;
 public class UserController : ControllerBase
 {
     private readonly UserService _userService;
-    //private readonly IRoleRepository _roleRepository;
 
-    public UserController(UserService userService, IRoleRepository roleRepository)
+    public UserController(UserService userService)
     {
         _userService = userService;
-       // _roleRepository = roleRepository;
     }
 
     [HttpGet("{id}")]
