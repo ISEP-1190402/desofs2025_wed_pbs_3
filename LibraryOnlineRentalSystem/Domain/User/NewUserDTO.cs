@@ -12,7 +12,7 @@ public class NewUserDTO
     
     public NewUserDTO() { }
     
-    public NewUserDTO(string name, string email, string roleId, string userName, string phoneNumber, string nif, string biography, string password)
+    public NewUserDTO(string name, string email, string userName, string phoneNumber, string nif, string biography, string password)
     {
         Name = name;
         Email = email;
