@@ -1,4 +1,4 @@
-name: IAST Security Scan for .NET
+name: Snyk Security Scan
 on:
   push:
     branches: [ "main" ]
@@ -6,7 +6,7 @@ on:
     branches: [ "main" ]
 
 jobs:
-  iast-scan:
+  snyk-scan:
     runs-on: ubuntu-latest
     steps:
       # 1. Checkout do código
@@ -19,33 +19,16 @@ jobs:
         with:
           dotnet-version: '8.0.x'
 
-      # 3. Instala o agente do Contrast (IAST para .NET)
-      - name: Install Contrast .NET Agent
-        run: |
-          curl -L https://packages.contrastsecurity.com/nuget/Contrast.NET.Core.zip -o Contrast.NET.Core.zip
-          unzip Contrast.NET.Core.zip -d ContrastAgent
-          export Contrast__Api__ApiKey=${{ secrets.CONTRAST_API_KEY }}
-          export Contrast__Api__ServiceKey=${{ secrets.CONTRAST_SERVICE_KEY }}
-          export Contrast__Service__Host=app.contrastsecurity.com
-
-      # 4. Roda a aplicação com o agente IAST
-      - name: Run API with IAST Monitoring
-        run: |
-          cd LibraryOnlineRentalSystem/src/API
-          dotnet restore
-          dotnet build
-          dotnet run --no-build &  # Roda em background
-          sleep 30  # Espera a API iniciar
-
-      # 5. Executa testes (IAST detecta vulnerabilidades em tempo real)
-      - name: Run Tests with IAST
-        run: |
-          cd LibraryOnlineRentalSystem/tests
-          dotnet test
-
-      # 6. Gera e faz upload do relatório (opcional)
-      - name: Upload IAST Report
-        uses: actions/upload-artifact@v3
+      # 3. Instala o Snyk CLI
+      - name: Install Snyk
+        uses: snyk/actions/setup@master
         with:
-          name: contrast-iast-report
-          path: ./contrast_scan_results.json  # (Ajuste conforme a ferramenta)
+          snyk-token: ${{ secrets.SNYK_TOKEN }}
+
+      # 4. Executa o Snyk para testar dependências (SCA)
+      - name: Run Snyk (Dependency Scan)
+        run: snyk test --file=LibraryOnlineRentalSystem/src/API/project.csproj
+
+      # 5. Executa o Snyk para análise de código (SAST) - Requer Snyk Code
+      - name: Run Snyk Code (SAST)
+        run: snyk code test --severity-threshold=high
