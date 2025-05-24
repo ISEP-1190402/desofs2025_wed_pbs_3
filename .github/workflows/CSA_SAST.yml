@@ -6,16 +6,15 @@ on:
   pull_request:
     branches: [ main ]
   schedule:
-    - cron: '0 0 * * *' # Executa diariamente à meia-noite
+    - cron: '0 0 * * *' # Executa diariamente
 
 env:
-  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
   PROJECT_DIR: ./LibraryOnlineRentalSystem
-  CSPROJ_NAME: LibraryOnlineRentalSystem.csproj  # Alterado para apenas o nome do arquivo
+  CSPROJ_NAME: LibraryOnlineRentalSystem.csproj
 
 jobs:
   security-scan:
-    name: Run Snyk Security Scan
+    name: Snyk Security Scan
     runs-on: ubuntu-latest
     
     steps:
@@ -24,44 +23,48 @@ jobs:
 
     - name: Verify project structure
       run: |
-        echo "Verifying project structure in ${{ env.PROJECT_DIR }}"
+        echo "Verificando estrutura em ${{ env.PROJECT_DIR }}"
         ls -la ${{ env.PROJECT_DIR }}
-        test -f "${{ env.PROJECT_DIR }}/${{ env.CSPROJ_NAME }}" || { echo "::error::Project file ${{ env.CSPROJ_NAME }} not found in ${{ env.PROJECT_DIR }}"; exit 1; }
+        test -f "${{ env.PROJECT_DIR }}/${{ env.CSPROJ_NAME }}" || {
+          echo "::error::Arquivo ${{ env.CSPROJ_NAME }} não encontrado"
+          exit 1
+        }
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
         dotnet-version: '8.0.x'
 
-    - name: Restore dependencies
+    - name: Restaurar dependências
       run: dotnet restore ${{ env.CSPROJ_NAME }}
       working-directory: ${{ env.PROJECT_DIR }}
 
-    - name: Install Snyk
-      run: npm install -g snyk
+    - name: Configurar Snyk
+      uses: snyk/actions/setup@master
+      with:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-    - name: Authenticate to Snyk
-      run: snyk auth ${{ env.SNYK_TOKEN }}
+    - name: Verificar monitoramento Snyk
+      run: snyk monitor
+      working-directory: ${{ env.PROJECT_DIR }}
+      continue-on-error: true
 
-    # CSA - Análise de segurança do código (dependências)
-    - name: Run Snyk CSA (Dependency Scan)
+    - name: Scan de dependências (CSA)
       run: snyk test --file=${{ env.CSPROJ_NAME }} --all-projects
       working-directory: ${{ env.PROJECT_DIR }}
       continue-on-error: true
       
-    # SAST - Teste estático de segurança do código
-    - name: Run Snyk SAST (Code Analysis)
-      run: snyk code test . --severity-threshold=high
+    - name: Scan de código (SAST)
+      run: snyk code test --severity-threshold=high
       working-directory: ${{ env.PROJECT_DIR }}
       continue-on-error: true
 
-    # Opcional: Gerar relatório SARIF para integração com GitHub Advanced Security
-    - name: Generate SARIF report
-      run: snyk code test . --sarif-file-output=snyk.sarif
+    - name: Gerar relatório SARIF
+      run: snyk code test --sarif-file-output=snyk.sarif
       working-directory: ${{ env.PROJECT_DIR }}
       if: always()
 
-    - name: Upload SARIF results
+    - name: Upload SARIF
       uses: github/codeql-action/upload-sarif@v2
       with:
         sarif_file: ${{ env.PROJECT_DIR }}/snyk.sarif
