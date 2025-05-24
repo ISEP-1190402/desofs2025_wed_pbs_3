@@ -5,17 +5,14 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class Email : ICloneable, IValueObject
 {
-    public Email()
-    {
-    } 
-    public string EmailAddress { get; }
-
+    public Email() { } 
     public Email(string email)
     {
         email = email.Trim();
         ValidateEmail(email);
         EmailAddress = email;
     }
+    public string EmailAddress { get; }
 
     private void ValidateEmail(string email)
     {

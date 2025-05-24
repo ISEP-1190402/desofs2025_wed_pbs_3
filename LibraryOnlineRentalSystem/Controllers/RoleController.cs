@@ -1,34 +1,33 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using LibraryOnlineRentalSystem.Repository.Common;
 
 namespace LibraryOnlineRentalSystem.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class RoleController : ControllerBase
 {
-    /**  private static readonly string[] Summaries = new[]
-      {
-          "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-      };
+    private readonly LibraryDbContext _context;
 
-      private readonly ILogger<WeatherForecastController> _logger;
+    public RoleController(LibraryDbContext context)
+    {
+        _context = context;
+    }
+    
+    [HttpGet]
+    [Authorize(Roles = "Admin")]
+    public IActionResult GetAllRoles()
+    {
+        var roles = _context.Roles
+            .Select(r => new
+            {
+                r.Id,
+                r.Name,
+                r.Description
+            })
+            .ToList();
 
-      public WeatherForecastController(ILogger<WeatherForecastController> logger)
-      {
-          _logger = logger;
-      }
-
-      [HttpGet(Name = "GetWeatherForecast")]
-      public IEnumerable<WeatherForecast> Get()
-      {
-          return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-          {
-              Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-              TemperatureC = Random.Shared.Next(-20, 55),
-              Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-          })
-          .ToArray();
-      }
-  }
-  **/ //
+        return Ok(roles);
+    }
 }

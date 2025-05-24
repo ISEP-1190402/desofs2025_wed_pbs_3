@@ -4,11 +4,8 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class Name : ICloneable, IValueObject
 {
-    public Name()
-    {
-    } 
-    public string FullName { get; }
-
+    public Name() { } 
+    
     public Name(string name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -27,6 +24,7 @@ public class Name : ICloneable, IValueObject
 
         FullName = name;
     }
+    public string FullName { get; }
 
     public object Clone()
     {

@@ -4,9 +4,7 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class Biography : ICloneable, IValueObject
 {
-    public Biography()
-    {
-    } 
+    public Biography() { } 
     public Biography(string biography)
     {
         if (string.IsNullOrWhiteSpace(biography))
