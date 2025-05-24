@@ -9,7 +9,7 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: library-api
-  API_PORT: 8081
+  API_PORT: 8080
 
 jobs:
   security-scans:
@@ -68,7 +68,10 @@ jobs:
         with:
           target: "http://localhost:$API_PORT"  # Usa a variável definida
           docker_args: '-v $(pwd):/zap/wrk/:rw -u zap'
-          args:
+          args: >
+          -J report_json.json
+          -w report_md.md
+          -r report_html.html
         timeout-minutes: 5
 
       # 7. Upload do relatório (usando v4, a mais recente)
