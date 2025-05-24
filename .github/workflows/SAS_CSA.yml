@@ -46,13 +46,19 @@ jobs:
           docker build -t $DOCKER_IMAGE_NAME .
 
       # 🔍 SAST + SCA com Snyk
-      - name: Run Snyk SAST & SCA Scan
-        uses: snyk/actions/dotnet@v1
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --all-projects --severity-threshold=medium
 
+      # Instalar CLI do Snyk
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@v1
+        with:
+         version: latest
+
+       # Executar análise SAST + SCA
+      - name: Run Snyk Test (.NET SAST + SCA)
+        run: snyk test --all-projects --severity-threshold=medium
+        env:
+         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      
       - name: Create Docker Network
         run: docker network create zap-net
 
