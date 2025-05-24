@@ -1,0 +1,59 @@
+name: Snyk Security Scan
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    - cron: '0 0 * * *' # Executa diariamente à meia-noite
+
+env:
+  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+  PROJECT_DIR: ./LibraryOnlineRentalSystem
+  CSPROJ_PATH: ./LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj
+
+jobs:
+  security-scan:
+    name: Run Snyk Security Scan
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '6.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore ${{ env.CSPROJ_PATH }}
+      working-directory: ${{ env.PROJECT_DIR }}
+
+    - name: Install Snyk
+      run: npm install -g snyk
+
+    - name: Authenticate to Snyk
+      run: snyk auth ${{ env.SNYK_TOKEN }}
+
+    # CSA - Análise de segurança do código (dependências)
+    - name: Run Snyk CSA (Dependency Scan)
+      run: snyk test --file=${{ env.CSPROJ_PATH }} --all-projects
+      continue-on-error: true # Continua mesmo se encontrar vulnerabilidades
+      
+    # SAST - Teste estático de segurança do código
+    - name: Run Snyk SAST (Code Analysis)
+      run: snyk code test ${{ env.PROJECT_DIR }} --severity-threshold=high
+      continue-on-error: true
+
+    # Opcional: Gerar relatório SARIF para integração com GitHub Advanced Security
+    - name: Generate SARIF report
+      run: snyk code test ${{ env.PROJECT_DIR }} --sarif-file-output=snyk.sarif
+      if: always()
+
+    - name: Upload SARIF results
+      uses: github/codeql-action/upload-sarif@v2
+      with:
+        sarif_file: snyk.sarif
+      if: always()
