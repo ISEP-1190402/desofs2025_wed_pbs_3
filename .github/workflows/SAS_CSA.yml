@@ -57,12 +57,11 @@ jobs:
 
      # 5 🔍 SAST + SCA com Snyk
       - name: Run Snyk Test (.NET SAST + SCA)
-        working-directory: ${{ env.PROJECT_DIR }}  # Execute no diretório do projeto
-        run: |
-          snyk test --file=*.csproj --severity-threshold=medium
-          snyk monitor --file=*.csproj  # Opcional: envia resultados para dashboard
+        working-directory: ./LibraryOnlineRentalSystem
+        run: snyk test --file=LibraryOnlineRentalSystem.csproj --severity-threshold=medium
         env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} 
+        
       
       - name: Create Docker Network
         run: docker network create zap-net
