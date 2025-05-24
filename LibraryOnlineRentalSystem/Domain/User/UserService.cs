@@ -3,6 +3,10 @@ using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Domain.Role;
 using static LibraryOnlineRentalSystem.Controllers.UserController;
 using LibraryOnlineRentalSystem.Repository.RoleRepository;
+using System.Text;
+using System.Text.Json;
+using Microsoft.Extensions.Configuration;
+using System.Text.Json.Serialization;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
@@ -13,6 +17,8 @@ public class UserService
     private readonly IAuditLogger _auditLogger;
     private readonly IRoleRepository _roleRepository;
     private readonly PasswordService _passwordService;
+    private readonly HttpClient _httpClient;
+    private readonly IConfiguration _configuration;
     private const string DEFAULT_USER_ROLE_NAME = "User";
 
     public UserService(
@@ -20,13 +26,17 @@ public class UserService
         IWorkUnity workUnit,
         IAuditLogger auditLogger,
         IRoleRepository roleRepository,
-        PasswordService passwordService)
+        PasswordService passwordService,
+        HttpClient httpClient,
+        IConfiguration configuration)
     {
         _userRepository = userRepository;
         _workUnit = workUnit;
         _auditLogger = auditLogger;
         _roleRepository = roleRepository;
         _passwordService = passwordService;
+        _httpClient = httpClient;
+        _configuration = configuration;
     }
     
     public async Task CreateUserAsync(NewUserDTO req)
@@ -43,6 +53,95 @@ public class UserService
 
         try
         {
+            // Get admin token
+            var adminToken = await GetAdminTokenAsync();
+
+            // Create user in Keycloak
+            var keycloakUser = new
+            {
+                username = req.UserName,
+                email = req.Email,
+                enabled = true,
+                credentials = new[]
+                {
+                    new
+                    {
+                        type = "password",
+                        value = req.Password,
+                        temporary = false
+                    }
+                }
+            };
+
+            var content = new StringContent(
+                JsonSerializer.Serialize(keycloakUser),
+                Encoding.UTF8,
+                "application/json");
+
+            var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
+            var keycloakUrl = authority.Replace("/realms/library", "");
+            
+            // Add Authorization header
+            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
+            
+            var response = await _httpClient.PostAsync($"{keycloakUrl}/admin/realms/library/users", content);
+            if (!response.IsSuccessStatusCode)
+            {
+                var error = await response.Content.ReadAsStringAsync();
+                throw new BusinessRulesException($"Failed to create user in Keycloak: {error}");
+            }
+
+            // After creating the user in Keycloak
+            await Task.Delay(1000); // Wait 1 second
+
+            // Retry fetching user ID from Keycloak
+            string userId = null;
+            for (int i = 0; i < 5; i++) {
+                var getUserResponse = await _httpClient.GetAsync($"{keycloakUrl}/admin/realms/library/users?username={req.UserName}");
+                var userContent = await getUserResponse.Content.ReadAsStringAsync();
+                var users = JsonSerializer.Deserialize<List<KeycloakUser>>(userContent);
+                if (users != null && users.Count > 0 && !string.IsNullOrEmpty(users[0].Id)) {
+                    userId = users[0].Id;
+                    break;
+                }
+                await Task.Delay(1000); // wait 1 second before retry
+            }
+            if (userId == null) {
+                throw new BusinessRulesException("Failed to find user in Keycloak after creation.");
+            }
+
+            // Get the User role ID
+            var getRoleResponse = await _httpClient.GetAsync($"{keycloakUrl}/admin/realms/library/roles/User");
+            var roleResponseContent = await getRoleResponse.Content.ReadAsStringAsync();
+            var role = JsonSerializer.Deserialize<KeycloakRole>(roleResponseContent);
+
+            // Assign User role
+            var roleUrl = $"{keycloakUrl}/admin/realms/library/users/{userId}/role-mappings/realm";
+            var roleData = new[]
+            {
+                new
+                {
+                    id = role.Id,
+                    name = "User",
+                    description = "Regular user role"
+                }
+            };
+
+            var roleAssignmentContent = new StringContent(
+                JsonSerializer.Serialize(roleData),
+                Encoding.UTF8,
+                "application/json");
+
+            var roleAssignmentResponse = await _httpClient.PostAsync(roleUrl, roleAssignmentContent);
+            if (!roleAssignmentResponse.IsSuccessStatusCode)
+            {
+                var error = await roleAssignmentResponse.Content.ReadAsStringAsync();
+                throw new BusinessRulesException($"Failed to assign role: {error}");
+            }
+
+            // Clear Authorization header
+            _httpClient.DefaultRequestHeaders.Authorization = null;
+
             // Hash the password
             var hashedPassword = _passwordService.HashPassword(req.Password);
 
@@ -67,6 +166,50 @@ public class UserService
         {
             throw new BusinessRulesException("Failed to create user: " + ex.Message);
         }
+    }
+
+    private async Task<string> GetAdminTokenAsync()
+    {
+        var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
+        var keycloakUrl = authority.Replace("/realms/library", "");
+        var content = new FormUrlEncodedContent(new[]
+        {
+            new KeyValuePair<string, string>("grant_type", "password"),
+            new KeyValuePair<string, string>("client_id", "admin-cli"),
+            new KeyValuePair<string, string>("username", "admin"),
+            new KeyValuePair<string, string>("password", "admin")
+        });
+
+        var response = await _httpClient.PostAsync($"{keycloakUrl}/realms/master/protocol/openid-connect/token", content);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            throw new BusinessRulesException($"Failed to get admin token: {error}");
+        }
+
+        var responseContent = await response.Content.ReadAsStringAsync();
+        var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(
+            responseContent,
+            new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+        );
+        return tokenResponse.AccessToken;
+    }
+
+    private class KeycloakTokenResponse
+    {
+        [JsonPropertyName("access_token")]
+        public string AccessToken { get; set; }
+    }
+
+    private class KeycloakUser
+    {
+        public string Id { get; set; }
+    }
+
+    private class KeycloakRole
+    {
+        public string Id { get; set; }
+        public string Name { get; set; }
     }
 
     public async Task<UserDTO?> GetUserByIdAsync(Guid id)

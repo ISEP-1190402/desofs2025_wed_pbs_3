@@ -19,6 +19,11 @@ public class AuthService
         _configuration = configuration;
         
         var authority = _configuration["Keycloak:Authority"];
+        if (string.IsNullOrEmpty(authority))
+            throw new ArgumentException("Keycloak:Authority is not configured");
+
+        // Remove trailing slash if present
+        authority = authority.TrimEnd('/');
         _tokenEndpoint = $"{authority}/protocol/openid-connect/token";
         _clientId = _configuration["Keycloak:ClientId"];
         _clientSecret = _configuration["Keycloak:ClientSecret"];

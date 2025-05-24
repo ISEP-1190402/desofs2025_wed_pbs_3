@@ -36,8 +36,8 @@ namespace LibraryOnlineRentalSystem
                 .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
             );
 
-            //ConfigureCors(services);
             ConfigureMyServices(services);
+            ConfigureCors(services);
 
             // Add Keycloak Authentication
             services.AddAuthentication(options =>
@@ -59,9 +59,8 @@ namespace LibraryOnlineRentalSystem
                 };
             });
 
+            services.AddHttpClient();
             services.AddControllers().AddNewtonsoftJson();
-
-            // Apenas Swashbuckle para Swagger
             services.AddSwaggerGen();
         }
 
@@ -77,7 +76,6 @@ namespace LibraryOnlineRentalSystem
             app.UseAuthentication();
             app.UseAuthorization();
 
-            // Swagger deve vir antes do endpoints
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
@@ -99,6 +97,8 @@ namespace LibraryOnlineRentalSystem
             services.AddTransient<IRoleRepository, RoleRepository>();
             services.AddTransient<IAuditLogger, AuditLogger>();
             services.AddTransient<PasswordService>();
+            services.AddTransient<AuthService>();
+            services.AddHttpClient<AuthService>();
         }
 
         public void ConfigureCors(IServiceCollection services)
@@ -106,7 +106,14 @@ namespace LibraryOnlineRentalSystem
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll",
-                    builder => { builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader(); });
+                    builder => 
+                    { 
+                        builder
+                            .AllowAnyOrigin()
+                            .AllowAnyMethod()
+                            .AllowAnyHeader()
+                            .WithExposedHeaders("WWW-Authenticate");
+                    });
             });
         }
     }

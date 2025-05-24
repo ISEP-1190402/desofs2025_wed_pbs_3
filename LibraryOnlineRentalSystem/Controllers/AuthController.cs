@@ -14,7 +14,7 @@ public class AuthController : ControllerBase
         _authService = authService;
     }
 
-    [HttpPost("auth")]
+    [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDTO>> Auth([FromBody] AuthRequestDTO request)
     {
         try

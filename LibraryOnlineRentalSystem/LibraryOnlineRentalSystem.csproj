@@ -30,13 +30,7 @@
         <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.0" />
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     </ItemGroup>
-
-    <ItemGroup>
-        <Compile Remove="WeatherForecast.cs" />
-        <Compile Remove="Controllers\WeatherForecastController.cs" />
-        <Compile Remove="Controllers\AuthController.cs" />
-    </ItemGroup>
-
+    
     <ItemGroup>
         <Folder Include="Unit Tests\" />
     </ItemGroup>
