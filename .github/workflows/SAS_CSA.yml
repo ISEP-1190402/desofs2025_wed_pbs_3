@@ -47,17 +47,16 @@ jobs:
 
       # 🔍 SAST + SCA com Snyk
 
-      # Instalar CLI do Snyk
+      # 5. Instalar e rodar Snyk
       - name: Setup Snyk CLI
-        uses: snyk/actions/setup@v1
+        uses: snyk/actions/setup@1
         with:
-         version: latest
+          version: latest
 
-       # Executar análise SAST + SCA
       - name: Run Snyk Test (.NET SAST + SCA)
         run: snyk test --all-projects --severity-threshold=medium
         env:
-         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       
       - name: Create Docker Network
         run: docker network create zap-net
