@@ -269,14 +269,4 @@ public class UserService
         await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
     }
 
-
-    //public async Task DeleteUserAsync(Guid id)
-    //{
-     //   var user = await _userRepository.GetByIdAsync(new UserId(id));
-       // if (user == null) return;
-
-        //_userRepository.Delete(user);
-       // await _workUnit.CommitAsync();
-      //  await _auditLogger.LogAsync($"User {id} deleted.", "UserDeletion");
-    //}
 }

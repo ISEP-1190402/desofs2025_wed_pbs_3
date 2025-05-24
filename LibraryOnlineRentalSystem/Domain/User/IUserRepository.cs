@@ -8,5 +8,4 @@ public interface IUserRepository
     Task<List<User>> GetAllAsync();
     Task AddAsync(User user);
 
-    //void Delete(User user);
 }

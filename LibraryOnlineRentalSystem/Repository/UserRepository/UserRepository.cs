@@ -38,8 +38,4 @@ public class UserRepository : GeneralRepository<User, UserId>, IUserRepository
         await _context.Users.AddAsync(user);
     }
 
-    //public void Delete(User user)
-    //{
-     //   _context.Users.Remove(user);
-    //}
 }

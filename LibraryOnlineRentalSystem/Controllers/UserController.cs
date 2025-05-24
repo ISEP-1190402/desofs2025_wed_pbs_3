@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using LibraryOnlineRentalSystem.Domain.User;
 using LibraryOnlineRentalSystem.Domain.Common;
-using LibraryOnlineRentalSystem.Repository.RoleRepository;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
@@ -62,14 +61,6 @@ public class UserController : ControllerBase
 
         return Forbid();
     }
-
-    //[HttpDelete("{id}")]
-    //[Authorize(Roles = "Admin")]
-    //public async Task<IActionResult> DeleteUser(Guid id)
-    //{
-      //  await _userService.DeleteUserAsync(id);
-        //return Ok("User deleted.");
-    //}
 
     public class UpdateUserRequest
     {
