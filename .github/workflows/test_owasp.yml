@@ -9,56 +9,50 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: library-api
-  API_PORT: 8081
-  PROJECT_DIR: ./LibraryOnlineRentalSystem  # Added missing environment variable
+  API_PORT: 5000
 
 jobs:
   security-scans:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Increased timeout
+    timeout-minutes: 20
 
     steps:
-      # 1. Checkout
+      # 1. Checkout (usando versão explícita)
       - name: Checkout
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.1  # Versão fixa
 
       # 2. Setup .NET
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v3 # Versão fixa
         with:
           dotnet-version: 8.0.x
 
-      # 3. Verify files
+      # Debug: Verificação completa
       - name: Verify files
         run: |
-          echo "Root directory content:"
+          echo "Conteúdo do diretório raiz:"
           ls -la
-          echo "Project directory content:"
+          echo "Conteúdo do diretório do projeto:"
           ls -la ${{ env.PROJECT_DIR }}
-          echo "Checking Dockerfile:"
-          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile not found"
+          echo "Verificando Dockerfile:"
+          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
           cat ${{ env.PROJECT_DIR }}/Dockerfile || true
           
-      # 4. Build Docker Image
+      #4. Build Docker (solução definitiva)
       - name: Build Docker Image
-        working-directory: ${{ env.PROJECT_DIR }}
+        working-directory: ./LibraryOnlineRentalSystem
         run: |
           echo "Building Docker image from $(pwd)" 
           docker build -t $DOCKER_IMAGE_NAME .
-
-      # 5. Run API Container
+      # 4. Inicia o container
       - name: Run API Container
         run: |
           docker run -d -p $API_PORT:$API_PORT --name api $DOCKER_IMAGE_NAME
-          echo "Waiting for API to start..."
-          sleep 15
-          curl --retry 5 --retry-delay 3 --retry-all-errors http://localhost:$API_PORT || echo "API may not be fully ready"
-
-      # 6. SonarScanner Setup
+          sleep 10
+          
       - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
 
-      # 7. SonarCloud Analysis
       - name: Start SonarCloud Analysis
         run: |
           dotnet sonarscanner begin \
@@ -66,27 +60,28 @@ jobs:
             /o:"jorgealmeidadeveloper" \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.dotnet.buildConfiguration="Release"
-
-      # 8. Prepare ZAP Directory
-      - name: Prepare ZAP Directory
-        run: |
-          mkdir -p zap-reports
-          chmod 777 zap-reports
-
-      # 10. Upload ZAP Reports
-      - name: Upload ZAP Reports
-        uses: actions/upload-artifact@v4.3.3
+            /d:sonar.dotnet.buildConfiguration="Release"       
+          
+      # 6. OWASP ZAP Scan
+      - name: API Security Scan
+        uses: zaproxy/action-baseline@v0.12.0
         with:
-          name: zap-security-reports
-          path: |
-            zap-reports/report_json.json
-            zap-reports/report_md.md
-            zap-reports/report_html.html
+          target: "http://localhost:$API_PORT"  # Usa a variável definida
+          docker_args: '-v $(pwd):/zap/wrk/:rw -u zap'
+          args: >
+          -J report_json.json
+            -w report_md.md
+            -r report_html.html
+        timeout-minutes: 5
 
-      # 11. Stop Container
+      # 7. Upload do relatório (usando v4, a mais recente)
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4.3.3  # Versão fixa
+        with:
+          name: zap-security-report
+          path: zap-report.html
+
+      # 8. Parar container
       - name: Stop Container
         if: always()
-        run: |
-          docker stop api || true
-          docker rm api || true
+        run: docker stop api && docker rm api
