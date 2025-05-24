@@ -87,7 +87,7 @@ jobs:
             -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
-            -t http://$API_IP:${{ env.API_PORT }} \
+            -t http://$API_IP:${{ env.API_PORT }}/api/health \
             -J report_json.json \
             -w report_md.md \
             -r report_html.html
