@@ -1,0 +1,24 @@
+name: Run .NET Tests
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Run tests
+        run: |
+          cd desofs2025_wed_pbs_3-1/LibraryOnlineRentalSystemt
+          dotnet restore
+          dotnet test
