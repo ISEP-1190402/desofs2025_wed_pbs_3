@@ -9,7 +9,7 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: library-api
-  API_PORT: 8080
+  API_PORT: 8081
 
 jobs:
   security-scans:
@@ -37,6 +37,7 @@ jobs:
           echo "Verificando Dockerfile:"
           ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
           cat ${{ env.PROJECT_DIR }}/Dockerfile || true
+          
       #4. Build Docker (solução definitiva)
       - name: Build Docker Image
         working-directory: ./LibraryOnlineRentalSystem
