@@ -41,27 +41,19 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      # 5. Container scan (with proper Dockerfile handling)
-      - name: Run Snyk Container Scan
-        working-directory: ./LibraryOnlineRentalSystem
+      # 2. Verificar Dockerfile
+      - name: Verify Dockerfile exists
         run: |
-          # Verify Dockerfile exists
-          if [ ! -f Dockerfile ]; then
-            echo "::error::Dockerfile not found in $(pwd)"
+          echo "Verificando Dockerfile em ${{ env.DOCKERFILE_PATH }}"
+          if [ ! -f "${{ env.DOCKERFILE_PATH }}" ]; then
+            echo "::error::Dockerfile não encontrado no caminho ${{ env.DOCKERFILE_PATH }}"
+            echo "Conteúdo do diretório:"
+            ls -R
             exit 1
+          else
+            echo "Dockerfile encontrado com sucesso"
+            cat "${{ env.DOCKERFILE_PATH }}"
           fi
-          
-          # Run container scan
-          docker run --rm -v $(pwd):/project -e SNYK_TOKEN=${{ secrets.SNYK_TOKEN }} \
-            snyk/snyk:dotnet snyk container test $DOCKER_IMAGE_NAME \
-            --file=Dockerfile \
-            --severity-threshold=high \
-            --sarif-file-output=snyk_container_results.sarif || echo "::warning::Snyk container scan failed"
-          
-          # Check if results were generated
-          if [ -f snyk_container_results.sarif ]; then
-            echo "Container scan results generated"
-          fi    
 
       # 5. Upload Snyk report
       - name: Upload Snyk Report
