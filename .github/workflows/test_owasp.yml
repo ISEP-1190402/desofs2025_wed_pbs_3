@@ -9,50 +9,56 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: library-api
-  API_PORT: 5000
+  API_PORT: 8081
+  PROJECT_DIR: ./LibraryOnlineRentalSystem  # Added missing environment variable
 
 jobs:
   security-scans:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30  # Increased timeout
 
     steps:
-      # 1. Checkout (usando versão explícita)
+      # 1. Checkout
       - name: Checkout
-        uses: actions/checkout@v4.1.1  # Versão fixa
+        uses: actions/checkout@v4.1.1
 
       # 2. Setup .NET
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3 # Versão fixa
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
 
-      # Debug: Verificação completa
+      # 3. Verify files
       - name: Verify files
         run: |
-          echo "Conteúdo do diretório raiz:"
+          echo "Root directory content:"
           ls -la
-          echo "Conteúdo do diretório do projeto:"
+          echo "Project directory content:"
           ls -la ${{ env.PROJECT_DIR }}
-          echo "Verificando Dockerfile:"
-          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
+          echo "Checking Dockerfile:"
+          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile not found"
           cat ${{ env.PROJECT_DIR }}/Dockerfile || true
           
-      #4. Build Docker (solução definitiva)
+      # 4. Build Docker Image
       - name: Build Docker Image
-        working-directory: ./LibraryOnlineRentalSystem
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
           echo "Building Docker image from $(pwd)" 
           docker build -t $DOCKER_IMAGE_NAME .
-      # 4. Inicia o container
+
+      # 5. Run API Container
       - name: Run API Container
         run: |
           docker run -d -p $API_PORT:$API_PORT --name api $DOCKER_IMAGE_NAME
-          sleep 10
-          
+          echo "Waiting for API to start..."
+          sleep 15
+          curl --retry 5 --retry-delay 3 --retry-all-errors http://localhost:$API_PORT || echo "API may not be fully ready"
+
+      # 6. SonarScanner Setup
       - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
 
+      # 7. SonarCloud Analysis
       - name: Start SonarCloud Analysis
         run: |
           dotnet sonarscanner begin \
@@ -60,28 +66,38 @@ jobs:
             /o:"jorgealmeidadeveloper" \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.dotnet.buildConfiguration="Release"       
-          
-      # 6. OWASP ZAP Scan
+            /d:sonar.dotnet.buildConfiguration="Release"
+
+      # 8. Prepare ZAP Directory
+      - name: Prepare ZAP Directory
+        run: |
+          mkdir -p zap-reports
+          chmod 777 zap-reports
+
+       # 9. OWASP ZAP Scan
       - name: API Security Scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: "http://localhost:$API_PORT"  # Usa a variável definida
-          docker_args: '-v $(pwd):/zap/wrk/:rw -u zap'
+          target: "http://localhost:${{ env.API_PORT }}"
           args: >
-          -J report_json.json
+            -J report_json.json
             -w report_md.md
             -r report_html.html
-        timeout-minutes: 5
+        timeout-minutes: 10  # Increased timeout
 
-      # 7. Upload do relatório (usando v4, a mais recente)
-      - name: Upload ZAP Report
-        uses: actions/upload-artifact@v4.3.3  # Versão fixa
+      # 10. Upload ZAP Reports
+      - name: Upload ZAP Reports
+        uses: actions/upload-artifact@v4.3.3
         with:
-          name: zap-security-report
-          path: zap-report.html
+          name: zap-security-reports
+          path: |
+            zap-reports/report_json.json
+            zap-reports/report_md.md
+            zap-reports/report_html.html
 
-      # 8. Parar container
+      # 11. Stop Container
       - name: Stop Container
         if: always()
-        run: docker stop api && docker rm api
+        run: |
+          docker stop api || true
+          docker rm api || true
