@@ -29,7 +29,7 @@ jobs:
 
       # 3. Build Docker (com caminho explícito)
       - name: Build Docker Image
-        working-directory: ./src  # Altere para o diretório do Dockerfile
+        working-directory: ./LibraryOnlineRentalSystem  # Altere para o diretório do Dockerfile
         run: |
           docker build -t $DOCKER_IMAGE_NAME -f Dockerfile .
 
