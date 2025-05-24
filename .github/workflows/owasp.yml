@@ -69,11 +69,6 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.dotnet.buildConfiguration="Release"       
 
-      - name: Debug current directory contents
-        run: |
-          echo "Current dir: $PWD"
-          ls -R $PWD
-
           
       # 6. OWASP ZAP Scan
       - name: Run OWASP ZAP Scan manually
@@ -93,9 +88,9 @@ jobs:
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
             -t http://$API_IP:${{ env.API_PORT }} \
-            -J /zap/wrk/report_json.json \
-            -w /zap/wrk/report_md.md \
-            -r /zap/wrk/report_html.html
+            -J report_json.json \
+            -w report_md.md \
+            -r report_html.html
 
       - name: List ZAP report files
         run: ls -l $GITHUB_WORKSPACE/zap-work
