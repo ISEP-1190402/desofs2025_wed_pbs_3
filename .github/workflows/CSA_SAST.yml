@@ -6,57 +6,56 @@ on:
   pull_request:
     branches: [ main ]
 
-env:
-  PROJECT_DIR: ./LibraryOnlineRentalSystem
-  CSPROJ_NAME: LibraryOnlineRentalSystem.csproj
-
 jobs:
   security-scan:
     name: Run Snyk Security Scan
     runs-on: ubuntu-latest
     permissions:
-      security-events: write  # Necessário para upload de resultados SARIF
+      contents: read
+      security-events: write
     
     steps:
-    - name: Checkout code
+    - name: Checkout repository (with proper authentication)
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN || github.token }}
+        repository: ISEP-1190402/desofs2025_wed_pbs_3
+        path: ./desofs2025_wed_pbs_3
 
     - name: Verify project structure
+      working-directory: ./desofs2025_wed_pbs_3
       run: |
-        echo "Verifying project structure in ${{ env.PROJECT_DIR }}"
-        ls -la ${{ env.PROJECT_DIR }}
-        test -f "${{ env.PROJECT_DIR }}/${{ env.CSPROJ_NAME }}" || {
-          echo "::error::Project file ${{ env.CSPROJ_NAME }} not found in ${{ env.PROJECT_DIR }}"
+        echo "Verifying project structure"
+        ls -la
+        test -f "LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj" || {
+          echo "::error::Project file not found"
           exit 1
         }
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: '.0.x'
+        dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore ${{ env.CSPROJ_NAME }}
-      working-directory: ${{ env.PROJECT_DIR }}
+      working-directory: ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem
+      run: dotnet restore LibraryOnlineRentalSystem.csproj
 
     - name: Install Snyk CLI
       run: npm install -g snyk@latest
 
     - name: Run Snyk Scans
+      working-directory: ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: |
-        # Dependency Scan
-        snyk test --file=${{ env.CSPROJ_NAME }} --all-projects --sarif-file-output=snyk-deps.sarif || true
-        
-        # Code Scan
+        snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=snyk-deps.sarif || true
         snyk code test --severity-threshold=high --sarif-file-output=snyk-code.sarif || true
-      working-directory: ${{ env.PROJECT_DIR }}
 
     - name: Upload SARIF results
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: |
-          ${{ env.PROJECT_DIR }}/snyk-deps.sarif
-          ${{ env.PROJECT_DIR }}/snyk-code.sarif
+          ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/snyk-deps.sarif
+          ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/snyk-code.sarif
       if: always()
