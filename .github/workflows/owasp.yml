@@ -3,76 +3,84 @@ name: .NET API Security Scan
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 8080
+  PROJECT_ROOT: LibraryOnlineRentalSystem  # 👈 Caminho do seu projeto
 
 jobs:
   security-scans:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
-      # 1. Checkout (usando versão explícita)
-      - name: Checkout
-        uses: actions/checkout@v4.1.1  # Versão fixa
+      # 1. Checkout com tratamento para subdiretórios
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          path: ${{ env.PROJECT_ROOT }}  # Faz checkout dentro do diretório
 
-      # 2. Setup .NET
+      # 2. Debug: Mostra estrutura de arquivos
+      - name: Show directory structure
+        run: |
+          echo "Estrutura do projeto:"
+          ls -R ${{ env.PROJECT_ROOT }}
+          echo "Verificando Dockerfile:"
+          ls -la ${{ env.PROJECT_ROOT }}/Dockerfile
+
+      # 3. Setup .NET
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3 # Versão fixa
+        uses: actions/setup-dotnet@v3
         with:
           dotnet-version: 8.0.x
 
-      # Debug: Verificação completa
-      - name: Verify files
-        run: |
-          echo "Conteúdo do diretório raiz:"
-          ls -la
-          echo "Conteúdo do diretório do projeto:"
-          ls -la ${{ env.PROJECT_DIR }}
-          echo "Verificando Dockerfile:"
-          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
-          cat ${{ env.PROJECT_DIR }}/Dockerfile || true
-
-      #4. Build Docker (solução definitiva)
+      # 4. Build Docker (executado no diretório correto)
       - name: Build Docker Image
-        working-directory: ./LibraryOnlineRentalSystem
         run: |
-          echo "Building Docker image from $(pwd)" docker build -t $DOCKER_IMAGE_NAME .
+          cd ${{ env.PROJECT_ROOT }}
+          docker build -t ${{ env.DOCKER_IMAGE_NAME }} .
 
-      # 4. Inicia o container
+      # 5. Executa o container com verificação
       - name: Run API Container
         run: |
-          docker run -d -p $API_PORT:$API_PORT --name api $DOCKER_IMAGE_NAME
+          docker run -d \
+            -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
+            --name api \
+            ${{ env.DOCKER_IMAGE_NAME }}
+          
+          # Verificação simples
           sleep 10
+          docker ps -a | grep api
 
-      # 5. SonarCloud (usando versão fixa)
-      - name: SonarCloud Analysis
-        uses: SonarSource/sonarcloud-github-action@v2.0.0  # Versão estável
+      # 6. SonarCloud Analysis
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ env.PROJECT_ROOT }}  # 👈 Analisa apenas esse diretório
 
-      # 6. OWASP ZAP Scan
+      # 7. OWASP ZAP Scan
       - name: API Security Scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: http://localhost:$API_PORT
+          target: http://localhost:${{ env.API_PORT }}
           args: -r
         timeout-minutes: 5
 
-      # 7. Upload do relatório (usando v4, a mais recente)
+      # 8. Upload reports
       - name: Upload ZAP Report
-        uses: actions/upload-artifact@v4.3.3  # Versão fixa
+        uses: actions/upload-artifact@v4
         with:
           name: zap-security-report
           path: zap-report.html
 
-      # 8. Parar container
+      # 9. Cleanup (sempre executa)
       - name: Stop Container
         if: always()
-        run: docker stop api && docker rm api
+        run: |
+          docker stop api || true
+          docker rm api || true
