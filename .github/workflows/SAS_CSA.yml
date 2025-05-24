@@ -10,6 +10,8 @@ on:
 env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 8080
+  PROJECT_DIR: ./LibraryOnlineRentalSystem  # Pasta do projeto
+  CSPROJ_PATH: ./LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj  # Caminho exato
 
 jobs:
   security-scans_CSA_SAST:
@@ -17,9 +19,9 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      # 1. Checkout (usando versão explícita)
+      # 1. Checkout
       - name: Checkout
-        uses: actions/checkout@v4.1.1  # Versão fixa
+        uses: actions/checkout@v4
 
       # 2. Setup .NET
       - name: Setup .NET
@@ -27,49 +29,29 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # 3. Debug: Verificação completa
-      - name: Verify files
-        run: |
-          echo "Conteúdo do diretório raiz:"
-          ls -la
-          echo "Conteúdo do diretório do projeto:"
-          ls -la ${{ env.PROJECT_DIR }}
-          echo "Verificando Dockerfile:"
-          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
-          cat ${{ env.PROJECT_DIR }}/Dockerfile || true
-          
-      # 4. Build Docker (solução definitiva)
+      # 3. Build do projeto
+      - name: Build .NET Project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dotnet build "${{ env.CSPROJ_PATH }}" --configuration Release
+
+      # 4. Build Docker
       - name: Build Docker Image
-        working-directory: ./LibraryOnlineRentalSystem
-        run: |
-          echo "Building Docker image from $(pwd)" 
-          docker build -t $DOCKER_IMAGE_NAME .
-      
-      - name: Verificar localização do .csproj
-        run: find . -name "*.csproj"
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: docker build -t $DOCKER_IMAGE_NAME .
 
-
-      # 4 🔍 SAST + SCA com Snyk - Versão corrigida
+      # 5. Snyk Scan (versão corrigida)
       - name: Setup Snyk CLI
-        uses: snyk/actions/setup@master
+        uses: snyk/actions/setup@v3
         with:
           version: latest
 
-     # 5 🔍 SAST + SCA com Snyk
-      - name: Build project first
+      - name: Run Snyk Test
         working-directory: ${{ env.PROJECT_DIR }}
-        run: dotnet build
-
-      - name: Run Snyk scan
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-           CSPROJ=$(find . -name "*.csproj" | head -n 1)
-           [ -z "$CSPROJ" ] && exit 0  # Ignora se não encontrar projeto
-           snyk test --file="$CSPROJ" --severity-threshold=medium
+        run: snyk test --file="${{ env.CSPROJ_PATH }}" --severity-threshold=medium
         env:
-           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        
-      
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # 6. Docker Network
       - name: Create Docker Network
         run: docker network create zap-net
 
@@ -80,10 +62,10 @@ jobs:
             --network zap-net \
             -p $API_PORT:$API_PORT \
             $DOCKER_IMAGE_NAME
-          sleep 10
+        sleep 10
 
-      # 6. Preparacao Sonar
-      - name: Install SonarScanner for .NET
+      # 7. SonarCloud
+      - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner
 
       - name: Start SonarCloud Analysis
@@ -93,10 +75,10 @@ jobs:
             /o:"jorgealmeidadeveloper" \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.dotnet.buildConfiguration="Release"       
+            /d:sonar.dotnet.buildConfiguration="Release"
 
-      # 7. OWASP ZAP Scan
-      - name: Run OWASP ZAP Scan manually
+      # 8. OWASP ZAP Scan
+      - name: Run OWASP ZAP Scan
         run: |
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
           echo "API container IP: $API_IP"
@@ -115,17 +97,14 @@ jobs:
             -r report_html.html \
             -I
 
-      - name: List ZAP report files
-        run: ls -l $GITHUB_WORKSPACE/zap-work
-
-      # 8. Upload do relatório
+      # 9. Upload reports
       - name: Upload ZAP reports
         uses: actions/upload-artifact@v4
         with:
           name: zap-reports
           path: zap-work/
 
-      # 9. Parar container
+      # 10. Cleanup
       - name: Stop Container
         if: always()
-        run: docker stop api && docker rm api
+        run: docker stop api && docker rm api || true
