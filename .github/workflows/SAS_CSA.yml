@@ -49,7 +49,7 @@ jobs:
 
       # 5. Instalar e rodar Snyk
       - name: Setup Snyk CLI
-        uses: snyk/actions/setup@1
+        uses: snyk/actions/setup@master 
         with:
           version: latest
 
