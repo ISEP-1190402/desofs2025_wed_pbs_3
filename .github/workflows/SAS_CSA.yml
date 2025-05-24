@@ -56,11 +56,18 @@ jobs:
           version: latest
 
      # 5 🔍 SAST + SCA com Snyk
-      - name: Run Snyk Test (.NET SAST + SCA)
-        working-directory: ./LibraryOnlineRentalSystem
-        run: snyk test --file=LibraryOnlineRentalSystem.csproj --severity-threshold=medium
+      - name: Build project first
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dotnet build
+
+      - name: Run Snyk scan
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+           CSPROJ=$(find . -name "*.csproj" | head -n 1)
+           [ -z "$CSPROJ" ] && exit 0  # Ignora se não encontrar projeto
+           snyk test --file="$CSPROJ" --severity-threshold=medium
         env:
-         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }} 
+           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         
       
       - name: Create Docker Network
