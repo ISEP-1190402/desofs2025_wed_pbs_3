@@ -95,7 +95,7 @@ jobs:
             -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
-            -t http://$API_IP:${{ env.API_PORT }} \
+            -t http://$API_IP:8080 \
             -J /zap/wrk/report_json.json \
             -w /zap/wrk/report_md.md \
             -r /zap/wrk/report_html.html
