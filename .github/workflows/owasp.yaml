@@ -27,10 +27,11 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # 3. Build Docker
+      # 3. Build Docker (com caminho explícito)
       - name: Build Docker Image
+        working-directory: ./src  # Altere para o diretório do Dockerfile
         run: |
-          docker build -t $DOCKER_IMAGE_NAME .
+          docker build -t $DOCKER_IMAGE_NAME -f Dockerfile .
 
       # 4. Inicia o container
       - name: Run API Container
