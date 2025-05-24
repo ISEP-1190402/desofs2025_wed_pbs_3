@@ -12,7 +12,7 @@ env:
   API_PORT: 8080
 
 jobs:
-  security-scans:
+  security-scans_DAST:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
@@ -27,7 +27,7 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # Debug: Verificação completa
+      # 3. Debug: Verificação completa
       - name: Verify files
         run: |
           echo "Conteúdo do diretório raiz:"
@@ -38,7 +38,7 @@ jobs:
           ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
           cat ${{ env.PROJECT_DIR }}/Dockerfile || true
           
-      #4. Build Docker (solução definitiva)
+      # 4. Build Docker (solução definitiva)
       - name: Build Docker Image
         working-directory: ./LibraryOnlineRentalSystem
         run: |
@@ -56,7 +56,8 @@ jobs:
             -p $API_PORT:$API_PORT \
             $DOCKER_IMAGE_NAME
           sleep 10
-          
+      
+      # 6. Preparacao Sonar
       - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
 
