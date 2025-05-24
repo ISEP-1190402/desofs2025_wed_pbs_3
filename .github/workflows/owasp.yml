@@ -46,7 +46,7 @@ jobs:
           docker build -t $DOCKER_IMAGE_NAME .
 
       - name: Create Docker Network
-        run: docker network create zap-ne
+        run: docker network create zap-net
       
       - name: Run API Container
         run: |
