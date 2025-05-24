@@ -14,10 +14,12 @@ jobs:
   security-scan:
     name: Run Snyk Security Scan
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write  # Necessário para upload de resultados SARIF
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Verify project structure
       run: |
@@ -40,45 +42,21 @@ jobs:
     - name: Install Snyk CLI
       run: npm install -g snyk@latest
 
-    - name: Authenticate with Snyk (simplified)
+    - name: Run Snyk Scans
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: |
-        # Skip explicit auth and rely on SNYK_TOKEN env var
-        echo "Skipping explicit auth, using SNYK_TOKEN directly"
+        # Dependency Scan
+        snyk test --file=${{ env.CSPROJ_NAME }} --all-projects --sarif-file-output=snyk-deps.sarif || true
         
-        # Verify token is set
-        if [ -z "$SNYK_TOKEN" ]; then
-          echo "::error::SNYK_TOKEN is empty or not set"
-          exit 1
-        fi
-
-    - name: Run Snyk Dependency Scan (CSA)
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      run: |
-        snyk test --file=${{ env.CSPROJ_NAME }} --all-projects
+        # Code Scan
+        snyk code test --severity-threshold=high --sarif-file-output=snyk-code.sarif || true
       working-directory: ${{ env.PROJECT_DIR }}
-      continue-on-error: true
-      
-    - name: Run Snyk Code Scan (SAST)
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      run: |
-        snyk code test --severity-threshold=high
-      working-directory: ${{ env.PROJECT_DIR }}
-      continue-on-error: true
-
-    - name: Generate SARIF report
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      run: |
-        snyk code test --sarif-file-output=snyk.sarif
-      working-directory: ${{ env.PROJECT_DIR }}
-      if: always()
 
     - name: Upload SARIF results
-      uses: github/codeql-action/upload-sarif@v2
+      uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: ${{ env.PROJECT_DIR }}/snyk.sarif
+        sarif_file: |
+          ${{ env.PROJECT_DIR }}/snyk-deps.sarif
+          ${{ env.PROJECT_DIR }}/snyk-code.sarif
       if: always()
