@@ -34,7 +34,7 @@ public class BookID : EntityId
 
         var that = (BookID) obj;
 
-        return this.Equals(that.bookID);
+        return this.bookID.Equals(that.bookID);
     }
 
     public override string ToString()

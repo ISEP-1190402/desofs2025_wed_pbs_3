@@ -45,8 +45,13 @@ public class Book : Entity<BookID>, IAggregateRoot
 
     public BookDTO toDTO()
     {
-        return new BookDTO(Id.Value.ToString(), AmountOfCopies.GetBookAmountOfCopies(), Author.GetBookAuthor(),
+        return new BookDTO(Id.Value, AmountOfCopies.GetBookAmountOfCopies(), Author.GetBookAuthor(),
             Category.GetBookCategoryName(), Description.GetBookDescription(), Isbn.GetISBN(),
             Publisher.GetBookPublisher());
+    }
+
+    public void UpdateStock(int currentAmountOfCopiesStock)
+    {
+        this.AmountOfCopies = new AmountOfCopies(currentAmountOfCopiesStock);
     }
 }

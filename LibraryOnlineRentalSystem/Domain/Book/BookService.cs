@@ -1,5 +1,6 @@
 using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Repository.Common;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
@@ -17,9 +18,9 @@ public class BookService
     public async Task<List<BookDTO>> GetAllBooks()
     {
         var list = await _bookRepository.GetAllAsync();
-        var listDTO = list.ConvertAll(book =>
+        var listDto = list.ConvertAll(book =>
             book.toDTO());
-        return listDTO;
+        return listDto;
     }
 
     public async Task<BookDTO> GetBookByID(string id)
@@ -43,9 +44,14 @@ public class BookService
 
         return addedBook.toDTO();
     }
-    
-    
-    
-    
-    
+
+
+    public async Task<ActionResult<BookDTO>> UpdateStock(string id, BookStockDTO bookStockUpdateDto)
+    {
+        var book=  _bookRepository.UpdateBookStock(id,bookStockUpdateDto.AmountOfCopies);
+        
+        await _workUnity.CommitAsync();
+
+        return book.toDTO();
+    }
 }

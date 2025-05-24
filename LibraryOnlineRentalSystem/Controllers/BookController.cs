@@ -52,5 +52,19 @@ public class BookController : ControllerBase
         }
     }
     
-    
+    // PUT: api/Book
+    [HttpPut("updatestock/{id}")]
+
+    public async Task<ActionResult<BookDTO>> UpdateStock (string id,BookStockDTO bookSotckUpdateDTO)
+    {
+        try
+        {
+            var quantityUpdate = await _bookService.UpdateStock(id,bookSotckUpdateDTO);
+            return quantityUpdate;
+        }
+        catch (BusinessRulesException ex)
+        {
+            return BadRequest(new {ex.Message});
+        }
+    }
 }

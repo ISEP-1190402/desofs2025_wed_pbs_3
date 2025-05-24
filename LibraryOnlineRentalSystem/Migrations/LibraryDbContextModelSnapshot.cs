@@ -32,7 +32,7 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Books");
+                    b.ToTable("Books", (string)null);
                 });
 
             modelBuilder.Entity("LibraryOnlineRentalSystem.Domain.Role.Role", b =>
@@ -57,19 +57,19 @@ namespace LibraryOnlineRentalSystem.Migrations
                     b.HasData(
                         new
                         {
-                            Id = new Guid("39a5af91-1c9c-4932-b2d5-2cc2ceeaf41d"),
+                            Id = new Guid("2bb380a5-2ed3-4252-9c4a-5a0fd56aaa79"),
                             Description = "Administrator with full access",
                             Name = "Admin"
                         },
                         new
                         {
-                            Id = new Guid("9f852c9c-02e4-41b6-b3b3-ebf1f4b821c0"),
+                            Id = new Guid("ea3d8917-391e-4474-a691-0244f6a37a4e"),
                             Description = "Library manager with book management access",
                             Name = "LibraryManager"
                         },
                         new
                         {
-                            Id = new Guid("003140f9-ad11-4312-bad8-3362ff740a77"),
+                            Id = new Guid("fc9d9222-d241-49f7-b73b-2e3fe1fe4efb"),
                             Description = "Regular user with basic access",
                             Name = "User"
                         });
@@ -79,10 +79,6 @@ namespace LibraryOnlineRentalSystem.Migrations
                 {
                     b.Property<Guid>("Id")
                         .HasColumnType("char(36)");
-
-                    b.Property<string>("HashedPassword")
-                        .IsRequired()
-                        .HasColumnType("longtext");
 
                     b.Property<Guid>("RoleId")
                         .HasColumnType("char(36)");
@@ -94,7 +90,7 @@ namespace LibraryOnlineRentalSystem.Migrations
 
             modelBuilder.Entity("LibraryOnlineRentalSystem.Domain.Book.Book", b =>
                 {
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.AmountOfCopies", "AmountOfCopies", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Book.AmountOfCopies#LibraryOnlineRentalSystem.Domain.Book.AmountOfCopies", "AmountOfCopies", b1 =>
                         {
                             b1.Property<string>("BookId")
                                 .HasColumnType("varchar(255)");
@@ -104,13 +100,13 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("BookId");
 
-                            b1.ToTable("Books");
+                            b1.ToTable("Books", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BookId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Author", "Author", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Book.Author#LibraryOnlineRentalSystem.Domain.Book.Author", "Author", b1 =>
                         {
                             b1.Property<string>("BookId")
                                 .HasColumnType("varchar(255)");
@@ -121,13 +117,13 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("BookId");
 
-                            b1.ToTable("Books");
+                            b1.ToTable("Books", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BookId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Category", "Category", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Book.Category#LibraryOnlineRentalSystem.Domain.Book.Category", "Category", b1 =>
                         {
                             b1.Property<string>("BookId")
                                 .HasColumnType("varchar(255)");
@@ -138,13 +134,13 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("BookId");
 
-                            b1.ToTable("Books");
+                            b1.ToTable("Books", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BookId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Description", "Description", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Book.Description#LibraryOnlineRentalSystem.Domain.Book.Description", "Description", b1 =>
                         {
                             b1.Property<string>("BookId")
                                 .HasColumnType("varchar(255)");
@@ -155,13 +151,13 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("BookId");
 
-                            b1.ToTable("Books");
+                            b1.ToTable("Books", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BookId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.ISBN", "Isbn", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Book.Isbn#LibraryOnlineRentalSystem.Domain.Book.ISBN", "Isbn", b1 =>
                         {
                             b1.Property<string>("BookId")
                                 .HasColumnType("varchar(255)");
@@ -172,13 +168,13 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("BookId");
 
-                            b1.ToTable("Books");
+                            b1.ToTable("Books", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BookId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Publisher", "Publisher", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.Book.Publisher#LibraryOnlineRentalSystem.Domain.Book.Publisher", "Publisher", b1 =>
                         {
                             b1.Property<string>("BookId")
                                 .HasColumnType("varchar(255)");
@@ -189,7 +185,7 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("BookId");
 
-                            b1.ToTable("Books");
+                            b1.ToTable("Books", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("BookId");
@@ -216,7 +212,7 @@ namespace LibraryOnlineRentalSystem.Migrations
 
             modelBuilder.Entity("LibraryOnlineRentalSystem.Domain.User.User", b =>
                 {
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.Biography", "Biography", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.User.Biography#LibraryOnlineRentalSystem.Domain.User.Biography", "Biography", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("char(36)");
@@ -228,13 +224,13 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("UserId");
 
-                            b1.ToTable("Users");
+                            b1.ToTable("Users", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.Email", "Email", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.User.Email#LibraryOnlineRentalSystem.Domain.User.Email", "Email", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("char(36)");
@@ -246,31 +242,13 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("UserId");
 
-                            b1.ToTable("Users");
+                            b1.ToTable("Users", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.NIF", "Nif", b1 =>
-                        {
-                            b1.Property<Guid>("UserId")
-                                .HasColumnType("char(36)");
-
-                            b1.Property<string>("TaxID")
-                                .IsRequired()
-                                .HasColumnType("longtext")
-                                .HasColumnName("NIF");
-
-                            b1.HasKey("UserId");
-
-                            b1.ToTable("Users");
-
-                            b1.WithOwner()
-                                .HasForeignKey("UserId");
-                        });
-
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.Name", "Name", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.User.Name#LibraryOnlineRentalSystem.Domain.User.Name", "Name", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("char(36)");
@@ -282,13 +260,31 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("UserId");
 
-                            b1.ToTable("Users");
+                            b1.ToTable("Users", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.PhoneNumber", "PhoneNumber", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.User.Nif#LibraryOnlineRentalSystem.Domain.User.NIF", "Nif", b1 =>
+                        {
+                            b1.Property<Guid>("UserId")
+                                .HasColumnType("char(36)");
+
+                            b1.Property<string>("TaxID")
+                                .IsRequired()
+                                .HasColumnType("longtext")
+                                .HasColumnName("NIF");
+
+                            b1.HasKey("UserId");
+
+                            b1.ToTable("Users", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("UserId");
+                        });
+
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.User.PhoneNumber#LibraryOnlineRentalSystem.Domain.User.PhoneNumber", "PhoneNumber", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("char(36)");
@@ -300,13 +296,13 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("UserId");
 
-                            b1.ToTable("Users");
+                            b1.ToTable("Users", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");
                         });
 
-                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.UserName", "UserName", b1 =>
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.User.User.UserName#LibraryOnlineRentalSystem.Domain.User.UserName", "UserName", b1 =>
                         {
                             b1.Property<Guid>("UserId")
                                 .HasColumnType("char(36)");
@@ -318,7 +314,7 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                             b1.HasKey("UserId");
 
-                            b1.ToTable("Users");
+                            b1.ToTable("Users", (string)null);
 
                             b1.WithOwner()
                                 .HasForeignKey("UserId");
