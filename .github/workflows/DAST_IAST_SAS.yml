@@ -118,11 +118,21 @@ jobs:
       - name: Concluir Análise SonarCloud
         run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
-      # 10. SAST: Executar Verificação de Código Seguro .NET
-      - name: Executar Verificação de Segurança de Código .NET
-        uses: security-code-scan/security-code-scan@v3
-        with:
-          solutionPath: '**/*.sln'
+      # 10. SAST: Executar Verificação de Código Seguro .NET (versão corrigida)
+      - name: Instalar Security Code Scan
+        run: dotnet tool install --global security-scan
+        
+      - name: Executar Security Code Scan
+        run: |
+          # Navegar para o diretório do projeto
+          cd ./LibraryOnlineRentalSystem
+          
+          # Executar a verificação
+          dotnet security-scan --severity high medium --fail-on-warnings true
+          
+          # Mover resultados para pasta de relatórios
+          mkdir -p $GITHUB_WORKSPACE/sast-reports
+          mv *.sarif $GITHUB_WORKSPACE/sast-reports/ || echo "Nenhum relatório SARIF gerado"
 
       # 11. Enviar todos os relatórios
       - name: Enviar Relatórios
