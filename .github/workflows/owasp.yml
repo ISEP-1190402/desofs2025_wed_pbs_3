@@ -98,14 +98,11 @@ jobs:
 
 
       # 7. Upload do relatório (usando v4, a mais recente)
-      - name: Upload ZAP Report
-        uses: actions/upload-artifact@v4.3.3  # Versão fixa
+      - name: Upload ZAP reports
+        uses: actions/upload-artifact@v4
         with:
-          name: zap-security-report
-          path: |
-            report_html.html
-            report_json.json
-            report_md.md
+          name: zap-reports
+          path: zap-work/
 
       # 8. Parar container
       - name: Stop Container
