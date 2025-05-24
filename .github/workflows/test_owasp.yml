@@ -9,13 +9,13 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: library-api
-  API_PORT: 8081
-  PROJECT_DIR: ./LibraryOnlineRentalSystem  # Added missing environment variable
+  API_PORT: 5000
+  PROJECT_DIR: ./LibraryOnlineRentalSystem
 
 jobs:
   security-scans:
     runs-on: ubuntu-latest
-    timeout-minutes: 30  # Increased timeout
+    timeout-minutes: 30  # Aumentado para 30 minutos
 
     steps:
       # 1. Checkout
@@ -28,37 +28,55 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # 3. Verify files
+      # 3. Verificação de arquivos
       - name: Verify files
+        working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          echo "Root directory content:"
+          echo "Conteúdo do diretório:"
           ls -la
-          echo "Project directory content:"
-          ls -la ${{ env.PROJECT_DIR }}
-          echo "Checking Dockerfile:"
-          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile not found"
-          cat ${{ env.PROJECT_DIR }}/Dockerfile || true
-          
+          echo "Verificando Dockerfile:"
+          cat Dockerfile || { echo "ERRO: Dockerfile não encontrado"; exit 1; }
+
       # 4. Build Docker Image
       - name: Build Docker Image
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          echo "Building Docker image from $(pwd)" 
-          docker build -t $DOCKER_IMAGE_NAME .
+          docker build -t $DOCKER_IMAGE_NAME . || { echo "ERRO: Falha no build"; exit 1; }
 
-      # 5. Run API Container
-      - name: Run API Container
+      # 5. Criar rede Docker
+      - name: Create Docker Network
+        run: docker network create zap-net
+
+      # 6. Iniciar API Container com verificação
+      - name: Run and Verify API Container
         run: |
-          docker run -d -p $API_PORT:$API_PORT --name api $DOCKER_IMAGE_NAME
-          echo "Waiting for API to start..."
-          sleep 15
-          curl --retry 5 --retry-delay 3 --retry-all-errors http://localhost:$API_PORT || echo "API may not be fully ready"
+          # Inicia o container
+          docker run -d \
+            --name api \
+            --network zap-net \
+            -p $API_PORT:$API_PORT \
+            $DOCKER_IMAGE_NAME || { echo "ERRO: Falha ao iniciar container"; exit 1; }
+          
+          # Verifica se a API está respondendo
+          echo "Aguardando API iniciar..."
+          for i in {1..10}; do
+            if docker run --network zap-net curlimages/curl \
+              curl -sSf http://api:$API_PORT >/dev/null; then
+              echo "API respondendo com sucesso!"
+              break
+            fi
+            echo "Tentativa $i/10 - API não respondendo, aguardando..."
+            sleep 5
+          done
+          
+          # Falha se a API não responder
+          docker run --network zap-net curlimages/curl \
+            curl -sSf http://api:$API_PORT || { echo "ERRO: API não respondeu após 50 segundos"; exit 1; }
 
-      # 6. SonarScanner Setup
+      # 7. SonarScanner
       - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
 
-      # 7. SonarCloud Analysis
       - name: Start SonarCloud Analysis
         run: |
           dotnet sonarscanner begin \
@@ -67,39 +85,53 @@ jobs:
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.dotnet.buildConfiguration="Release"
-            /d:sonar.scanner.scanAll=false
 
-      # 8. Prepare ZAP Directory
-      - name: Prepare ZAP Directory
+      # 8. Debug de rede
+      - name: Debug Network
         run: |
+          echo "--- Containers ativos ---"
+          docker ps -a
+          echo "--- Teste de conexão ---"
+          docker run --network zap-net curlimages/curl \
+            curl -v http://api:$API_PORT
+          echo "--- IP do container API ---"
+          docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api
+
+      # 9. Scan ZAP
+      - name: Run OWASP ZAP Scan
+        run: |
+          # Prepara diretório para relatórios
           mkdir -p zap-reports
-          chmod 777 zap-reports
+          chmod -R 777 zap-reports
 
-       # 9. OWASP ZAP Scan
-      - name: API Security Scan
-        uses: zaproxy/action-baseline@v0.12.0
-        with:
-          target: "http://localhost:$API_PORT"
-          docker_args: '-v $(pwd)/zap-reports:/zap/wrk/:rw -u zap -e ZAP_UID=$(id -u) -e ZAP_GID=$(id -g)'
-          args: >
-            -J report_json.json
-            -w report_md.md
-            -r report_html.html
-        timeout-minutes: 10  # Increased timeout
+          # Executa o scan
+          docker run --rm \
+            --network zap-net \
+            -v $(pwd)/zap-reports:/zap/wrk:rw \
+            -e ZAP_JVM_ARGS="-Dnetwork.connection.timeout=20" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://api:$API_PORT \
+            -J /zap/wrk/report_json.json \
+            -w /zap/wrk/report_md.md \
+            -r /zap/wrk/report_html.html \
+            -x report_xml.xml
 
-      # 10. Upload ZAP Reports
+      # 10. Upload de relatórios
       - name: Upload ZAP Reports
         uses: actions/upload-artifact@v4.3.3
         with:
           name: zap-security-reports
           path: |
+            zap-reports/report_html.html
             zap-reports/report_json.json
             zap-reports/report_md.md
-            zap-reports/report_html.html
+            zap-reports/report_xml.xml
 
-      # 11. Stop Container
-      - name: Stop Container
+      # 11. Limpeza
+      - name: Cleanup
         if: always()
         run: |
           docker stop api || true
           docker rm api || true
+          docker network rm zap-net || true
