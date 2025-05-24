@@ -1,20 +1,104 @@
-name: OWASP ZAP Scan
+name: .NET API Security Scan
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
 
+env:
+  DOCKER_IMAGE_NAME: library-api
+  API_PORT: 8081
+  PROJECT_DIR: ./LibraryOnlineRentalSystem  # Added missing environment variable
 
 jobs:
-  owasp-zap-scan:
+  security-scans:
     runs-on: ubuntu-latest
+    timeout-minutes: 30  # Increased timeout
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
+      # 1. Checkout
+      - name: Checkout
+        uses: actions/checkout@v4.1.1
 
-      - name: ZAP Scan
+      # 2. Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      # 3. Verify files
+      - name: Verify files
+        run: |
+          echo "Root directory content:"
+          ls -la
+          echo "Project directory content:"
+          ls -la ${{ env.PROJECT_DIR }}
+          echo "Checking Dockerfile:"
+          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile not found"
+          cat ${{ env.PROJECT_DIR }}/Dockerfile || true
+          
+      # 4. Build Docker Image
+      - name: Build Docker Image
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          echo "Building Docker image from $(pwd)" 
+          docker build -t $DOCKER_IMAGE_NAME .
+
+      # 5. Run API Container
+      - name: Run API Container
+        run: |
+          docker run -d -p $API_PORT:$API_PORT --name api $DOCKER_IMAGE_NAME
+          echo "Waiting for API to start..."
+          sleep 15
+          curl --retry 5 --retry-delay 3 --retry-all-errors http://localhost:$API_PORT || echo "API may not be fully ready"
+
+      # 6. SonarScanner Setup
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      # 7. SonarCloud Analysis
+      - name: Start SonarCloud Analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" \
+            /o:"jorgealmeidadeveloper" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.dotnet.buildConfiguration="Release"
+
+      # 8. Prepare ZAP Directory
+      - name: Prepare ZAP Directory
+        run: |
+          mkdir -p zap-reports
+          chmod 777 zap-reports
+
+      # 9. OWASP ZAP Scan
+      - name: API Security Scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: 'https://tek4geek.me/api/user'
-          args: -r
+          target: "http://localhost:$API_PORT"
+          docker_args: '-v $(pwd)/zap-reports:/zap/wrk/:rw -u zap -e ZAP_UID=$(id -u) -e ZAP_GID=$(id -g)'
+          args: >
+            -J report_json.json
+            -w report_md.md
+            -r report_html.html
+        timeout-minutes: 10  # Increased timeout
+
+      # 10. Upload ZAP Reports
+      - name: Upload ZAP Reports
+        uses: actions/upload-artifact@v4.3.3
+        with:
+          name: zap-security-reports
+          path: |
+            zap-reports/report_json.json
+            zap-reports/report_md.md
+            zap-reports/report_html.html
+
+      # 11. Stop Container
+      - name: Stop Container
+        if: always()
+        run: |
+          docker stop api || true
+          docker rm api || true
