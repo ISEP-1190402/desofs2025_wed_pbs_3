@@ -68,14 +68,7 @@ jobs:
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.dotnet.buildConfiguration="Release"       
-
-
-      - name: Test API reachability from helper container
-        run: |
-          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
-          echo "API IP is $API_IP"
-          docker run --rm --network zap-net curlimages/curl:latest -v http://$API_IP:8080/api/health || echo "API not reachable from helper container"
-
+     
           
       # 6. OWASP ZAP Scan
       - name: Run OWASP ZAP Scan manually
@@ -94,7 +87,7 @@ jobs:
             -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
-            -t http://$API_IP:${{ env.API_PORT }}/api/health \
+            -t http://$API_IP:${{ env.API_PORT }} \
             -J report_json.json \
             -w report_md.md \
             -r report_html.html
