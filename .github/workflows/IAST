@@ -1,4 +1,4 @@
-name: Security Analysis Pipeline
+name: SAP-
 on:
   push:
     branches: [ main ]
@@ -6,7 +6,7 @@ on:
     branches: [ main ]
 
 jobs:
-  security:
+  iast:
     runs-on: ubuntu-latest
     steps:
       # 1. Checkout do código
