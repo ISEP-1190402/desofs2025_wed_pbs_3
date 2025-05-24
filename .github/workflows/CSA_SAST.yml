@@ -5,8 +5,6 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  schedule:
-    - cron: '0 0 * * *' # Executa diariamente à meia-noite
 
 env:
   PROJECT_DIR: ./LibraryOnlineRentalSystem
@@ -42,41 +40,40 @@ jobs:
     - name: Install Snyk CLI
       run: npm install -g snyk@latest
 
-    - name: Authenticate with Snyk (correct approach)
+    - name: Authenticate with Snyk (simplified)
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: |
-        # Validate token is not empty
+        # Skip explicit auth and rely on SNYK_TOKEN env var
+        echo "Skipping explicit auth, using SNYK_TOKEN directly"
+        
+        # Verify token is set
         if [ -z "$SNYK_TOKEN" ]; then
           echo "::error::SNYK_TOKEN is empty or not set"
           exit 1
         fi
-        
-        # Authenticate using the recommended method
-        echo "$SNYK_TOKEN" | snyk auth --stdin
-        
-        # Verify authentication worked
-        snyk whoami || {
-          echo "::error::Failed to authenticate with Snyk"
-          echo "Please verify:"
-          echo "1. The token is correct at https://snyk.io/account/"
-          echo "2. The token has not expired"
-          echo "3. Your account has proper permissions"
-          exit 1
-        }
 
     - name: Run Snyk Dependency Scan (CSA)
-      run: snyk test --file=${{ env.CSPROJ_NAME }} --all-projects
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        snyk test --file=${{ env.CSPROJ_NAME }} --all-projects
       working-directory: ${{ env.PROJECT_DIR }}
       continue-on-error: true
       
     - name: Run Snyk Code Scan (SAST)
-      run: snyk code test --severity-threshold=high
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        snyk code test --severity-threshold=high
       working-directory: ${{ env.PROJECT_DIR }}
       continue-on-error: true
 
     - name: Generate SARIF report
-      run: snyk code test --sarif-file-output=snyk.sarif
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        snyk code test --sarif-file-output=snyk.sarif
       working-directory: ${{ env.PROJECT_DIR }}
       if: always()
 
