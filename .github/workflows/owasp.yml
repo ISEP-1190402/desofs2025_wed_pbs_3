@@ -74,7 +74,7 @@ jobs:
         run: |
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
           echo "API IP is $API_IP"
-          docker run --rm --network zap-net curlimages/curl:latest -v http://$API_IP:8080/api/status || echo "API not reachable from helper container"
+          docker run --rm --network zap-net curlimages/curl:latest -v http://$API_IP:8080/api/health || echo "API not reachable from helper container"
 
           
       # 6. OWASP ZAP Scan
