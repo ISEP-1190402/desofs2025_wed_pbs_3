@@ -1,63 +1,110 @@
-name: Snyk Security Scan
+name: .NET API Security Scan
 
 on:
   push:
-    branches: [ main ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
+  workflow_dispatch:
 
 env:
-  SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-  PROJECT_DIR: ./LibraryOnlineRentalSystem
-  CSPROJ_PATH: LibraryOnlineRentalSystem.csproj  # Alterado para caminho relativo dentro do diretório do projeto
+  DOCKER_IMAGE_NAME: library-api
+  API_PORT: 8080
+  PROJECT_DIR: ./LibraryOnlineRentalSystem  # Pasta do projeto
+  CSPROJ_PATH: ./LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj  # Caminho exato
 
 jobs:
-  security-scan:
-    name: Run Snyk Security Scan
+  security-scans_CSA_SAST:
     runs-on: ubuntu-latest
-    
+    timeout-minutes: 20
+
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      # 1. Checkout
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Verify project structure
-      run: |
-        ls -la ${{ env.PROJECT_DIR }}
-        echo "CSPROJ_PATH: ${{ env.PROJECT_DIR }}/${{ env.CSPROJ_PATH }}"
-        test -f "${{ env.PROJECT_DIR }}/${{ env.CSPROJ_PATH }}" || exit 1
+      # 2. Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: '6.0.x'
+      # 3. Build do projeto
+      - name: Build .NET Project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dotnet build "${{ env.CSPROJ_PATH }}" --configuration Release
 
-    - name: Restore dependencies
-      run: dotnet restore ${{ env.CSPROJ_PATH }}
-      working-directory: ${{ env.PROJECT_DIR }}
+      # 4. Build Docker
+      - name: Build Docker Image
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: docker build -t $DOCKER_IMAGE_NAME .
 
-    - name: Install Snyk
-      run: npm install -g snyk
+      # 5. Snyk Scan (versão corrigida)
+      - name: Setup Snyk CLI
+        uses: snyk/actions/setup@v3
+        with:
+          version: latest
 
-    - name: Authenticate to Snyk
-      run: snyk auth ${{ env.SNYK_TOKEN }}
+      - name: Run Snyk Test
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: snyk test --file="${{ env.CSPROJ_PATH }}" --severity-threshold=medium
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-    - name: Run Snyk CSA (Dependency Scan)
-      run: snyk test --file=${{ env.CSPROJ_PATH }} --all-projects
-      working-directory: ${{ env.PROJECT_DIR }}
-      continue-on-error: true
+      # 6. Docker Network
+      - name: Create Docker Network
+        run: docker network create zap-net
 
-    - name: Run Snyk SAST (Code Analysis)
-      run: snyk code test . --severity-threshold=high
-      working-directory: ${{ env.PROJECT_DIR }}
-      continue-on-error: true
+      - name: Run API Container
+        run: |
+          docker run -d \
+            --name api \
+            --network zap-net \
+            -p $API_PORT:$API_PORT \
+            $DOCKER_IMAGE_NAME
+        sleep 10
 
-    - name: Generate SARIF report
-      run: snyk code test . --sarif-file-output=snyk.sarif
-      working-directory: ${{ env.PROJECT_DIR }}
-      if: always()
+      # 7. SonarCloud
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
 
-    - name: Upload SARIF results
-      uses: github/codeql-action/upload-sarif@v2
-      with:
-        sarif_file: ${{ env.PROJECT_DIR }}/snyk.sarif
-      if: always()
+      - name: Start SonarCloud Analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" \
+            /o:"jorgealmeidadeveloper" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.dotnet.buildConfiguration="Release"
+
+      # 8. OWASP ZAP Scan
+      - name: Run OWASP ZAP Scan
+        run: |
+          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
+          echo "API container IP: $API_IP"
+
+          mkdir -p $GITHUB_WORKSPACE/zap-work
+          chmod -R 777 $GITHUB_WORKSPACE/zap-work
+
+          docker run --rm \
+            --network zap-net \
+            -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://$API_IP:${{ env.API_PORT }} \
+            -J report_json.json \
+            -w report_md.md \
+            -r report_html.html \
+            -I
+
+      # 9. Upload reports
+      - name: Upload ZAP reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-reports
+          path: zap-work/
+
+      # 10. Cleanup
+      - name: Stop Container
+        if: always()
+        run: docker stop api && docker rm api || true
