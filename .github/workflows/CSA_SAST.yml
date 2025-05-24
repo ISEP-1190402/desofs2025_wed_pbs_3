@@ -12,7 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      security-events: write
+      # Se não for mais fazer upload para Code Scanning, pode remover esta linha:
+      # security-events: write
     
     steps:
     - name: Checkout repository
@@ -47,27 +48,22 @@ jobs:
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: |
-        # Create directory for SARIF files if not exists
         mkdir -p ./snyk_results
-        
-        # Run scans and output to specific directory
         snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=./snyk_results/snyk-deps.sarif || true
         snyk code test --severity-threshold=high --sarif-file-output=./snyk_results/snyk-code.sarif || true
-        
-        # Verify SARIF files were created
         ls -la ./snyk_results/
 
-
-    - name: Upload SARIF results
-      uses: github/codeql-action/upload-sarif@v3
+    - name: Save SARIF results as artifact
+      uses: actions/upload-artifact@v4
       with:
-        sarif_file: |
+        name: snyk-sarif-results
+        path: |
           ./src/LibraryOnlineRentalSystem/snyk_results/snyk-deps.sarif
           ./src/LibraryOnlineRentalSystem/snyk_results/snyk-code.sarif
 
     - name: Debug SARIF files
       run: |
-       echo "Checking SARIF files..."
-       find ./src -name "*.sarif" -exec ls -la {} \;
-       find ./src -name "*.sarif" -exec head -n 5 {} \;
-      if: always()      
+        echo "Checking SARIF files..."
+        find ./src -name "*.sarif" -exec ls -la {} \;
+        find ./src -name "*.sarif" -exec head -n 5 {} \;
+      if: always()
