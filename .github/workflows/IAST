@@ -1,34 +1,56 @@
-name: Snyk Security Scan
+name: Security Analysis - LibraryOnlineRentalSystem
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  snyk-scan:
+  security-scan:
     runs-on: ubuntu-latest
     steps:
       # 1. Checkout do código
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      # 2. Configura o .NET 8
-      - name: Setup .NET SDK
+      # 2. Configuração do .NET 8
+      - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
 
-      # 3. Instala o Snyk CLI
-      - name: Install Snyk
+      # 3. Instalação do Snyk
+      - name: Install Snyk CLI
         uses: snyk/actions/setup@master
         with:
           snyk-token: ${{ secrets.SNYK_TOKEN }}
 
-      # 4. Executa o Snyk para testar dependências (SCA)
-      - name: Run Snyk (Dependency Scan)
-        run: snyk test --file=LibraryOnlineRentalSystem/src/API/project.csproj
+      # 4. Análise de segurança (SCA + SAST)
+      - name: Run Snyk Security Scan
+        run: |
+          # Analisa dependências NuGet
+          snyk test --file=LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --severity-threshold=high --json-file-output=snyk-deps.json
+          
+          # Analisa código-fonte C#
+          snyk code test --severity-threshold=high --json-file-output=snyk-code.json
 
-      # 5. Executa o Snyk para análise de código (SAST) - Requer Snyk Code
-      - name: Run Snyk Code (SAST)
-        run: snyk code test --severity-threshold=high
+      # 5. Geração de SBOM
+      - name: Generate SBOM
+        uses: advanced-security/sbom-generator-action@v0.0.1
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # 6. Upload de resultados
+      - name: Upload Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            snyk-deps.json
+            snyk-code.json
+            sbom.spdx.json
+
+      # 7. Testes unitários (opcional)
+      - name: Run Tests
+        run: |
+          cd LibraryOnlineRentalSystem.Tests
+          dotnet test
