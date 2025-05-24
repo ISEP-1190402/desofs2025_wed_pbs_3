@@ -45,6 +45,9 @@ jobs:
           echo "Building Docker image from $(pwd)" 
           docker build -t $DOCKER_IMAGE_NAME .
       
+      - name: Verificar localização do .csproj
+        run: find . -name "*.csproj"
+
 
       # 4 🔍 SAST + SCA com Snyk - Versão corrigida
       - name: Setup Snyk CLI
