@@ -27,11 +27,19 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # 3. Build Docker (com caminho explícito)
-      - name: Build Docker Image
-        working-directory: ./desofs2025_wed_pbs_3-1/LibraryOnlineRentalSystem  # Altere para o diretório do Dockerfile
+      # Debug: Mostra estrutura de arquivos
+      - name: Verify project structure
         run: |
-          docker build -t $DOCKER_IMAGE_NAME -f Dockerfile .
+          echo "Estrutura do projeto:"
+          ls -R
+          echo "Verificando Dockerfile:"
+          ls -la LibraryOnlineRentalSystem/Dockerfile    
+
+      #4. Build Docker (solução definitiva)
+      - name: Build Docker Image
+        working-directory: ./LibraryOnlineRentalSystem
+        run: |
+          echo "Building Docker image from $(pwd)" docker build -t $DOCKER_IMAGE_NAME .
 
       # 4. Inicia o container
       - name: Run API Container
