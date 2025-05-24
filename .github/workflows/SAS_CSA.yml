@@ -48,7 +48,7 @@ jobs:
 
       # 4 🔍 SAST + SCA com Snyk - Versão corrigida
       - name: Setup Snyk CLI
-        uses: snyk/actions/setup@v3
+        uses: snyk/actions/setup@manger
         with:
           version: latest
 
