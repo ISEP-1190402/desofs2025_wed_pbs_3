@@ -97,6 +97,9 @@ jobs:
             -w /zap/wrk/report_md.md \
             -r /zap/wrk/report_html.html
 
+      - name: List ZAP report files
+        run: ls -l $GITHUB_WORKSPACE/zap-work
+
 
       # 7. Upload do relatório (usando v4, a mais recente)
       - name: Upload ZAP Report
