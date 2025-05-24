@@ -27,13 +27,16 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # Debug: Mostra estrutura de arquivos
-      - name: Verify project structure
+      # Debug: Verificação completa
+      - name: Verify files
         run: |
-          echo "Estrutura do projeto:"
-          ls -R
+          echo "Conteúdo do diretório raiz:"
+          ls -la
+          echo "Conteúdo do diretório do projeto:"
+          ls -la ${{ env.PROJECT_DIR }}
           echo "Verificando Dockerfile:"
-          ls -la LibraryOnlineRentalSystem/Dockerfile    
+          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
+          cat ${{ env.PROJECT_DIR }}/Dockerfile || true
 
       #4. Build Docker (solução definitiva)
       - name: Build Docker Image
