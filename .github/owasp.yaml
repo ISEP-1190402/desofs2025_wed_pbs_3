@@ -1,0 +1,60 @@
+name: OWASP+PUSH+PULL
+
+on:
+  release:
+    types: [published]
+  push:
+    branches:
+      - main  # ou 'master' ou outro nome que use no seu repositório
+  pull_request:
+    branches:
+      - main  # garante que PRs contra a main disparem o workflow
+
+jobs:
+  scan-and-analyze:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # OWASP ZAP SCAN
+      - name: OWASP ZAP Scan
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: 'LibraryOnlineRentalSystem'  # Altere aqui LibraryOnlineRentalSystem
+          args: -r
+
+      # SETUP .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'  # Altere conforme sua versão
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Run tests
+        run: dotnet test --no-build --verbosity normal
+
+      # SONARCLOUD ANALYSIS
+      - name: SonarCloud begin analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          export PATH="$PATH:/home/runner/.dotnet/tools"
+          dotnet-sonarscanner begin /k:"LibraryOnlineRentalSystem" /o:"SUA_ORGANIZACAO" /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Rebuild for Sonar
+        run: dotnet build
+
+      - name: SonarCloud end analysis
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          export PATH="$PATH:/home/runner/.dotnet/tools"
+          dotnet-sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
