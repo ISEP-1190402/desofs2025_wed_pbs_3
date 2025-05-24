@@ -44,18 +44,20 @@ jobs:
         run: |
           echo "Building Docker image from $(pwd)" 
           docker build -t $DOCKER_IMAGE_NAME .
+      
 
-      # 🔍 SAST + SCA com Snyk
-
-      # 5. Instalar e rodar Snyk
+      # 4 🔍 SAST + SCA com Snyk - Versão corrigida
       - name: Setup Snyk CLI
-        uses: snyk/actions/setup@master 
+        uses: snyk/actions/setup@v3
         with:
           version: latest
 
+     # 5 🔍 SAST + SCA com Snyk
       - name: Run Snyk Test (.NET SAST + SCA)
-        working-directory: ./LibraryOnlineRentalSystem
-        run: snyk test --all-projects --severity-threshold=medium
+        working-directory: ${{ env.PROJECT_DIR }}  # Execute no diretório do projeto
+        run: |
+          snyk test --file=*.csproj --severity-threshold=medium
+          snyk monitor --file=*.csproj  # Opcional: envia resultados para dashboard
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       
