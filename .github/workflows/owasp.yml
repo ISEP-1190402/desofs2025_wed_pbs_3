@@ -69,13 +69,10 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.dotnet.buildConfiguration="Release"       
 
-      - name: Test API reachability from helper container
+      - name: Debug current directory contents
         run: |
-          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
-          echo "API IP is $API_IP"
-          docker run --rm --network zap-net curlimages/curl:latest -v http://$API_IP:5000 || echo "API not reachable from helper container"
-
-
+          echo "Current dir: $PWD"
+          ls -R $PWD
 
           
       # 6. OWASP ZAP Scan
