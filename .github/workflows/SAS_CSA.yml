@@ -1,0 +1,114 @@
+name: .NET API Security Scan
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE_NAME: library-api
+  API_PORT: 8080
+
+jobs:
+  security-scans_CSA_SAST:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      # 1. Checkout (usando versão explícita)
+      - name: Checkout
+        uses: actions/checkout@v4.1.1  # Versão fixa
+
+      # 2. Setup .NET
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 8.0.x
+
+      # 3. Debug: Verificação completa
+      - name: Verify files
+        run: |
+          echo "Conteúdo do diretório raiz:"
+          ls -la
+          echo "Conteúdo do diretório do projeto:"
+          ls -la ${{ env.PROJECT_DIR }}
+          echo "Verificando Dockerfile:"
+          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
+          cat ${{ env.PROJECT_DIR }}/Dockerfile || true
+          
+      # 4. Build Docker (solução definitiva)
+      - name: Build Docker Image
+        working-directory: ./LibraryOnlineRentalSystem
+        run: |
+          echo "Building Docker image from $(pwd)" 
+          docker build -t $DOCKER_IMAGE_NAME .
+
+      # 🔍 SAST + SCA com Snyk
+      - name: Run Snyk SAST & SCA Scan
+        uses: snyk/actions/dotnet@v1
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=medium
+
+      - name: Create Docker Network
+        run: docker network create zap-net
+
+      - name: Run API Container
+        run: |
+          docker run -d \
+            --name api \
+            --network zap-net \
+            -p $API_PORT:$API_PORT \
+            $DOCKER_IMAGE_NAME
+          sleep 10
+
+      # 6. Preparacao Sonar
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Start SonarCloud Analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" \
+            /o:"jorgealmeidadeveloper" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.dotnet.buildConfiguration="Release"       
+
+      # 7. OWASP ZAP Scan
+      - name: Run OWASP ZAP Scan manually
+        run: |
+          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
+          echo "API container IP: $API_IP"
+
+          mkdir -p $GITHUB_WORKSPACE/zap-work
+          chmod -R 777 $GITHUB_WORKSPACE/zap-work
+
+          docker run --rm \
+            --network zap-net \
+            -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://$API_IP:${{ env.API_PORT }} \
+            -J report_json.json \
+            -w report_md.md \
+            -r report_html.html \
+            -I
+
+      - name: List ZAP report files
+        run: ls -l $GITHUB_WORKSPACE/zap-work
+
+      # 8. Upload do relatório
+      - name: Upload ZAP reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-reports
+          path: zap-work/
+
+      # 9. Parar container
+      - name: Stop Container
+        if: always()
+        run: docker stop api && docker rm api
