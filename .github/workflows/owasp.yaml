@@ -23,7 +23,7 @@ jobs:
 
       # 2. Setup .NET
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3.3.0  # Versão fixa
+        uses: actions/setup-dotnet@v3 # Versão fixa
         with:
           dotnet-version: 8.0.x
 
