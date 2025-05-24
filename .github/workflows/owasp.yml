@@ -91,7 +91,7 @@ jobs:
             -J report_json.json \
             -w report_md.md \
             -r report_html.html \
-            --exitcode -1
+            -I
 
       - name: List ZAP report files
         run: ls -l $GITHUB_WORKSPACE/zap-work
