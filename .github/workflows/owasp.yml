@@ -90,7 +90,8 @@ jobs:
             -t http://$API_IP:${{ env.API_PORT }} \
             -J report_json.json \
             -w report_md.md \
-            -r report_html.html
+            -r report_html.html \
+            --exitcode -1
 
       - name: List ZAP report files
         run: ls -l $GITHUB_WORKSPACE/zap-work
