@@ -15,15 +15,13 @@ jobs:
       security-events: write
     
     steps:
-    - name: Checkout repository (with proper authentication)
+    - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        token: ${{ secrets.GITHUB_TOKEN || github.token }}
-        repository: ISEP-1190402/desofs2025_wed_pbs_3
-        path: ./desofs2025_wed_pbs_3
+        path: ./src
 
     - name: Verify project structure
-      working-directory: ./desofs2025_wed_pbs_3
+      working-directory: ./src
       run: |
         echo "Verifying project structure"
         ls -la
@@ -38,24 +36,38 @@ jobs:
         dotnet-version: '8.0.x'
 
     - name: Restore dependencies
-      working-directory: ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem
-      run: dotnet restore LibraryOnlineRentalSystem.csproj
+      working-directory: ./src/LibraryOnlineRentalSystem
+      run: dotnet restore
 
     - name: Install Snyk CLI
       run: npm install -g snyk@latest
 
     - name: Run Snyk Scans
-      working-directory: ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem
+      working-directory: ./src/LibraryOnlineRentalSystem
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       run: |
-        snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=snyk-deps.sarif || true
-        snyk code test --severity-threshold=high --sarif-file-output=snyk-code.sarif || true
+        # Create directory for SARIF files if not exists
+        mkdir -p ./snyk_results
+        
+        # Run scans and output to specific directory
+        snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=./snyk_results/snyk-deps.sarif || true
+        snyk code test --severity-threshold=high --sarif-file-output=./snyk_results/snyk-code.sarif || true
+        
+        # Verify SARIF files were created
+        ls -la ./snyk_results/
+
 
     - name: Upload SARIF results
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: |
-          ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/snyk-deps.sarif
-          ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/snyk-code.sarif
-      if: always()
+          ./src/LibraryOnlineRentalSystem/snyk_results/snyk-deps.sarif
+          ./src/LibraryOnlineRentalSystem/snyk_results/snyk-code.sarif
+
+    - name: Debug SARIF files
+      run: |
+       echo "Checking SARIF files..."
+       find ./src -name "*.sarif" -exec ls -la {} \;
+       find ./src -name "*.sarif" -exec head -n 5 {} \;
+      if: always()      
