@@ -48,15 +48,19 @@ jobs:
         run: |
           docker run -d -p $API_PORT:$API_PORT --name api $DOCKER_IMAGE_NAME
           sleep 10
-      # 5. SonarCloud (usando versão fixa)
-      - name: SonarCloud Analysis
-        uses: SonarSource/sonarcloud-github-action@v2.0.0  # Versão estável
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: ./LibraryOnlineRentalSystem  # Caminho para a pasta do projeto .NET
+          
+      - name: Install SonarScanner for .NET
+        run: dotnet tool install --global dotnet-sonarscanner
 
+      - name: Start SonarCloud Analysis
+        run: |
+          dotnet sonarscanner begin \
+            /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" \
+            /o:"jorgealmeidadeveloper" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.dotnet.buildConfiguration="Release"       
+          
       # 6. OWASP ZAP Scan
       - name: API Security Scan
         uses: zaproxy/action-baseline@v0.12.0
