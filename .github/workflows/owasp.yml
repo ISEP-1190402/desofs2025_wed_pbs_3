@@ -69,10 +69,10 @@ jobs:
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.dotnet.buildConfiguration="Release"       
 
-      - name: Debug Docker containers and network
+      - name: Check API inside container
         run: |
-          docker ps
-          docker network inspect zap-net
+          docker exec api curl -v http://localhost:5000 || echo "API not reachable inside container"
+
 
           
       # 6. OWASP ZAP Scan
