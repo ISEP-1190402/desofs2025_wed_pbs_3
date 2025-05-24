@@ -68,6 +68,13 @@ jobs:
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.dotnet.buildConfiguration="Release"       
+
+      - name: Debug Docker containers and network
+        run: |
+          docker ps
+          docker network inspect zap-net
+          docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api
+
           
       # 6. OWASP ZAP Scan
       - name: API Security Scan
