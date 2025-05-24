@@ -84,5 +84,5 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
-app.MapGet("/api/health", () => Results.Json(new { status = "ok" }));
+app.MapGet("/", () => Results.Json(new { status = "ok" }));
 app.Run();
