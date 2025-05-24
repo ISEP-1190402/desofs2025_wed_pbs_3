@@ -67,7 +67,7 @@ jobs:
         uses: zaproxy/action-baseline@v0.12.0
         with:
           target: "http://localhost:$API_PORT"  # Usa a variável definida
-          docker_args: '-v $(pwd):/zap/wrk/:rw -u zap'
+          docker_args: '-v $(pwd):/zap/wrk/:rw -u zap -e ZAP_UID=$(id -u) -e ZAP_GID=$(id -g)'
           args: >
           -J report_json.json
           -w report_md.md
