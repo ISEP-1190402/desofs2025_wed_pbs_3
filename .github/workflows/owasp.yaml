@@ -2,14 +2,14 @@ name: .NET API Security Scan
 
 on:
   push:
-    branches: [ main]
+    branches: [ main, master ]
   pull_request:
-    branches: [ main]
+    branches: [ main, master ]
   workflow_dispatch:
 
 env:
   DOCKER_IMAGE_NAME: library-api
-  API_PORT: 8080  # Porta da sua API (ajuste se necessário)
+  API_PORT: 8080
 
 jobs:
   security-scans:
@@ -17,49 +17,50 @@ jobs:
     timeout-minutes: 20
 
     steps:
-      # 1. Checkout do código
+      # 1. Checkout (usando versão explícita)
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.1.1  # Versão fixa
 
-      # 2. Configura .NET e restaura dependências
+      # 2. Setup .NET
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3
+        uses: actions/setup-dotnet@v3.3.0  # Versão fixa
         with:
           dotnet-version: 8.0.x
 
-      # 3. Build da imagem Docker
+      # 3. Build Docker
       - name: Build Docker Image
         run: |
           docker build -t $DOCKER_IMAGE_NAME .
 
-      # 4. Inicia o container da API
+      # 4. Inicia o container
       - name: Run API Container
         run: |
           docker run -d -p $API_PORT:$API_PORT --name api $DOCKER_IMAGE_NAME
-          sleep 10  # Espera a API iniciar
+          sleep 10
 
-      # 5. SonarCloud Scan (requer SONAR_TOKEN nos secrets)
+      # 5. SonarCloud (usando versão fixa)
       - name: SonarCloud Analysis
-        uses: SonarSource/sonarcloud-github-action@master
+        uses: SonarSource/sonarcloud-github-action@v2.0.0  # Versão estável
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-      # 6. OWASP ZAP Scan (na API local)
+      # 6. OWASP ZAP Scan
       - name: API Security Scan
         uses: zaproxy/action-baseline@v0.12.0
         with:
-          target: http://localhost:$API_PORT  # Altere para o endpoint da sua API (ex: /api)
-          args: -r  # Gera relatório
+          target: http://localhost:$API_PORT
+          args: -r
         timeout-minutes: 5
 
-      # 7. Parar o container e salvar relatório
-      - name: Stop Container
-        if: always()
-        run: docker stop api && docker rm api
-
+      # 7. Upload do relatório (usando v4, a mais recente)
       - name: Upload ZAP Report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4.3.3  # Versão fixa
         with:
           name: zap-security-report
           path: zap-report.html
+
+      # 8. Parar container
+      - name: Stop Container
+        if: always()
+        run: docker stop api && docker rm api
