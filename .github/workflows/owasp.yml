@@ -82,10 +82,14 @@ jobs:
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
           echo "API container IP: $API_IP"
 
+          # Prepare writable directory for ZAP reports
+          mkdir -p $GITHUB_WORKSPACE/zap-work
+          chmod -R 777 $GITHUB_WORKSPACE/zap-work
+
           # Run ZAP docker container with scan targeting API IP, saving reports to current directory
           docker run --rm \
             --network zap-net \
-            -v $PWD:/zap/wrk \
+            -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
             -t http://$API_IP:${{ env.API_PORT }} \
