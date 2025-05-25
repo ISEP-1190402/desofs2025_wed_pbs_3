@@ -1,0 +1,64 @@
+name: SAST Analysis (.NET + Snyk + SonarCloud)
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  PROJECT_DIR: ./LibraryOnlineRentalSystem
+
+jobs:
+  sast-scan:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore ${{ env.PROJECT_DIR }}/LibraryOnlineRentalSystem.csproj
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Run Snyk (Code & Dependencies)
+        working-directory: ${{ env.PROJECT_DIR }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        run: |
+          mkdir -p ./snyk_results
+          snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=./snyk_results/snyk-deps.sarif || true
+          snyk code test --severity-threshold=high --sarif-file-output=./snyk_results/snyk-code.sarif || true
+
+      - name: Upload Snyk Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-results
+          path: |
+            ${{ env.PROJECT_DIR }}/snyk_results/
+
+      - name: Install SonarScanner
+        run: dotnet tool install --global dotnet-sonarscanner
+
+      - name: Start SonarCloud Scan
+        run: |
+          dotnet sonarscanner begin \
+            /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" \
+            /o:"jorgealmeidadeveloper" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.dotnet.buildConfiguration="Release"
+
+      - name: Build for Sonar
+        run: dotnet build --configuration Release ${{ env.PROJECT_DIR }}
+
+      - name: End SonarCloud Scan
+        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
