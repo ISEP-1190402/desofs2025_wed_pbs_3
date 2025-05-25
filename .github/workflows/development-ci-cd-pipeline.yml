@@ -21,15 +21,14 @@ jobs:
     - name: Restore, Build and Test Main Project
       run: |
         dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
-        dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --configuration Release --no-restore
-        dotnet test LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --configuration Release --no-build --verbosity normal
+        dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
+        dotnet test LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln 
 
     - name: Restore, Build and Test Tests Project
       run: |
         dotnet restore LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj
-        dotnet build LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj --configuration Release --no-restore
-        dotnet test LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj --configuration Release --no-build --verbosity normal
-
+        dotnet build LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj 
+        dotnet test LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj 
     - name: Lint the code 
       run: |
         dotnet new tool-manifest
