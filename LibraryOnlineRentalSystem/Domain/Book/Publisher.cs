@@ -36,9 +36,9 @@ public class Publisher : IValueObject
 
         if (obj == null || obj.GetType() != GetType()) return false;
 
-        var that = (Description)obj;
+        var that = (Publisher)obj;
 
-        return PublisherName.ToUpper().Equals(that.BookDescription.ToUpper());
+        return PublisherName.ToUpper().Equals(that.PublisherName.ToUpper());
     }
 
     public override string ToString()
