@@ -44,6 +44,7 @@ public class AuthService
         response.EnsureSuccessStatusCode();
 
         var responseContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Raw response from Keycloak: {responseContent}"); //to be removed after testing
         var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(responseContent);
 
         return new AuthResponseDTO
@@ -69,6 +70,7 @@ public class AuthService
         response.EnsureSuccessStatusCode();
 
         var responseContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"Raw response from Keycloak: {responseContent}"); //to be removed after testing
         var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(responseContent);
 
         return new AuthResponseDTO
