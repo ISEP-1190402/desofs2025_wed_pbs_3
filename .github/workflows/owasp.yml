@@ -2,9 +2,9 @@ name: .NET API Security Scan
 
 on:
   push:
-    branches: [ ** ] # Executa em todas as branches
+    branches: ["**"] # Executa em todas as branches
   pull_request:
-    branches: [ ** ] # Executa em todas as branches
+    branches: ["**"] # Executa em todas as branches
   workflow_dispatch:
 
 env:
