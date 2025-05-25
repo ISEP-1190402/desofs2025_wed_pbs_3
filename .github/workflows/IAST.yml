@@ -94,7 +94,7 @@ jobs:
     - name: Upload ZAP Reports
       uses: actions/upload-artifact@v4
       with:
-        name: zap-reports
+        name: zap-reports_iast
         path: zap-work/
       
      # 9. Stop Container  
