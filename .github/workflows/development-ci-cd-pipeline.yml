@@ -18,8 +18,8 @@ jobs:
       with:
         dotnet-version: 8.0.x
     - name: Restore dependencies
-      run: dotnet restore LibraryOnlineRentalSystem.sln
+      run: dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
     - name: Build
-      run: dotnet build LibraryOnlineRentalSystem.sln --no-restore
+      run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-restore
     - name: Test
-      run: dotnet test LibraryOnlineRentalSystem.sln --no-build --verbosity normal
+      run: dotnet test LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-build --verbosity normal
