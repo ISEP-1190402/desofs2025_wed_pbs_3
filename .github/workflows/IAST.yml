@@ -2,9 +2,9 @@ name: Full Security  (.NET + SAST + DAST + Simulated IAST)
 
 on:
   push:
-    branches: [main]
+    branches: [**]
   pull_request:
-    branches: [main]
+    branches: [**]
   workflow_dispatch:
 
 env:
@@ -54,7 +54,7 @@ jobs:
           ./LibraryOnlineRentalSystem/snyk_results/snyk-deps.sarif
           ./LibraryOnlineRentalSystem/snyk_results/snyk-code.sarif
 
-    # 6. Build imagem Docker
+    # 5. Build imagem Docker
     - name: Build Docker Image
       working-directory: ./LibraryOnlineRentalSystem
       run: docker build -t $DOCKER_IMAGE_NAME .
@@ -62,6 +62,7 @@ jobs:
     - name: Create Docker Network
       run: docker network create zap-net
 
+    # 6. Prepara API no container
     - name: Run API Container
       run: |
         docker run -d \
@@ -89,12 +90,14 @@ jobs:
           -r report_html.html \
           -I
 
+      # 8. Upload dos arquivos gerados Owasp 
     - name: Upload ZAP Reports
       uses: actions/upload-artifact@v4
       with:
         name: zap-reports
         path: zap-work/
-
+      
+     # 9. Stop Container  
     - name: Stop API Container
       if: always()
       run: docker stop api && docker rm api

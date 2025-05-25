@@ -2,9 +2,9 @@ name: .NET API Security Scan
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ ** ] # Executa em todas as branches
   pull_request:
-    branches: [ main, master ]
+    branches: [ ** ] # Executa em todas as branches
   workflow_dispatch:
 
 env:
@@ -47,7 +47,8 @@ jobs:
 
       - name: Create Docker Network
         run: docker network create zap-net
-      
+
+      # 5. Prepara API no container
       - name: Run API Container
         run: |
           docker run -d \
