@@ -1,5 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 using LibraryOnlineRentalSystem.Domain.Common;
+using Microsoft.IdentityModel.Tokens;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
@@ -9,6 +10,7 @@ public class BookID : EntityId
     [JsonConstructor]
     public BookID(string value) : base(value)
     {
+        if (string.IsNullOrEmpty(value)) throw new BusinessRulesException("ID cannot be null or empty.");
         bookID = value;
     }
 

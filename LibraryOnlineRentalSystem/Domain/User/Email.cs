@@ -20,6 +20,8 @@ public class Email : ICloneable, IValueObject
 
         if (string.IsNullOrWhiteSpace(email) || !Regex.IsMatch(email, detectPattern, RegexOptions.IgnoreCase))
             throw new BusinessRulesException("The email is not valid.");
+        if (email.Contains(".."))
+            throw new BusinessRulesException("The email is not valid.");
     }
 
     public object Clone()
