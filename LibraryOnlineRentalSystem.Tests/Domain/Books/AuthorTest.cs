@@ -3,7 +3,7 @@ using LibraryOnlineRentalSystem.Domain.Common;
 using NUnit.Framework;
 using System;
 
-namespace LibraryOnlineRentalSystem.Tests.Domain.Book
+namespace LibraryOnlineRentalSystem.Tests.Domain.Books
 {
     [TestFixture]
     [TestOf(typeof(Author))]

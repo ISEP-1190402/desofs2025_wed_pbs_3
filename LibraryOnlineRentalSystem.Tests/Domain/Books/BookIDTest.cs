@@ -1,7 +1,7 @@
 using LibraryOnlineRentalSystem.Domain.Book;
 using NUnit.Framework;
 
-namespace LibraryOnlineRentalSystem.Tests.Domain.Book
+namespace LibraryOnlineRentalSystem.Tests.Domain.Books
 {
     [TestFixture]
     [TestOf(typeof(BookID))]

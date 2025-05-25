@@ -1,12 +1,13 @@
-using NUnit.Framework;
 using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Common;
+using NUnit.Framework;
 using System;
 
-namespace LibraryOnlineRentalSystem.Tests.Domain.Book
+namespace LibraryOnlineRentalSystem.Tests.Domain.Books
 {
     [TestFixture]
-    public class AmountOfCopiesTests
+    [TestOf(typeof(AmountOfCopies))]
+    public class AmountOfCopiesTest
     {
         [Test]
         public void Constructor_WithValidNumber_SetsValue()
