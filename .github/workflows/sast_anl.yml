@@ -48,7 +48,7 @@ jobs:
         run: |
           wget https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-5.0.1.3006-linux.zip
           unzip -o -qq sonar-scanner-cli-5.0.1.3006-linux.zip || true
-          mv sonar-scanner-5.0.1.3006 sonar-scanner
+          mv sonar-scanner-5.0.1.3006-linux sonar-scanner
 
       - name: Generate Sonar Report Locally
         run: |
