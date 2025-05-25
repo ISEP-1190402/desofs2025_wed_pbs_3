@@ -63,8 +63,13 @@ jobs:
 
       - name: Upload Local Sonar Report Files
         run: |
+          echo "Conteúdo do workspace atual:"
+          ls -la
+          echo "Conteúdo da pasta .scannerwork:"
+          ls -la .scannerwork || echo ".scannerwork não encontrada"
           mkdir -p sonar_reports
-          cp -r .scannerwork/* sonar_reports/ || true
+          cp -r .scannerwork sonar_reports/ || echo "Erro ao copiar .scannerwork"
+          ls -la sonar_reports
 
       - name: Upload Sonar Report Artifacts
         uses: actions/upload-artifact@v4
