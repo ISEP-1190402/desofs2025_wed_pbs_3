@@ -1,16 +1,14 @@
 ﻿using LibraryOnlineRentalSystem.Domain.Common;
-using LibraryOnlineRentalSystem.Domain.Role;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class User : Entity<UserId>, IAggregateRoot
 {
     protected User() { }
-    public User(string id, string name, string email, string roleId, string userName, string phoneNumber, string nif, string biography, string hashedPassword)
+    public User(string id, string name, string email, string userName, string phoneNumber, string nif, string biography, string hashedPassword)
     {
         if (string.IsNullOrEmpty(name)) throw new ArgumentException("Name is required", nameof(name));
         if (string.IsNullOrEmpty(email)) throw new ArgumentException("Email is required", nameof(email));
-        if (string.IsNullOrEmpty(roleId)) throw new ArgumentException("RoleId is required", nameof(roleId));
         if (string.IsNullOrEmpty(userName)) throw new ArgumentException("UserName is required", nameof(userName));
         if (string.IsNullOrEmpty(phoneNumber)) throw new ArgumentException("PhoneNumber is required", nameof(phoneNumber));
         if (string.IsNullOrEmpty(nif)) throw new ArgumentException("Nif is required", nameof(nif));
@@ -20,7 +18,6 @@ public class User : Entity<UserId>, IAggregateRoot
         Id = new UserId(id);
         Name = new Name(name);
         Email = new Email(email);
-        RoleId = new RoleId(roleId);
         UserName = new UserName(userName);
         PhoneNumber = new PhoneNumber(phoneNumber);
         Nif = new NIF(nif);
@@ -32,7 +29,6 @@ public class User : Entity<UserId>, IAggregateRoot
 
     public Name Name { get; private set; }
     public Email Email { get; private set; }
-    public RoleId RoleId { get; private set; }
     public UserName UserName { get; private set; }
     public PhoneNumber PhoneNumber { get; private set; }
     public NIF Nif { get; private set; }
@@ -57,14 +53,5 @@ public class User : Entity<UserId>, IAggregateRoot
     public void ChangeName(string name)
     {
         Name = new Name(name);
-    }
-
-    public void ChangeRoleId(string roleId)
-    {
-        if (!Guid.TryParse(roleId, out var parsedRoleId))
-            throw new BusinessRulesException("Invalid Role ID format.");
-
-        RoleId = new RoleId(parsedRoleId); // RoleId = new RoleId(roleId); 
-
     }
 }

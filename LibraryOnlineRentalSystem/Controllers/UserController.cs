@@ -68,6 +68,5 @@ public class UserController : ControllerBase
         public string? Name { get; set; }
         public string? Email { get; set; }
         public string? Biography { get; set; }
-        public string? RoleId { get; set; } // Only Admin should use this
     }
 }

@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Wait for Keycloak to be ready
-#echo "Waiting for Keycloak to be ready..."
-#sleep 30
-
-# Function to check if a command succeeded
 check_error() {
     if [ $? -ne 0 ]; then
         echo "Error: $1"

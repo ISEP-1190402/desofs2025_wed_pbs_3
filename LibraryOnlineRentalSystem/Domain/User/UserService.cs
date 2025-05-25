@@ -1,12 +1,10 @@
 using LibraryOnlineRentalSystem.Domain.User;
 using LibraryOnlineRentalSystem.Domain.Common;
-using LibraryOnlineRentalSystem.Domain.Role;
-using static LibraryOnlineRentalSystem.Controllers.UserController;
-using LibraryOnlineRentalSystem.Repository.RoleRepository;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json.Serialization;
+using static LibraryOnlineRentalSystem.Controllers.UserController;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
@@ -15,7 +13,6 @@ public class UserService
     private readonly IUserRepository _userRepository;
     private readonly IWorkUnity _workUnit;
     private readonly IAuditLogger _auditLogger;
-    private readonly IRoleRepository _roleRepository;
     private readonly PasswordService _passwordService;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
@@ -25,7 +22,6 @@ public class UserService
         IUserRepository userRepository,
         IWorkUnity workUnit,
         IAuditLogger auditLogger,
-        IRoleRepository roleRepository,
         PasswordService passwordService,
         HttpClient httpClient,
         IConfiguration configuration)
@@ -33,7 +29,6 @@ public class UserService
         _userRepository = userRepository;
         _workUnit = workUnit;
         _auditLogger = auditLogger;
-        _roleRepository = roleRepository;
         _passwordService = passwordService;
         _httpClient = httpClient;
         _configuration = configuration;
@@ -47,10 +42,6 @@ public class UserService
         if (await _userRepository.GetByUsernameAsync(req.UserName) != null)
             throw new BusinessRulesException("Username already in use");
 
-        var userRole = await _roleRepository.GetByNameAsync(DEFAULT_USER_ROLE_NAME);
-        if (userRole == null)
-            throw new BusinessRulesException("Default user role not found");
-
         try
         {
             // Get admin token
@@ -62,6 +53,7 @@ public class UserService
                 username = req.UserName,
                 email = req.Email,
                 enabled = true,
+                emailVerified = true,
                 credentials = new[]
                 {
                     new
@@ -70,7 +62,8 @@ public class UserService
                         value = req.Password,
                         temporary = false
                     }
-                }
+                },
+                requiredActions = new string[] { }
             };
 
             var content = new StringContent(
@@ -92,51 +85,23 @@ public class UserService
             }
 
             // After creating the user in Keycloak
-            await Task.Delay(1000); // Wait 1 second
+            await Task.Delay(2000); // Wait 2 seconds
 
             // Retry fetching user ID from Keycloak
             string userId = null;
             for (int i = 0; i < 5; i++) {
                 var getUserResponse = await _httpClient.GetAsync($"{keycloakUrl}/admin/realms/library/users?username={req.UserName}");
                 var userContent = await getUserResponse.Content.ReadAsStringAsync();
+                Console.WriteLine($"Attempt {i + 1} to find user. Response: {userContent}");
                 var users = JsonSerializer.Deserialize<List<KeycloakUser>>(userContent);
                 if (users != null && users.Count > 0 && !string.IsNullOrEmpty(users[0].Id)) {
                     userId = users[0].Id;
                     break;
                 }
-                await Task.Delay(1000); // wait 1 second before retry
+                await Task.Delay(2000); // wait 2 seconds before retry
             }
             if (userId == null) {
                 throw new BusinessRulesException("Failed to find user in Keycloak after creation.");
-            }
-
-            // Get the User role ID
-            var getRoleResponse = await _httpClient.GetAsync($"{keycloakUrl}/admin/realms/library/roles/User");
-            var roleResponseContent = await getRoleResponse.Content.ReadAsStringAsync();
-            var role = JsonSerializer.Deserialize<KeycloakRole>(roleResponseContent);
-
-            // Assign User role
-            var roleUrl = $"{keycloakUrl}/admin/realms/library/users/{userId}/role-mappings/realm";
-            var roleData = new[]
-            {
-                new
-                {
-                    id = role.Id,
-                    name = "User",
-                    description = "Regular user role"
-                }
-            };
-
-            var roleAssignmentContent = new StringContent(
-                JsonSerializer.Serialize(roleData),
-                Encoding.UTF8,
-                "application/json");
-
-            var roleAssignmentResponse = await _httpClient.PostAsync(roleUrl, roleAssignmentContent);
-            if (!roleAssignmentResponse.IsSuccessStatusCode)
-            {
-                var error = await roleAssignmentResponse.Content.ReadAsStringAsync();
-                throw new BusinessRulesException($"Failed to assign role: {error}");
             }
 
             // Clear Authorization header
@@ -150,7 +115,6 @@ public class UserService
                 Guid.NewGuid().ToString(),
                 req.Name,
                 req.Email,
-                userRole.Id.AsString(),
                 req.UserName,
                 req.PhoneNumber,
                 req.Nif,
@@ -203,7 +167,17 @@ public class UserService
 
     private class KeycloakUser
     {
+        [JsonPropertyName("id")]
         public string Id { get; set; }
+        
+        [JsonPropertyName("username")]
+        public string Username { get; set; }
+        
+        [JsonPropertyName("email")]
+        public string Email { get; set; }
+        
+        [JsonPropertyName("enabled")]
+        public bool Enabled { get; set; }
     }
 
     private class KeycloakRole
@@ -221,7 +195,6 @@ public class UserService
             user.Id.AsGuid(),
             user.Name.FullName,
             user.Email.EmailAddress,
-            user.RoleId.AsGuid(),
             user.Nif.TaxID,
             user.UserName.Tag,
             user.Biography.Description,
@@ -236,7 +209,6 @@ public class UserService
             user.Id.AsGuid(),
             user.Name.FullName,
             user.Email.EmailAddress,
-            user.RoleId.AsGuid(),
             user.Nif.TaxID,
             user.UserName.Tag,
             user.Biography.Description,
@@ -256,9 +228,6 @@ public class UserService
         if (request.PhoneNumber != null)
             user.ChangePhoneNumber(request.PhoneNumber);
 
-        if (request.RoleId != null)
-            user.ChangeRoleId(request.RoleId);
-
         if (request.Name != null)
             user.ChangeName(request.Name);
 
@@ -268,5 +237,4 @@ public class UserService
         await _workUnit.CommitAsync();
         await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
     }
-
 }

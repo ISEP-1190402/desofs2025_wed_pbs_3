@@ -1,5 +1,4 @@
 using LibraryOnlineRentalSystem.Domain.User;
-using LibraryOnlineRentalSystem.Domain.Role;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -45,12 +44,6 @@ public class ConfigUserEntityType : IEntityTypeConfiguration<User>
         builder.OwnsOne(u => u.Biography)
             .Property(b => b.Description)
             .HasColumnName("Biography");
-
-        builder.Property(u => u.RoleId)
-            .HasConversion(
-                roleId => roleId.AsGuid(),
-                guid => new RoleId(guid))
-            .IsRequired();
 
         builder.ToTable("Users");
     }
