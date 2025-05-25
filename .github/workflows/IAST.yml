@@ -2,9 +2,9 @@ name: Full Security  (.NET + SAST + DAST + Simulated IAST)
 
 on:
   push:
-    branches: [**]
+    branches: ["**"]
   pull_request:
-    branches: [**]
+    branches: ["**"]
   workflow_dispatch:
 
 env:
