@@ -1,31 +1,32 @@
-# This workflow will build a .NET project
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-net
-
-name: .NET
+name: .NET CI
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ main ]
 
 jobs:
-  build:
-
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout code
+      uses: actions/checkout@v4
+
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
+
     - name: Restore dependencies
-      run: dotnet restore
+      run: dotnet restore LibraryOnlineRentalSystem.sln
       working-directory: LibraryOnlineRentalSystem
-    - name: Build
-      run: dotnet build --no-restore
+
+    - name: Build solution
+      run: dotnet build LibraryOnlineRentalSystem.sln --configuration Release --no-restore
       working-directory: LibraryOnlineRentalSystem
-    - name: Test
-      run: dotnet test --no-build --verbosity normal
+
+    - name: Run tests
+      run: dotnet test LibraryOnlineRentalSystem.sln --configuration Release --no-build --verbosity normal
       working-directory: LibraryOnlineRentalSystem
