@@ -49,10 +49,10 @@ public class AuthService
 
         return new AuthResponseDTO
         {
-            AccessToken = tokenResponse.AccessToken,
-            RefreshToken = tokenResponse.RefreshToken,
-            ExpiresIn = tokenResponse.ExpiresIn,
-            TokenType = tokenResponse.TokenType
+            AccessToken = tokenResponse.access_token,
+            RefreshToken = tokenResponse.refresh_token,
+            ExpiresIn = tokenResponse.expires_in,
+            TokenType = tokenResponse.token_type
         };
     }
 
@@ -75,18 +75,18 @@ public class AuthService
 
         return new AuthResponseDTO
         {
-            AccessToken = tokenResponse.AccessToken,
-            RefreshToken = tokenResponse.RefreshToken,
-            ExpiresIn = tokenResponse.ExpiresIn,
-            TokenType = tokenResponse.TokenType
+            AccessToken = tokenResponse.access_token,
+            RefreshToken = tokenResponse.refresh_token,
+            ExpiresIn = tokenResponse.expires_in,
+            TokenType = tokenResponse.token_type
         };
     }
 
     private class KeycloakTokenResponse
     {
-        public string AccessToken { get; set; }
-        public string RefreshToken { get; set; }
-        public int ExpiresIn { get; set; }
-        public string TokenType { get; set; }
+        public string access_token { get; set; }
+        public string refresh_token { get; set; }
+        public int expires_in { get; set; }
+        public string token_type { get; set; }
     }
 } 

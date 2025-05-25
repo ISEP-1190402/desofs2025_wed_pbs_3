@@ -44,10 +44,7 @@ public class UserService
 
         try
         {
-            // Get admin token
             var adminToken = await GetAdminTokenAsync();
-
-            // Create user in Keycloak
             var keycloakUser = new
             {
                 username = req.UserName,
@@ -74,7 +71,6 @@ public class UserService
             var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
             var keycloakUrl = authority.Replace("/realms/library", "");
             
-            // Add Authorization header
             _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
             
             var response = await _httpClient.PostAsync($"{keycloakUrl}/admin/realms/library/users", content);
@@ -84,10 +80,8 @@ public class UserService
                 throw new BusinessRulesException($"Failed to create user in Keycloak: {error}");
             }
 
-            // After creating the user in Keycloak
-            await Task.Delay(2000); // Wait 2 seconds
+            await Task.Delay(2000);
 
-            // Retry fetching user ID from Keycloak
             string userId = null;
             for (int i = 0; i < 5; i++) {
                 var getUserResponse = await _httpClient.GetAsync($"{keycloakUrl}/admin/realms/library/users?username={req.UserName}");
@@ -98,19 +92,16 @@ public class UserService
                     userId = users[0].Id;
                     break;
                 }
-                await Task.Delay(2000); // wait 2 seconds before retry
+                await Task.Delay(2000);
             }
             if (userId == null) {
                 throw new BusinessRulesException("Failed to find user in Keycloak after creation.");
             }
 
-            // Clear Authorization header
             _httpClient.DefaultRequestHeaders.Authorization = null;
 
-            // Hash the password
             var hashedPassword = _passwordService.HashPassword(req.Password);
 
-            // Create user in our database with hashed password
             var user = new User(
                 Guid.NewGuid().ToString(),
                 req.Name,
