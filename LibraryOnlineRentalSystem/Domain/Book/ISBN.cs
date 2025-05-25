@@ -54,6 +54,8 @@ public class ISBN : IValueObject
 
     public static bool IsISBNValid(string isbnToTest)
     {
+        if (isbnToTest == null)
+            return false;
         isbnToTest = isbnToTest.Replace("-", "").Replace(" ", "").ToUpper();
 
         var regex10 = new Regex(@"^\d{9}[\dX]$");
