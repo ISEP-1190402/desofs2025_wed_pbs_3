@@ -40,6 +40,7 @@ jobs:
       working-directory: ./LibraryOnlineRentalSystem
       env:
         SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         mkdir -p ./snyk_results
         snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=./snyk_results/snyk-deps.sarif || true
