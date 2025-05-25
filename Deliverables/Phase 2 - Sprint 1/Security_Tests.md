@@ -4,7 +4,7 @@ This table outlines the security validations enforced for each business entity i
 
 | **Entity**     | **Property**          | **Security Restriction / Validation**                                                                                          |
 |----------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------|
-| **User**       | Password              | Must be at least 8 characters, include uppercase, lowercase, number, and special character. [SDR3]                            |
+| **User**       | Password              | Must be at least 12 characters, include uppercase, lowercase, number, and special character. [SDR3, OWASP Best Practices]                           |
 |                | Role                  | Assigned automatically by Keycloak (User role). Access controlled using RBAC with least privilege. [SDR5, FR14]                |
 | **Book**       | General Metadata      | Titles, authors, categories, etc., are managed by the Library Manager only. [FR10]                                             |
 | **Rental**     | BookId, UserId        | Users can only rent if copies are available; can't rent on behalf of other users. [FR6, User Stories]                          |
