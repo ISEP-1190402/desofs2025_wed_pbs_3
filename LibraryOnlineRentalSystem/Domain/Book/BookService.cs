@@ -1,13 +1,15 @@
+using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Repository.Common;
+using Microsoft.AspNetCore.Mvc;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class BookService
 {
     private readonly IBookRepository _bookRepository;
-    private readonly WorkUnity _workUnity;
+    private readonly IWorkUnity _workUnity;
 
-    public BookService(IBookRepository bookRepository, WorkUnity workUnity)
+    public BookService(IBookRepository bookRepository, IWorkUnity workUnity)
     {
         _bookRepository = bookRepository;
         _workUnity = workUnity;
@@ -16,9 +18,9 @@ public class BookService
     public async Task<List<BookDTO>> GetAllBooks()
     {
         var list = await _bookRepository.GetAllAsync();
-        var listDTO = list.ConvertAll(book =>
+        var listDto = list.ConvertAll(book =>
             book.toDTO());
-        return listDTO;
+        return listDto;
     }
 
     public async Task<BookDTO> GetBookByID(string id)
@@ -32,19 +34,24 @@ public class BookService
     {
         var id=_bookRepository.GetAllAsync().Result.Count + 1+"";
 
-        var AddedBook= new Book(id,bookToAddDto.AmountOfCopies,bookToAddDto.Author,bookToAddDto.Category,
+        var addedBook= new Book(id,bookToAddDto.AmountOfCopies,bookToAddDto.Author,bookToAddDto.Category,
             bookToAddDto.Description,bookToAddDto.Isbn,bookToAddDto.Publisher);
 
             
-        await _bookRepository.AddAsync(AddedBook);
+        await _bookRepository.AddAsync(addedBook);
 
         await _workUnity.CommitAsync();
 
-        return AddedBook.toDTO();
+        return addedBook.toDTO();
     }
-    
-    
-    
-    
-    
+
+
+    public async Task<ActionResult<BookDTO>> UpdateStock(string id, BookStockDTO bookStockUpdateDto)
+    {
+        var book=  _bookRepository.UpdateBookStock(id,bookStockUpdateDto.AmountOfCopies);
+        
+        await _workUnity.CommitAsync();
+
+        return book.toDTO();
+    }
 }

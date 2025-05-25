@@ -4,6 +4,7 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class PhoneNumber : ICloneable, IValueObject
 {
+    public PhoneNumber() { } 
     public PhoneNumber(string number)
     {
         if (string.IsNullOrWhiteSpace(number))
@@ -22,6 +23,24 @@ public class PhoneNumber : ICloneable, IValueObject
 
     public object Clone()
     {
-        return new PhoneNumber(Number);
+        return new PhoneNumber(this.Number);
+    }
+
+    public override string ToString()
+    {
+        return Number;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (this == obj) return true;
+        if (obj is not PhoneNumber other) return false;
+
+        return Number.Equals(other.Number, StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    public override int GetHashCode()
+    {
+        return Number.ToLowerInvariant().GetHashCode();
     }
 }

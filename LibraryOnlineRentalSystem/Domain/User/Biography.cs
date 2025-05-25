@@ -4,11 +4,12 @@ namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class Biography : ICloneable, IValueObject
 {
+    public Biography() { } 
     public Biography(string biography)
     {
         if (string.IsNullOrWhiteSpace(biography))
         {
-            this.biography = string.Empty;
+            this.Description = string.Empty;
             return;
         }
 
@@ -20,14 +21,31 @@ public class Biography : ICloneable, IValueObject
         if (!biography.All(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)))
             throw new BusinessRulesException("Biography cannot contain emojis or special characters.");
 
-        this.biography = biography;
+        Description = biography;
     }
 
-    public string biography { get; }
+    public string Description { get; }
 
     public object Clone()
     {
-        var biography = new Biography(this.biography);
-        return biography;
+        return new Biography(this.Description);
+    }
+
+    public override string ToString()
+    {
+        return Description;
+    }
+
+    public override bool Equals(object? obj)
+    {
+        if (this == obj) return true;
+        if (obj is not Biography other) return false;
+
+        return Description.Equals(other.Description, StringComparison.InvariantCultureIgnoreCase);
+    }
+
+    public override int GetHashCode()
+    {
+        return Description.ToLowerInvariant().GetHashCode();
     }
 }

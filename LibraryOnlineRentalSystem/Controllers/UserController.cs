@@ -1,33 +1,72 @@
+using Microsoft.AspNetCore.Authorization;
+using LibraryOnlineRentalSystem.Domain.User;
+using LibraryOnlineRentalSystem.Domain.Common;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace LibraryOnlineRentalSystem.Controllers;
 
 [ApiController]
-[Route("[controller]")]
+[Route("api/[controller]")]
 public class UserController : ControllerBase
 {
-    /** private static readonly string[] Summaries = new[]
-     {
-         "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-     };
+    private readonly UserService _userService;
 
-     private readonly ILogger<WeatherForecastController> _logger;
+    public UserController(UserService userService)
+    {
+        _userService = userService;
+    }
 
-     public WeatherForecastController(ILogger<WeatherForecastController> logger)
-     {
-         _logger = logger;
-     }
+    [HttpGet("{id}")]
+    [Authorize(Roles = "Admin,LibraryManager")]
+    public async Task<IActionResult> GetUser(Guid id)
+    {
+        var user = await _userService.GetUserByIdAsync(id);
+        return user == null ? NotFound() : Ok(user);
+    }
 
-     [HttpGet(Name = "GetWeatherForecast")]
-     public IEnumerable<WeatherForecast> Get()
-     {
-         return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-         {
-             Date = DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-             TemperatureC = Random.Shared.Next(-20, 55),
-             Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-         })
-         .ToArray();
-     }
- }**/
+    [HttpGet]
+    [Authorize(Roles = "Admin,LibraryManager")]
+    public async Task<IActionResult> GetAllUsers()
+    {
+        var users = await _userService.GetAllUsersAsync();
+        return Ok(users);
+    }
+    
+    [HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] NewUserDTO request)
+    {
+        try
+        {
+            await _userService.CreateUserAsync(request);
+            return Ok(new { message = "User registered successfully" });
+        }
+        catch (BusinessRulesException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+   
+    [HttpPut("{id}")]
+    [Authorize]
+    public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+    {
+        var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (User.IsInRole("Admin") || currentUserId == id.ToString())
+        {
+            await _userService.UpdateUserAsync(id, request);
+            return Ok("User updated.");
+        }
+
+        return Forbid();
+    }
+
+    public class UpdateUserRequest
+    {
+        public string? PhoneNumber { get; set; }
+        public string? Name { get; set; }
+        public string? Email { get; set; }
+        public string? Biography { get; set; }
+    }
 }

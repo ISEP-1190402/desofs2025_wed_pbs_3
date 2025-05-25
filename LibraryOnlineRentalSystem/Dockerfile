@@ -26,5 +26,11 @@ RUN dotnet publish "./LibraryOnlineRentalSystem.csproj" -c $BUILD_CONFIGURATION 
 # Esta fase é usada na produção ou quando executada no VS no modo normal (padrão quando não está usando a configuração de Depuração)
 FROM base AS final
 WORKDIR /app
+
+# Install curl as root
+USER root
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+USER $APP_UID
+
 COPY --from=publish /app/publish .
 ENTRYPOINT ["dotnet", "LibraryOnlineRentalSystem.dll"]

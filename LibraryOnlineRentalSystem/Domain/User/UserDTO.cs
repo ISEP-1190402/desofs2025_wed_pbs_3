@@ -4,14 +4,12 @@ public class UserDTO
 {
     public UserDTO() { }
 
-
-    public UserDTO(Guid id, string name, string email, Guid roleId, string nif, string username, string biography,
+    public UserDTO(Guid id, string name, string email, string nif, string username, string biography,
         string phoneNumber)
     {
         Id = id;
         Name = name;
         Email = email;
-        RoleId = roleId;
         PhoneNumber = phoneNumber;
         Nif = nif;
         Biography = biography;
@@ -27,8 +25,6 @@ public class UserDTO
     public string Email { get; private set; }
 
     public string Biography { get; private set; }
-
-    public Guid RoleId { get; private set; }
 
     public string Nif { get; private set; }
 

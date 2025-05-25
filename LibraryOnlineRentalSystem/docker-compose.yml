@@ -1,17 +1,15 @@
-version: '3.8'
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "8080:8080"
-      - "8081:8081"
+      - "8081:5000"
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Server=mysql;Database=librarydb;User=root;Password=rootpassword;
-      - Keycloak__Authority=http://keycloak:8080/auth/realms/library
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__LibraryDatabase=Server=mysql;Port=3306;Database=librarydb;User=root;Password=rootpassword;
+      - Keycloak__Authority=http://keycloak:8080/realms/library
       - Keycloak__Audience=library-client
       - Keycloak__ClientId=library-client
       - Keycloak__ClientSecret=your-client-secret

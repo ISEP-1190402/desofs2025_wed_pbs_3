@@ -4,6 +4,9 @@ namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class Publisher : IValueObject
 {
+    public Publisher()
+    {
+    } 
     public Publisher(string name)
     {
         if (string.IsNullOrEmpty(name)) throw new BusinessRulesException("Publisher cannot be null or empty");
@@ -33,9 +36,9 @@ public class Publisher : IValueObject
 
         if (obj == null || obj.GetType() != GetType()) return false;
 
-        var that = (Description)obj;
+        var that = (Publisher)obj;
 
-        return PublisherName.ToUpper().Equals(that.BookDescription.ToUpper());
+        return PublisherName.ToUpper().Equals(that.PublisherName.ToUpper());
     }
 
     public override string ToString()
