@@ -1,0 +1,71 @@
+name: DAST Analysis (OWASP ZAP)
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE_NAME: library-api
+  API_PORT: 8080
+  PROJECT_DIR: ./LibraryOnlineRentalSystem
+
+jobs:
+  dast-zap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Build Docker Image
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: docker build -t $DOCKER_IMAGE_NAME .
+
+      - name: Create Docker Network
+        run: docker network create zap-net
+
+      - name: Run API Container
+        run: |
+          docker run -d \
+            --name api \
+            --network zap-net \
+            -p $API_PORT:$API_PORT \
+            $DOCKER_IMAGE_NAME
+          sleep 10
+
+      - name: Run OWASP ZAP Scan
+        run: |
+          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
+          echo "API IP: $API_IP"
+          mkdir -p zap-work
+          chmod -R 777 zap-work
+
+          docker run --rm \
+            --network zap-net \
+            -v ${{ github.workspace }}/zap-work:/zap/wrk \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t http://$API_IP:${{ env.API_PORT }} \
+            -J report_json.json \
+            -w report_md.md \
+            -r report_html.html \
+            -I
+
+      - name: Upload ZAP Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap-work/
+
+      - name: Stop and Remove API Container
+        if: always()
+        run: docker stop api && docker rm api
