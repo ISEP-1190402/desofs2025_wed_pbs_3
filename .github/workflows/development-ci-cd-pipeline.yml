@@ -2,9 +2,9 @@ name: .NET
 
 on:
   push:
-    branches: [ "development" ]
+    branches: [ development ]
   pull_request:
-    branches: [ "development" ]
+    branches: [ development ]
 
 jobs:
   build:
@@ -17,9 +17,21 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-    - name: Restore dependencies
-      run: dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
-    - name: Build
-      run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-restore
-    - name: Test
-      run: dotnet test LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --no-build --verbosity normal
+
+    - name: Restore, Build and Test Main Project
+      run: |
+        dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
+        dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --configuration Release --no-restore
+        dotnet test LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln --configuration Release --no-build --verbosity normal
+
+    - name: Restore, Build and Test Tests Project
+      run: |
+        dotnet restore LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj
+        dotnet build LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj --configuration Release --no-restore
+        dotnet test LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj --configuration Release --no-build --verbosity normal
+
+    - name: Lint the code 
+      run: |
+        dotnet new tool-manifest
+        dotnet tool install JetBrains.ReSharper.GlobalTools
+        dotnet tool restore
