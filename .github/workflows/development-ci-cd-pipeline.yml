@@ -8,7 +8,6 @@ on:
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
@@ -17,20 +16,12 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: 8.0.x
-
-    - name: Restore, Build and Test Main Project
-      run: |
-        dotnet restore LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
-        dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln
-        dotnet test LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.sln 
-
-    - name: Restore, Build and Test Tests Project
-      run: |
-        dotnet restore LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj
-        dotnet build LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj 
-        dotnet test LibraryOnlineRentalSystem.Tests/LibraryOnlineRentalSystem.Tests.csproj 
-    - name: Lint the code 
-      run: |
-        dotnet new tool-manifest
-        dotnet tool install JetBrains.ReSharper.GlobalTools
-        dotnet tool restore
+    - name: Restore dependencies
+      run: dotnet restore LibraryOnlineRentalSystem.sln
+      working-directory: LibraryOnlineRentalSystem
+    - name: Build
+      run: dotnet build LibraryOnlineRentalSystem.sln --no-restore
+      working-directory: LibraryOnlineRentalSystem
+    - name: Test
+      run: dotnet test LibraryOnlineRentalSystem.sln --no-build --verbosity normal
+      working-directory: LibraryOnlineRentalSystem
