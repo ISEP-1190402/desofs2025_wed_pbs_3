@@ -15,7 +15,9 @@ public class UserName : ICloneable, IValueObject
         if (username.Length > 30) throw new BusinessRulesException("The name cannot be longer than 30 characters.");
         if (username.StartsWith("_") || username.EndsWith("_"))
             throw new BusinessRulesException("The username cannot start or end with special character _.");
+        if (username.Length < 4) throw new BusinessRulesException("The username must be longer than 4 characters.");
         Tag = username;
+        
     }
 
     public string Tag { get; }

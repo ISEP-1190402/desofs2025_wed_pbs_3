@@ -1,4 +1,4 @@
-# 🔐 Security Tests – Entity Property Restrictions
+#   Security Tests – Entity Property Restrictions
 
 This table outlines the security validations enforced for each business entity in the Library Online Rental System.
 
