@@ -5,7 +5,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
 {
     [TestFixture]
     [TestOf(typeof(BookID))]
-    public class BookIDTest
+    public class RentalIdTest
     {
         [Test]
         public void Constructor_SetsBookIDValue()
