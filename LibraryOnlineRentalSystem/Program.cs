@@ -27,7 +27,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true
     };
 });
-
+// test pipeline
 // Configure Swagger with OAuth2
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
