@@ -28,7 +28,7 @@
         <PackageReference Include="NSwag.AspNetCore" Version="14.0.0" />
         <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
         <PackageReference Include="Swashbuckle.AspNetCore.Swagger" Version="8.1.1" />
-        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.1" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.OpenIdConnect" Version="8.0.0" />
         <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
     </ItemGroup>
