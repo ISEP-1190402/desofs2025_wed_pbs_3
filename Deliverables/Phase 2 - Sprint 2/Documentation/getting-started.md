@@ -1,23 +1,55 @@
-## Index
+# Development environment setup
 
-2. [Getting Started](#getting-started)
-    - [2.1 Overview](#21-overview)
-    - [2.2 Technologies used](#22-technologies-used)
-    - [2.3 How to run the app](#23-how-to-run-the-app)
+# 1. GIT Setup
 
----
+## GIT Installation:
 
-## 2. Getting Started
+Follow this tutorial: https://git-scm.com/downloads
 
-## 2.1 Overview
+## GIT Configuration
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.
+   `git config –global user.name = “Name Surname”
+   git config –global user.name = studentnumber@isep.ipp.pt
+   git config --global core.editor "nano"`
 
-## 2.2 Technologies used
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor.
+GUI: https://git-scm.com/downloads/guis
 
 
-## 2.3 How to run the app
+## Configuring SSH Key on Github
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent vestibulum dapibus nibh. Nullam tincidunt adipiscing enim.
+Execute the following commands:
+
+   ssh-keygen
+
+After, register the generated key on github:
+
+https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-newssh-key-and-adding-it-to-the-ssh-agent
+
+
+# Documentation
+
+For the documentation will be used the Intellij / Visual Studio Code with the Markdown and plantuml plugins.
+
+URLS:
+
+* https://www.jetbrains.com/idea/
+* https://code.visualstudio.com/Plantuml
+* https://plantuml.com/
+
+And for uniformization of code related prints:
+
+* https://carbon.now.sh/
+
+# Development
+
+## IDE and other Software
+
+* Intellij: https://www.jetbrains.com/idea/ - used for the documentation
+* Rider: https://dotnet.microsoft.com/en-us/download/dotnet/thank-you/sdk-8.0.407-windows-x64-i - used for develop the dotnet API
+* Dotnet 8: https://dotnet.microsoft.com/en-us/download - LTS
+
+# System Administration
+
+## Remote Access to the servers:
+
+https://mobaxterm.mobatek.net/download.html
