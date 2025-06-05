@@ -97,7 +97,7 @@
   - Repository implementations
   - Database context and configurations
   - Authentication services (Keycloak integration)
-  - External service clients
+<!--  - External service clients-->
 
 - **Presentation Layer**:
   - **Controllers**: Handle HTTP requests and responses
@@ -119,8 +119,7 @@
   }
   ```
 
-- Global exception handling middleware
-- Structured logging with Serilog
+- Global exception handling
 - Standardized error responses
 
 #### 3.2.4 Validation
@@ -288,10 +287,10 @@ LibraryOnlineRentalSystem/
   dotnet ef migrations add InitialCreate
   dotnet ef database update
   ```
-- Indexes for frequently queried columns
-- Transactions for multi-operation updates
 - Parameterized queries to prevent SQL injection
-- Connection strings in configuration
+<!-- - Indexes for frequently queried columns
+- Transactions for multi-operation updates
+- Connection strings in configuration -->
 
 ### 3.6 Authentication and Authorization
 
@@ -433,20 +432,21 @@ public class UpdateUserRequest
 #### 3.8.3 API Documentation
 - **Swagger/OpenAPI** integration
 - **OAuth2** authentication for testing
-- **XML documentation** for API endpoints
-- **Example requests/responses**
+<!-- - **XML documentation** for API endpoints
+- **Example requests/responses**-->
 
 ### 3.9 Code Quality
 
 #### 3.9.1 Linting and Formatting
-- **EditorConfig** for consistent code style
-- **dotnet-format** for automated code formatting
+<!-- - **EditorConfig** for consistent code style
 - **StyleCop** for static code analysis
-- **XML documentation** for public APIs
+- **XML documentation** for public APIs -->
+- **dotnet-format** for automated code formatting
+
 
 #### 3.9.2 Testing
 - **xUnit** for unit tests
-- **Moq** for mocking dependencies
+<!-- - **Moq** for mocking dependencies -->
 - **Test projects** parallel to main code
 - **Integration tests** for API endpoints
 - **Test coverage** tracking
@@ -474,10 +474,11 @@ public class UpdateUserRequest
 - **Role-based access control (RBAC)**
 - **Policy-based** authorization
 - **Resource-based** checks
-- **Claims-based** authorization
+<!-- - **Claims-based** authorization -->
+- **Secure token** validation
 
 #### 3.10.3 Data Protection
-- **Encryption** of sensitive data at rest
+- **Encryption** of sensitive data at REST endpoints
 - **HTTPS** enforced
 - **CSRF protection**
 - **CORS** policy configuration
