@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LibraryOnlineRentalSystem.Migrations
 {
     [DbContext(typeof(LibraryDbContext))]
-    [Migration("20250521094514_LibraryOnlineRentalSystem")]
+    [Migration("20250605211456_LibraryOnlineRentalSystem")]
     partial class LibraryOnlineRentalSystem
     {
         /// <inheritdoc />
@@ -43,8 +43,9 @@ namespace LibraryOnlineRentalSystem.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("char(36)");
 
-                    b.Property<Guid>("RoleId")
-                        .HasColumnType("char(36)");
+                    b.Property<string>("HashedPassword")
+                        .IsRequired()
+                        .HasColumnType("longtext");
 
                     b.HasKey("Id");
 
