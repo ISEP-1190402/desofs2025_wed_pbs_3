@@ -89,20 +89,22 @@
 
 - **Add a new migration**
   ```bash
-  dotnet ef migrations add YourMigrationName --project LibraryOnlineRentalSystem
+  dotnet ef migrations add LibraryOnlineRentalSystem
   ```
 
 - **Update database**
   ```bash
-  dotnet ef database update --project LibraryOnlineRentalSystem
+  dotnet ef database update
   ```
 
 - **Format code**
   ```bash
   dotnet format
   ```
-
----
+- **Removing migrations**
+  ```bash
+  dotnet ef migrations remove
+  ```
 
 # 1. GIT Setup
 
