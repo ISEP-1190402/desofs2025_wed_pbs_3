@@ -1,6 +1,6 @@
 # Project Documentation
 
-Here we will describe the ways of working of the team, best practices followed as well as some decisions related with the implementation
+Here we will describe the technologies used in the application, how to run it, ways of working of the team, best practices followed as well as some decisions related with the implementation based on experience and challenges faced during development.
 
 ## Index
 
