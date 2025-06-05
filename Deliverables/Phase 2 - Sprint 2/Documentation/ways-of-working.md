@@ -6,6 +6,8 @@
     - [3.3 Repository branching strategy](#33-repository-branching-strategy)
     - [3.4 Code review](#34-code-review)
 
+---
+
 ## 3. Ways of working
 
 ### 3.1 Naming conventions
