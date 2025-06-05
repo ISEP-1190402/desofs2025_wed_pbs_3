@@ -7,8 +7,11 @@
     - [3.4 Project structure](#34-project-structure)
     - [3.5 Database and ORM](#35-database-and-orm)
     - [3.6 Authentication and Authorization](#36-authentication-and-authorization)
-    - [3.7 Code Quality](#37-code-quality)
-    - [3.8 Security Guidelines](#38-security-guidelines)
+    - [3.7 Project Dependencies](#37-project-dependencies)
+    - [3.8 Presentation Layer Components](#38-presentation-layer-components)
+    - [3.9 Code Quality](#39-code-quality)
+    - [3.10 Security Guidelines](#310-security-guidelines)
+    - [3.11 Deployment](#311-deployment)
 
 ---
 
@@ -76,26 +79,35 @@
 #### 3.2.2 Clean Architecture
 
 - **Domain Layer**: Core business logic
-  - Entities
-  - Value Objects
-  - Domain Events
-  - Domain Services
-  - Repository Interfaces
+  - Entities (e.g., `User`, `Book`)
+  - Value Objects (e.g., `Email`, `PhoneNumber`)
+  - Domain Services (e.g., `UserService`)
+  - Repository Interfaces (e.g., `IUserRepository`)
+  - Domain-specific exceptions (e.g., `BusinessRulesException`)
 
-- **Application Layer**: Use cases
-  - DTOs
+- **Application Layer**:
+  - DTOs (e.g., `UserDTO`, `NewUserDTO`)
   - Application Services
   - Interfaces for external services
+  - Request/Response models
+  - Validation logic
 
 - **Infrastructure Layer**:
   - Entity Framework Core implementations
-  - External service implementations
-  - Authentication (Keycloak)
+  - Repository implementations
+  - Database context and configurations
+  - Authentication services (Keycloak integration)
+  - External service clients
 
 - **Presentation Layer**:
-  - Controllers
-  - API Models
-  - Middleware
+  - **Controllers**: Handle HTTP requests and responses
+    - `UserController`: User management endpoints
+    - `BookController`: Book management endpoints
+    - `AuthController`: Authentication endpoints
+  - **Middleware**: Request/response pipeline components
+  - **API Documentation**: Swagger/OpenAPI integration
+  - **DTOs**: Data transfer objects for API contracts
+  - **Validation**: Request model validation
 
 #### 3.2.3 Exception Handling
 
@@ -123,6 +135,8 @@
           var pattern = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$";
           if (!Regex.IsMatch(email, pattern, RegexOptions.IgnoreCase))
               throw new BusinessRulesException("The email is not valid");
+          if (email.Contains(".."))
+              throw new BusinessRulesException("The email is not valid");
       }
   }
   ```
@@ -130,19 +144,39 @@
 - **Service Layer Validation**: Business rule validation in services
   ```csharp
   // From UserService.cs
-  private void ValidateEmail(string email)
+  public async Task CreateUserAsync(NewUserDTO req)
   {
-      if (string.IsNullOrWhiteSpace(email) || !email.Contains("@"))
-          throw new BusinessRulesException("Invalid email");
+      if (await _userRepository.GetByEmailAsync(req.Email) != null)
+          throw new BusinessRulesException("Email already in use");
+
+      if (await _userRepository.GetByUsernameAsync(req.UserName) != null)
+          throw new BusinessRulesException("Username already in use");
       
-      if (email.Contains("\n") || email.Contains("\r"))
-          throw new BusinessRulesException("Email contains invalid characters");
+      // Additional validation logic...
   }
   ```
 
-- **Business Rules Exception**: Custom exception for validation failures
+- **DTO Validation**: Input validation using data annotations
   ```csharp
-  throw new BusinessRulesException("Email already in use");
+  public class NewUserDTO
+  {
+      [Required]
+      public string Name { get; set; }
+      
+      [Required]
+      [EmailAddress]
+      public string Email { get; set; }
+      
+      [Required]
+      [StringLength(50, MinimumLength = 3)]
+      public string UserName { get; set; }
+      
+      [Required]
+      [StringLength(100, MinimumLength = 6)]
+      public string Password { get; set; }
+      
+      // Other properties...
+  }
   ```
 
 ### 3.3 Repository branching strategy
@@ -177,33 +211,55 @@
 LibraryOnlineRentalSystem/
 │
 ├── Controllers/               # API Controllers
-│   ├── BookController.cs
-│   └── UserController.cs
+│   ├── AuthController.cs      # Authentication endpoints
+│   ├── BookController.cs      # Book management endpoints
+│   ├── RoleController.cs      # Role management endpoints
+│   └── UserController.cs      # User management endpoints
 │
-├── Domain/                   # Domain models and business logic
-│   ├── User/
-│   │   ├── User.cs           # User aggregate root
-│   │   ├── Email.cs           # Value object
-│   │   └── UserService.cs     # Domain service
+├── Domain/                   # Domain layer
+│   ├── Book/                 # Book domain
+│   │   ├── Book.cs           # Book entity
+│   │   ├── IBookRepository.cs # Book repository interface
+│   │   └── BookService.cs    # Book domain service
 │   │
-│   └── Book/                # Book-related domain models
+│   ├── Common/             # Shared domain components
+│   │   ├── IRepository.cs    # Generic repository interface
+│   │   ├── IUnitOfWork.cs    # Unit of work pattern
+│   │   └── ValueObject.cs    # Base class for value objects
+│   │
+│   ├── Role/               # Role domain
+│   │   └── Role.cs           # Role entity
+│   │
+│   └── User/               # User domain
+│       ├── User.cs           # User aggregate root
+│       ├── Email.cs          # Value object
+│       ├── UserService.cs    # Domain service
+│       ├── IUserRepository.cs # User repository interface
+│       └── DTOs/             # User-related DTOs
+│           ├── UserDTO.cs
+│           └── NewUserDTO.cs
 │
 ├── Repository/               # Data access layer
 │   ├── Common/
-│   │   ├── LibraryDbContext.cs
-│   │   └── GeneralRepository.cs
-│   ├── BookRepository/
-│   └── UserRepository/
+│   │   ├── LibraryDbContext.cs  # DbContext configuration
+│   │   └── BaseRepository.cs  # Generic repository implementation
+│   ├── BookRepository/       # Book repository implementation
+│   └── UserRepository/       # User repository implementation
 │
-├── appsettings.json          # Configuration
-└── Program.cs                # Application entry point
+├── Properties/              # Assembly metadata and launch settings
+├── appsettings.json          # Application configuration
+├── appsettings.Development.json # Development-specific settings
+├── Dockerfile                # Container configuration
+├── docker-compose.yml        # Service definitions
+├── init-keycloak-db.sql      # Keycloak database setup
+└── Program.cs                # Application entry point and service configuration
 ```
 
 ### 3.5 Database and ORM
 
 #### 3.5.1 Entity Framework Core
-- Code-first approach
-- Fluent API for configuration
+- **Code-first** approach with MySQL database
+- **Fluent API** for configuration
   ```csharp
   // From LibraryDbContext.cs
   public class LibraryDbContext : DbContext
@@ -211,12 +267,19 @@ LibraryOnlineRentalSystem/
       public LibraryDbContext(DbContextOptions options) : base(options) { }
 
       public DbSet<Book> Books { get; set; }
+      public DbSet<User> Users { get; set; }
 
       protected override void OnModelCreating(ModelBuilder modelBuilder)
       {
           modelBuilder.ApplyConfiguration(new ConfigBookEntityType());
+          modelBuilder.ApplyConfiguration(new ConfigUserEntityType());
       }
   }
+  ```
+- **MySQL** database provider with Pomelo
+- **Value conversion** for custom types
+  ```csharp
+  .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
   ```
 
 #### 3.5.2 SQL Best Practices
@@ -235,87 +298,209 @@ LibraryOnlineRentalSystem/
 #### 3.6.1 Authentication
 - **JWT-based authentication** with Keycloak integration
   ```csharp
-  // From Program.cs
-  builder.Services.AddAuthentication(options =>
+  // From Startup.cs
+  services.AddAuthentication(options =>
   {
       options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
       options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
   })
   .AddJwtBearer(options =>
   {
-      options.Authority = builder.Configuration["Keycloak:Authority"];
-      options.Audience = builder.Configuration["Keycloak:Audience"];
+      options.Authority = Configuration["Keycloak:Authority"];
+      options.Audience = Configuration["Keycloak:Audience"];
       options.RequireHttpsMetadata = false; // Set to true in production
+      options.TokenValidationParameters = new TokenValidationParameters
+      {
+          ValidateIssuer = true,
+          ValidateAudience = true,
+          ValidateLifetime = true,
+          ValidateIssuerSigningKey = true
+      };
   });
   ```
 - **Swagger/OpenAPI** with OAuth2 support for testing
-- Role-based access control (RBAC) via Keycloak roles
-- Secure token validation with issuer and audience checking
+- **Role-based access control (RBAC)** via Keycloak roles
+- **Secure token validation** with issuer and audience checking
+- **Password hashing** using BCrypt
+  ```csharp
+  // Password hashing in PasswordService
+  var hashedPassword = BCrypt.Net.BCrypt.HashPassword(password);
+  ```
 
-#### 3.6.2 Roles
-- Admin
-- Library Manager
-- User
-- Guest
+#### 3.6.2 Roles and Authorization
+- **Admin**: Full system access
+  ```csharp
+  [Authorize(Roles = "Admin")]
+  ```
+- **LibraryManager**: Manage books and users
+  ```csharp
+  [Authorize(Roles = "Admin,LibraryManager")]
+  ```
+- **User**: Regular authenticated users
+  ```csharp
+  [Authorize]
+  ```
+- **Guest**: Unauthenticated access (limited endpoints)
 
 ### 3.7 Project Dependencies
 
 #### 3.7.1 Core Dependencies
 - **.NET 8.0** - Cross-platform development framework
-- **Entity Framework Core** (v9.0.5) - ORM for database operations
+- **Entity Framework Core** (v8.0.13) - ORM for database operations
+- **Pomelo.EntityFrameworkCore.MySql** (v8.0.3) - MySQL database provider
 - **ASP.NET Core** - Web framework
+- **Newtonsoft.Json** (v13.0.3) - JSON serialization
 
 #### 3.7.2 Authentication & Security
-- **Microsoft.AspNetCore.Authentication.JwtBearer** (v8.0.1) - JWT authentication middleware
+- **Microsoft.AspNetCore.Authentication.JwtBearer** (v8.0.0) - JWT authentication middleware
 - **Microsoft.AspNetCore.Authentication.OpenIdConnect** (v8.0.0) - OpenID Connect support
+- **BCrypt.Net-Next** (v4.0.3) - Password hashing
+- **Microsoft.Extensions.Configuration** (v10.0.0-preview.4) - Configuration management
 
 #### 3.7.3 Development Tools
-- **Swashbuckle.AspNetCore** (v6.6.2) - Swagger/OpenAPI documentation
+- **Swashbuckle.AspNetCore** (v6.5.0) - Swagger/OpenAPI documentation
+- **NSwag.AspNetCore** (v14.0.0) - API documentation
 - **Microsoft.VisualStudio.Azure.Containers.Tools.Targets** (v1.21.0) - Container tooling
 - **Migrations** (v1.0.1) - Database migration support
+- **FluentValidation.AspNetCore** (v11.3.0) - Model validation
 
-### 3.8 Code Quality
+### 3.8 Presentation Layer Components
 
-#### 3.8.1 Linting and Formatting
-- EditorConfig for consistent style
-- dotnet-format for automated formatting
-- StyleCop for static analysis
+#### 3.8.1 API Controllers
 
-#### 3.8.2 Testing
-- xUnit for unit tests
-- Moq for mocking
-- Test projects parallel to main code
-- Integration tests for APIs
+##### User Controller
+- **Base Route**: `/api/User`
+- **Endpoints**:
+  ```csharp
+  // Register new user (Public)
+  [HttpPost("register")]
+  public async Task<IActionResult> Register([FromBody] NewUserDTO request)
+  
+  // Get user by ID (Admin/LibraryManager)
+  [HttpGet("{id}")]
+  [Authorize(Roles = "Admin,LibraryManager")]
+  public async Task<IActionResult> GetUser(Guid id)
+  
+  // Get all users (Admin/LibraryManager)
+  [HttpGet]
+  [Authorize(Roles = "Admin,LibraryManager")]
+  public async Task<IActionResult> GetAllUsers()
+  
+  // Update user (Admin or self)
+  [HttpPut("{id}")]
+  [Authorize]
+  public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
+  ```
 
-#### 3.7.3 Code Reviews
-- Required for all PRs
-- Check for:
+#### 3.8.2 Data Transfer Objects (DTOs)
+
+##### NewUserDTO
+```csharp
+public class NewUserDTO
+{
+    [Required]
+    public string Name { get; set; }
+    
+    [Required]
+    [EmailAddress]
+    public string Email { get; set; }
+    
+    [Required]
+    [StringLength(50, MinimumLength = 3)]
+    public string UserName { get; set; }
+    
+    [Required]
+    [StringLength(100, MinimumLength = 6)]
+    public string Password { get; set; }
+    
+    public string PhoneNumber { get; set; }
+    public string Nif { get; set; }
+    public string Biography { get; set; }
+}
+```
+
+##### UpdateUserRequest
+```csharp
+public class UpdateUserRequest
+{
+    public string? PhoneNumber { get; set; }
+    public string? Name { get; set; }
+    public string? Email { get; set; }
+    public string? Biography { get; set; }
+}
+```
+
+#### 3.8.3 API Documentation
+- **Swagger/OpenAPI** integration
+- **OAuth2** authentication for testing
+- **XML documentation** for API endpoints
+- **Example requests/responses**
+
+### 3.9 Code Quality
+
+#### 3.9.1 Linting and Formatting
+- **EditorConfig** for consistent code style
+- **dotnet-format** for automated code formatting
+- **StyleCop** for static code analysis
+- **XML documentation** for public APIs
+
+#### 3.9.2 Testing
+- **xUnit** for unit tests
+- **Moq** for mocking dependencies
+- **Test projects** parallel to main code
+- **Integration tests** for API endpoints
+- **Test coverage** tracking
+
+#### 3.9.3 Code Reviews
+- **Pull request** workflow
+- **Code ownership** and responsibility
+- **Automated checks** before merge
+- **Documentation** updates required
+- **Check for**:
   - Security vulnerabilities
   - Code smells
   - Test coverage
   - Documentation updates
 
-### 3.8 Security Guidelines
+### 3.10 Security Guidelines
 
-#### 3.8.1 Authentication
-- JWT with Keycloak
-- Secure token storage
-- Token refresh mechanism
+#### 3.10.1 Authentication
+- **JWT with Keycloak** integration
+- **Secure token** storage in HTTP-only cookies
+- **Token refresh** mechanism
+- **Password hashing** with BCrypt
 
-#### 3.8.2 Authorization
-- Role-based access control
-- Policy-based authorization
-- Resource-based checks
+#### 3.10.2 Authorization
+- **Role-based access control (RBAC)**
+- **Policy-based** authorization
+- **Resource-based** checks
+- **Claims-based** authorization
 
-#### 3.8.3 Data Protection
-- Encrypt sensitive data
-- Use HTTPS everywhere
+#### 3.10.3 Data Protection
+- **Encryption** of sensitive data at rest
+- **HTTPS** enforced
+- **CSRF protection**
+- **CORS** policy configuration
 
-#### 3.8.4 Dependencies
-- Regular updates
-- Dependabot for security patches
-- Audit for vulnerabilities
+#### 3.10.4 Dependencies and Security
+- **Dependabot** for automated security updates
+- **Regular security audits**
+- **License compliance** checks
+- **Vulnerability monitoring**
+- **Automated dependency scanning**
+- **Security headers** implementation
 
+### 3.11 Deployment
 
+#### 3.11.1 Environments
+- **Development** - Local and CI testing
+- **Staging** - Pre-production testing
+- **Production** - Live environment
 
+#### 3.11.2 CI/CD Pipeline
+- **GitHub Actions** for automation
+- **Automated testing** on every push
+- **Docker** containerization
+- **Rollback** strategy in place
+- **Environment-specific** configurations
 
