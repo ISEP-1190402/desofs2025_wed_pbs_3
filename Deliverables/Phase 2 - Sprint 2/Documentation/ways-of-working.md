@@ -281,7 +281,7 @@ LibraryOnlineRentalSystem/
 #### 3.5.2 SQL Best Practices
 - Use migrations for schema changes
   ```bash
-  dotnet ef migrations add InitialCreate
+  dotnet ef migrations add LibraryOnlineRentalSystem
   dotnet ef database update
   ```
 - Parameterized queries to prevent SQL injection
