@@ -276,10 +276,7 @@ LibraryOnlineRentalSystem/
   }
   ```
 - **MySQL** database provider with Pomelo
-- **Value conversion** for custom types
-  ```csharp
-  .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
-  ```
+<!-- - **Value conversion** for custom types -->
 
 #### 3.5.2 SQL Best Practices
 - Use migrations for schema changes
