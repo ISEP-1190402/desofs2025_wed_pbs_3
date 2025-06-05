@@ -115,7 +115,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
         public void GetHashCode_DifferentUserNames_ReturnDifferentHash()
         {
             var a = new UserName("alice");
-            var b = new UserName("bob");
+            var b = new UserName("bob1");
             Assert.That(a.GetHashCode(), Is.Not.EqualTo(b.GetHashCode()));
         }
     }
