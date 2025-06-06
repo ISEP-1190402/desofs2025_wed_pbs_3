@@ -8,11 +8,11 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
-      - ConnectionStrings__LibraryDatabase=Server=mysql;Port=3306;Database=librarydb;User=root;Password=rootpassword;
+      - ConnectionStrings__LibraryDatabase=Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${DB_USER};Password=${DB_PASSWORD};
       - Keycloak__Authority=http://keycloak:8080/realms/library
       - Keycloak__Audience=library-client
       - Keycloak__ClientId=library-client
-      - Keycloak__ClientSecret=your-client-secret
+      - Keycloak__ClientSecret=${KEYCLOAK_CLIENT_SECRET}
     depends_on:
       - mysql
       - keycloak
@@ -22,12 +22,12 @@ services:
     ports:
       - "8082:8080"
     environment:
-      - KEYCLOAK_ADMIN=admin
-      - KEYCLOAK_ADMIN_PASSWORD=admin
+      - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
+      - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
       - KC_DB=mysql
       - KC_DB_URL=jdbc:mysql://mysql:3306/keycloak
-      - KC_DB_USERNAME=root
-      - KC_DB_PASSWORD=rootpassword
+      - KC_DB_USERNAME=${DB_USER}
+      - KC_DB_PASSWORD=${DB_PASSWORD}
     command: start-dev
     depends_on:
       - mysql
@@ -37,8 +37,8 @@ services:
     ports:
       - "3307:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=rootpassword
-      - MYSQL_DATABASE=librarydb
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
     volumes:
       - mysql_data:/var/lib/mysql
       - ./init-keycloak-db.sql:/docker-entrypoint-initdb.d/init-keycloak-db.sql

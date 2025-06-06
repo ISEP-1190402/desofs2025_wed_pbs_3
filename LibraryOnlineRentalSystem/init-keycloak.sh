@@ -11,8 +11,8 @@ check_error() {
 echo "Getting admin token..."
 ADMIN_TOKEN=$(curl -X POST http://localhost:8082/realms/master/protocol/openid-connect/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -d "username=admin" \
-  -d "password=admin" \
+  -d "username=${KEYCLOAK_ADMIN}" \
+  -d "password=${KEYCLOAK_ADMIN_PASSWORD}" \
   -d "grant_type=password" \
   -d "client_id=admin-cli" | jq -r '.access_token')
 check_error "Failed to get admin token"
@@ -58,7 +58,7 @@ curl -X POST http://localhost:8082/admin/realms/library/clients \
   -H "Content-Type: application/json" \
   -d '{
     "clientId": "library-client",
-    "secret": "your-client-secret",
+    "secret": "'${KEYCLOAK_CLIENT_SECRET}'",
     "redirectUris": ["http://localhost:8081/*"],
     "webOrigins": ["http://localhost:8081"],
     "publicClient": false,
@@ -82,11 +82,18 @@ curl -X POST http://localhost:8082/admin/realms/library/users \
     "enabled": true,
     "credentials": [{
       "type": "password",
-      "value": "admin123",
+      "value": "'${KEYCLOAK_ADMIN_PASSWORD}'",
       "temporary": false
     }]
   }'
 check_error "Failed to create admin user"
+
+echo "Disabling all required actions..."
+curl -X PUT http://localhost:8082/admin/realms/library/authentication/required-actions \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '[]'
+check_error "Failed to disable required actions"
 
 echo "Getting admin user ID..."
 ADMIN_USER_ID=$(curl -X GET http://localhost:8082/admin/realms/library/users?username=admin \
