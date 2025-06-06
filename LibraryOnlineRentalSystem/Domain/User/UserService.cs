@@ -44,6 +44,18 @@ public class UserService
 
         try
         {
+            // Validate user data before creating in Keycloak
+            var user = new User(
+                Guid.NewGuid().ToString(),
+                req.Name,
+                req.Email,
+                req.UserName,
+                req.PhoneNumber,
+                req.Nif,
+                req.Biography,
+                _passwordService.HashPassword(req.Password)
+            );
+
             var adminToken = await GetAdminTokenAsync();
             var keycloakUser = new
             {
@@ -99,19 +111,6 @@ public class UserService
             }
 
             _httpClient.DefaultRequestHeaders.Authorization = null;
-
-            var hashedPassword = _passwordService.HashPassword(req.Password);
-
-            var user = new User(
-                Guid.NewGuid().ToString(),
-                req.Name,
-                req.Email,
-                req.UserName,
-                req.PhoneNumber,
-                req.Nif,
-                req.Biography,
-                hashedPassword
-            );
 
             await _userRepository.AddAsync(user);
             await _workUnit.CommitAsync();
