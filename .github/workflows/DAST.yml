@@ -1,4 +1,4 @@
-name: DAST API Security Scan
+name: DAST Security Scan
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: library-api
-  API_PORT: 8081
+  API_PORT: 5000
 
 jobs:
   security-scans_DAST:
