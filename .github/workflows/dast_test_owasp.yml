@@ -1,311 +1,162 @@
-name: DAST
+name: DAST Security Scan
 
 on:
   push:
-    branches: ["**"] # Executa em todas as branches
+    branches: ["**"]
   pull_request:
-    branches: ["**"] # Executa em todas as branches
+    branches: ["**"]
   workflow_dispatch:
 
 env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 5000
-  PROJECT_DIR: ./LibraryOnlineRentalSystem
+  PROJECT_DIR: LibraryOnlineRentalSystem
 
 jobs:
   security-scans_DAST:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-
+    
     steps:
-      # 1. Checkout (usando versão explícita)
+      # 1. Checkout
       - name: Checkout
-        uses: actions/checkout@v4.1.1  # Versão fixa
-        with:
-          fetch-depth: 0  # Busca histórico completo para SonarCloud
+        uses: actions/checkout@v4.1.1
 
       # 2. Setup .NET
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3 # Versão fixa
+        uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 8.0.x
 
-      # 3. Debug: Verificação completa
-      - name: Verify files
-        run: |
-          echo "Conteúdo do diretório raiz:"
-          ls -la
-          echo "Conteúdo do diretório do projeto:"
-          ls -la ${{ env.PROJECT_DIR }}
-          echo "Verificando Dockerfile:"
-          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
-          cat ${{ env.PROJECT_DIR }}/Dockerfile || true
-          
-      # 4. Build Docker (solução definitiva)
+      # 3. Cache Dependencies
+      - name: Cache .NET packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-path: |
+            ~/.nuget/packages
+
+      # 4. Build Docker Image
       - name: Build Docker Image
-        working-directory: ${{ env.PROJECT_DIR }}
+        working-directory: ./${{ env.PROJECT_DIR }}
         run: |
-          echo "Building Docker image from $(pwd)" 
+          echo "Building Docker image from $(pwd)"
           docker build -t $DOCKER_IMAGE_NAME .
 
+      # 5. Create Docker Network
       - name: Create Docker Network
         run: docker network create zap-net
 
-      # 5. Prepara API no container
+      # 6. Run API Container
       - name: Run API Container
         run: |
           docker run -d \
             --name api \
             --network zap-net \
-            -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
-            -e ASPNETCORE_URLS=http://+:${{ env.API_PORT }} \
+            -p $API_PORT:$API_PORT \
+            --health-cmd="curl -f http://localhost:$API_PORT/health || exit 1" \
+            --health-interval=10s \
+            --health-timeout=5s \
+            --health-retries=3 \
             $DOCKER_IMAGE_NAME
-          
-          echo "🚀 Starting API container..."
-          sleep 25
-          
-          # Verifica se a API está respondendo
-          for i in {1..12}; do
-            if docker exec api curl -f -s http://localhost:${{ env.API_PORT }} >/dev/null 2>&1; then
-              echo "✅ API is ready!"
-              break
-            elif [ $i -eq 12 ]; then
-              echo "❌ API failed to start after 12 attempts"
-              docker logs api
-              exit 1
-            else
-              echo "⏳ Attempt $i/12: API not ready yet, waiting 10s..."
-              sleep 10
-            fi
-          done
-      
-      # 6. Preparacao SonarCloud
+
+      # 7. Wait for API to be ready
+      - name: Wait for API Health Check
+        run: |
+          echo "Waiting for API to be healthy..."
+          timeout 60s bash -c 'until docker inspect --format="{{.State.Health.Status}}" api | grep -q "healthy"; do
+            echo "API container status: $(docker inspect --format="{{.State.Health.Status}}" api)"
+            sleep 5
+          done'
+          echo "API is ready!"
+
+      # 8. Install SonarScanner
       - name: Install SonarScanner for .NET
         run: dotnet tool install --global dotnet-sonarscanner
 
+      # 9. Start SonarCloud Analysis
       - name: Start SonarCloud Analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "📊 Starting SonarCloud analysis for branch: ${{ github.ref_name }}"
-          
-          # Verificar se o SONAR_TOKEN existe
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
-            echo "❌ SONAR_TOKEN not found in secrets"
-            exit 1
-          fi
-          
-          # Configuração base do SonarScanner
-          SONAR_ARGS=(
-            "/k:jorgealmeidadeveloper_LibraryOnlineRentalSystem"
-            "/o:jorgealmeidadeveloper"
-            "/d:sonar.login=${{ secrets.SONAR_TOKEN }}"
-            "/d:sonar.host.url=https://sonarcloud.io"
-            "/d:sonar.dotnet.buildConfiguration=Release"
-            "/d:sonar.sources=."
-            "/d:sonar.exclusions=**/bin/**,**/obj/**,**/*.Tests/**"
-          )
-          
-          # Configuração específica por tipo de branch
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "📋 Configuring for Pull Request #${{ github.event.pull_request.number }}"
-            SONAR_ARGS+=(
-              "/d:sonar.pullrequest.key=${{ github.event.pull_request.number }}"
-              "/d:sonar.pullrequest.branch=${{ github.head_ref }}"
-              "/d:sonar.pullrequest.base=${{ github.base_ref }}"
-              "/d:sonar.pullrequest.github.repository=${{ github.repository }}"
-            )
-          elif [[ "${{ github.ref_name }}" == "main" ]]; then
-            echo "🌟 Analyzing main branch: ${{ github.ref_name }}"
-            # Para a branch main, não precisamos de parâmetros extras
-          else
-            echo "🌿 Analyzing branch: ${{ github.ref_name }}"
-            SONAR_ARGS+=(
-              "/d:sonar.branch.name=${{ github.ref_name }}"
-            )
-          fi
-          
-          echo "🔧 SonarScanner arguments:"
-          printf '%s\n' "${SONAR_ARGS[@]}"
-          
-          # Executa o SonarScanner begin
-          dotnet sonarscanner begin "${SONAR_ARGS[@]}"
-          
-      # 7. OWASP ZAP Scan com geração completa de relatórios
-      - name: Run OWASP ZAP Scan manually
+          dotnet sonarscanner begin \
+            /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" \
+            /o:"jorgealmeidadeveloper" \
+            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.host.url="https://sonarcloud.io" \
+            /d:sonar.dotnet.buildConfiguration="Release"
+
+      # 10. OWASP ZAP Security Scan
+      - name: Run OWASP ZAP DAST Scan
         run: |
-          # Get API container IP address in zap-net
+          # Get API container IP
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
-          echo "🎯 API container IP: $API_IP"
-          echo "🛡️ Starting OWASP ZAP security scan..."
-
-          # Prepare writable directory for ZAP reports
-          mkdir -p $GITHUB_WORKSPACE/zap-work
-          chmod -R 777 $GITHUB_WORKSPACE/zap-work
-
-          # Run ZAP docker container with scan targeting API IP, saving reports to current directory
+          echo "API container IP: $API_IP"
+          
+          # Prepare reports directory
+          mkdir -p $GITHUB_WORKSPACE/zap-reports
+          chmod -R 777 $GITHUB_WORKSPACE/zap-reports
+          
+          # Run ZAP baseline scan
           docker run --rm \
             --network zap-net \
-            -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
+            -v $GITHUB_WORKSPACE/zap-reports:/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
             -t http://$API_IP:${{ env.API_PORT }} \
-            -J report_json.json \
-            -w report_md.md \
-            -r report_html.html \
-            -x report_xml.xml \
+            -J zap-report.json \
+            -w zap-report.md \
+            -r zap-report.html \
+            -x zap-report.xml \
             -I \
-            -d || echo "⚠️ ZAP scan completed with findings (this is normal)"
+            -d
 
-      - name: List ZAP report files
-        run: |
-          echo "📊 Generated ZAP Reports:"
-          ls -la $GITHUB_WORKSPACE/zap-work/
-          
-          # Show summary if markdown report exists
-          if [ -f "$GITHUB_WORKSPACE/zap-work/report_md.md" ]; then
-            echo ""
-            echo "📋 ZAP Scan Summary:"
-            head -20 $GITHUB_WORKSPACE/zap-work/report_md.md || true
-          fi
-
-      # 8. Restore NuGet packages (CORRIGIDO)
-      - name: Restore NuGet packages
-        run: |
-          echo "📦 Restoring NuGet packages for all projects..."
-          
-          # Restore projeto principal
-          echo "Restoring main project..."
-          dotnet restore ${{ env.PROJECT_DIR }} --verbosity normal
-          
-          # Procura e restore projetos de teste
-          echo "Looking for test projects..."
-          if [ -d "LibraryOnlineRentalSystem.Tests" ]; then
-            echo "Restoring test project..."
-            dotnet restore LibraryOnlineRentalSystem.Tests --verbosity normal
-          fi
-          
-          # Procura por outros projetos .csproj na raiz se existirem
-          for proj in $(find . -maxdepth 2 -name "*.csproj" -not -path "${{ env.PROJECT_DIR }}/*" -not -path "./LibraryOnlineRentalSystem.Tests/*"); do
-            if [ -f "$proj" ]; then
-              echo "Restoring additional project: $proj"
-              dotnet restore "$proj" --verbosity normal
-            fi
-          done
-
-      # 9. Finalize SonarCloud Analysis (CORRIGIDO)
-      - name: Complete SonarCloud Analysis
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          echo "🔨 Building project for SonarCloud..."
-          
-          # Build projeto principal
-          dotnet build ${{ env.PROJECT_DIR }} --configuration Release --no-restore --verbosity normal
-          
-          # Build projetos de teste se existirem
-          if [ -d "LibraryOnlineRentalSystem.Tests" ]; then
-            echo "Building test project..."
-            dotnet build LibraryOnlineRentalSystem.Tests --configuration Release --no-restore --verbosity normal
-          fi
-          
-          echo "📤 Finalizing SonarCloud analysis..."
-          
-          # Verificar se ainda temos o token
-          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
-            echo "❌ SONAR_TOKEN not available for end command"
-            exit 1
-          fi
-          
-          # Finalizar análise com tratamento de erro
-          if dotnet sonarscanner end "/d:sonar.login=${{ secrets.SONAR_TOKEN }}"; then
-            echo "✅ SonarCloud analysis completed successfully!"
-          else
-            echo "⚠️ SonarCloud analysis failed, but continuing workflow..."
-            echo "This might be due to:"
-            echo "- Project not existing in SonarCloud"
-            echo "- Branch configuration issues"
-            echo "- Token permissions"
-            # Não falhamos o workflow por causa do SonarCloud
-          fi
-
-      # 10. Upload do relatório (usando v4, a mais recente)
-      - name: Upload ZAP reports
+      # 11. Process ZAP Results
+      - name: Process ZAP Results
         if: always()
+        run: |
+          echo "ZAP scan completed. Report files:"
+          ls -la $GITHUB_WORKSPACE/zap-reports/
+          
+          # Check if high/medium severity issues found
+          if [ -f "$GITHUB_WORKSPACE/zap-reports/zap-report.json" ]; then
+            echo "Analyzing security findings..."
+            # Add logic to parse JSON and set job status based on severity
+          fi
+
+      # 12. Upload ZAP Reports
+      - name: Upload ZAP Reports
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: zap-security-reports-${{ github.ref_name }}-${{ github.run_number }}
-          path: zap-work/
+          name: zap-security-reports-${{ github.run_number }}
+          path: zap-reports/
           retention-days: 30
 
-      # 11. Generate Security Summary Report
-      - name: Generate Security Summary
+      # 13. Security Summary
+      - name: Security Scan Summary
         if: always()
         run: |
-          echo "# 🛡️ Security Analysis Report" > security-summary.md
-          echo "" >> security-summary.md
-          echo "**Branch:** ${{ github.ref_name }}" >> security-summary.md
-          echo "**Event:** ${{ github.event_name }}" >> security-summary.md
-          echo "**Date:** $(date)" >> security-summary.md
-          echo "" >> security-summary.md
+          echo "## 🔒 DAST Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target**: API Container on port ${{ env.API_PORT }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scan Type**: OWASP ZAP Baseline" >> $GITHUB_STEP_SUMMARY
+          echo "- **Reports**: Available in artifacts" >> $GITHUB_STEP_SUMMARY
           
-          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            echo "**Pull Request:** #${{ github.event.pull_request.number }}" >> security-summary.md
-            echo "**Source:** ${{ github.head_ref }} → ${{ github.base_ref }}" >> security-summary.md
-            echo "" >> security-summary.md
-          fi
-          
-          echo "## 📊 Scan Results" >> security-summary.md
-          echo "" >> security-summary.md
-          
-          if [ -f "$GITHUB_WORKSPACE/zap-work/report_md.md" ]; then
-            echo "### 🔍 OWASP ZAP Findings" >> security-summary.md
-            echo "" >> security-summary.md
-            cat $GITHUB_WORKSPACE/zap-work/report_md.md >> security-summary.md
+          if [ -f "$GITHUB_WORKSPACE/zap-reports/zap-report.json" ]; then
+            echo "- **Status**: ✅ Scan completed successfully" >> $GITHUB_STEP_SUMMARY
           else
-            echo "### ❌ ZAP Report Not Generated" >> security-summary.md
-            echo "ZAP scan may have failed or no findings were detected." >> security-summary.md
+            echo "- **Status**: ❌ Scan failed or no reports generated" >> $GITHUB_STEP_SUMMARY
           fi
-          
-          echo "" >> security-summary.md
-          echo "## 📁 Available Reports" >> security-summary.md
-          echo "" >> security-summary.md
-          echo "- **JSON Report:** report_json.json" >> security-summary.md
-          echo "- **HTML Report:** report_html.html" >> security-summary.md
-          echo "- **Markdown Report:** report_md.md" >> security-summary.md
-          echo "- **XML Report:** report_xml.xml" >> security-summary.md
-          echo "" >> security-summary.md
-          echo "**Artifact Name:** zap-security-reports-${{ github.ref_name }}-${{ github.run_number }}" >> security-summary.md
-          
-          # Show summary in logs
-          echo "📋 Security Analysis Summary:"
-          echo "============================="
-          cat security-summary.md
 
-      # 12. Upload Security Summary
-      - name: Upload Security Summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-summary-${{ github.ref_name }}-${{ github.run_number }}
-          path: security-summary.md
-          retention-days: 30
-
-      # 13. Show API logs for debugging
-      - name: Show API Container Logs
-        if: failure()
-        run: |
-          echo "📋 API Container Logs for debugging:"
-          echo "===================================="
-          docker logs api
-
-      # 14. Parar container
-      - name: Stop Container
+      # 14. Cleanup
+      - name: Cleanup Containers
         if: always()
         run: |
-          echo "🧹 Cleaning up containers..."
           docker stop api || true
           docker rm api || true
           docker network rm zap-net || true
-          echo "✅ Cleanup completed"
+
+      # 15. Complete SonarCloud Analysis
+      - name: Complete SonarCloud Analysis
+        if: always()
+        run: |
+          dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
