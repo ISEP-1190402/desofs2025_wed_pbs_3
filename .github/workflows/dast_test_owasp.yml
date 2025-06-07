@@ -83,7 +83,7 @@ jobs:
             /o:"jorgealmeidadeveloper" \
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.dotnet.buildConfiguration="Release"
+            
 
       # ✅ 10. Build the solution (.sln is mandatory for correct analysis)
       - name: Build Solution
