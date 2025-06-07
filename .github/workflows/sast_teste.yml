@@ -1,4 +1,4 @@
-name: Snyk Security SAST
+name: Snyk Security Scan with PDF Report
 
 on:
   push:
@@ -8,11 +8,13 @@ on:
 
 jobs:
   security-scan:
-    name: Run Snyk Security SAST
+    name: Run Snyk Security Scan and Generate PDF Report
     runs-on: ubuntu-latest
     permissions:
       contents: read
       security-events: write
+      actions: read
+      id-token: write
 
     steps:
     # 1. Checkout código
@@ -360,9 +362,19 @@ jobs:
           ./src/LibraryOnlineRentalSystem/snyk_results/json/
           ./src/LibraryOnlineRentalSystem/snyk_results/sarif/
 
-    # 13. Upload SARIF para GitHub Security
+    # 13. Upload SARIF para GitHub Security (com tratamento de erros)
     - name: Upload SARIF to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: ./src/LibraryOnlineRentalSystem/snyk_results/sarif/
+        sarif_file: ./src/LibraryOnlineRentalSystem/snyk_results/sarif/snyk-code.sarif
+        category: snyk-code
+      continue-on-error: true
+      if: always()
+      
+    - name: Upload Dependencies SARIF to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ./src/LibraryOnlineRentalSystem/snyk_results/sarif/snyk-deps.sarif
+        category: snyk-dependencies
+      continue-on-error: true
       if: always()
