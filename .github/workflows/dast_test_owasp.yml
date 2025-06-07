@@ -159,6 +159,14 @@ jobs:
             head -20 $GITHUB_WORKSPACE/zap-work/report_md.md || true
           fi
 
+        # 8. Restore NuGet packages (NOVO STEP)
+      - name: Restore NuGet packages
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          echo "📦 Restoring NuGet packages..."
+          dotnet restore    
+
+
       # 8. Finalize SonarCloud Analysis
       - name: Complete SonarCloud Analysis
         working-directory: ${{ env.PROJECT_DIR }}
