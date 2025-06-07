@@ -2,7 +2,7 @@ name: Snyk SAST Code and Dependency
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
     branches: ["**"]
 
@@ -10,6 +10,8 @@ jobs:
   sast-scan:
     name: SAST Snyk Code and Dependency
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && success()
+    timeout-minutes: 25
     permissions:
       contents: read
       security-events: write

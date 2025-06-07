@@ -2,7 +2,7 @@ name: DAST (OWASP ZAP)
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"]
   pull_request:
     branches: ["**"]
   workflow_dispatch:
@@ -15,6 +15,7 @@ env:
 jobs:
   dast-zap:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && success()
     timeout-minutes: 20
 
     steps:
