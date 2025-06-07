@@ -85,6 +85,10 @@ jobs:
             /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
             /d:sonar.host.url="https://sonarcloud.io" \
             /d:sonar.dotnet.buildConfiguration="Release"
+        
+    #9.1 Build the Project (required for SonarScanner)
+      - name: Build the Project
+        run: dotnet build --configuration Release
 
       # 10. OWASP ZAP Security Scan
       - name: Run OWASP ZAP DAST Scan
