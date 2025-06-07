@@ -1,4 +1,4 @@
-name: Snyk SAST Code
+name: Snyk SAST Code and Dependency
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   sast-scan:
-    name: Run Snyk Code and Dependency Scan
+    name: SAST Snyk Code and Dependency
     runs-on: ubuntu-latest
     permissions:
       contents: read
