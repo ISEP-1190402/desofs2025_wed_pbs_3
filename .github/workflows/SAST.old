@@ -1,0 +1,78 @@
+name: Snyk Security Scan
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"] 
+
+jobs:
+  security-scan:
+    name: Run Snyk Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      # Se não for mais fazer upload para Code Scanning, pode remover esta linha:
+      # security-events: write
+
+    # 1. Checkout código
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        path: ./src
+    
+    # 2. Verificar Estrutura do Projeto
+    - name: Verify project structure
+      working-directory: ./src
+      run: |
+        echo "Verifying project structure"
+        ls -la
+        test -f "LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj" || {
+          echo "::error::Project file not found"
+          exit 1
+        }
+    
+    # 3. Setup .NET
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+     
+        
+    # 3. Restaurar dependencias
+    - name: Restore dependencies
+      working-directory: ./src/LibraryOnlineRentalSystem
+      run: dotnet restore
+
+    # 4. Instalação Snuk  
+    - name: Install Snyk CLI
+      run: npm install -g snyk@latest
+
+    # 5. Scanear o Snyk  
+    - name: Run Snyk Scans
+      working-directory: ./src/LibraryOnlineRentalSystem
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        mkdir -p ./snyk_results
+        snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=./snyk_results/snyk-deps.sarif || true
+        snyk code test --severity-threshold=high --sarif-file-output=./snyk_results/snyk-code.sarif || true
+        ls -la ./snyk_results/
+
+    # 6. Salvar Relatorio    
+    - name: Save SARIF results as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: snyk-sarif-results
+        path: |
+          ./src/LibraryOnlineRentalSystem/snyk_results/snyk-deps.sarif
+          ./src/LibraryOnlineRentalSystem/snyk_results/snyk-code.sarif
+
+    # 7. Sarif dos arquivos         
+    - name: Debug SARIF files
+      run: |
+        echo "Checking SARIF files..."
+        find ./src -name "*.sarif" -exec ls -la {} \;
+        find ./src -name "*.sarif" -exec head -n 5 {} \;
+      if: always()
