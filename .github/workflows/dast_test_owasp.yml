@@ -1,4 +1,4 @@
-name: DAST Security Owasp
+name: DAST API Security Scan
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 env:
   DOCKER_IMAGE_NAME: library-api
-  API_PORT: 8081
+  API_PORT: 5000
   PROJECT_DIR: ./LibraryOnlineRentalSystem
 
 jobs:
@@ -55,7 +55,8 @@ jobs:
           docker run -d \
             --name api \
             --network zap-net \
-            -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
+            -p 5000:5000 \
+            -e ASPNETCORE_URLS=http://+:5000 \
             ${{ env.DOCKER_IMAGE_NAME }}
           
           # Aguarda a API inicializar
@@ -64,7 +65,7 @@ jobs:
           
           # Verifica se a API está respondendo
           for i in {1..10}; do
-            if docker exec api curl -f http://localhost:${{ env.API_PORT }}/health 2>/dev/null; then
+            if docker exec api curl -f http://localhost:5000/health 2>/dev/null || docker exec api curl -f http://localhost:5000 2>/dev/null; then
               echo "API está rodando!"
               break
             elif [ $i -eq 10 ]; then
@@ -87,7 +88,7 @@ jobs:
           docker run --rm \
             --network zap-net \
             ghcr.io/zaproxy/zaproxy:stable \
-            bash -c "curl -v http://$API_IP:${{ env.API_PORT }}/health || curl -v http://$API_IP:${{ env.API_PORT }} || echo 'Connection failed'"
+            bash -c "curl -v http://$API_IP:5000/health || curl -v http://$API_IP:5000 || echo 'Connection failed'"
 
       # 8. OWASP ZAP Scan
       - name: Run OWASP ZAP Scan
@@ -106,7 +107,7 @@ jobs:
             -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
-            -t http://$API_IP:${{ env.API_PORT }} \
+            -t http://$API_IP:5000 \
             -J zap-report.json \
             -w zap-report.md \
             -r zap-report.html \
