@@ -12,7 +12,7 @@ env:
   API_PORT: 8081
 
 jobs:
-  sast-dast-iast-security:
+  iast-security:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
