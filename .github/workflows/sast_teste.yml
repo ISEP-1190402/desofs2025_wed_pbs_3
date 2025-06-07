@@ -48,8 +48,8 @@ jobs:
         echo "Running Snyk static code analysis..."
         snyk code test --json > ./snyk_results/json/snyk-code.json || true
         snyk code test --sarif-file-output=./snyk_results/sarif/snyk-code.sarif || true
-        snyk test --file=ISEP-1190402/desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --json > ./snyk_results/json/snyk-deps.json || true
-        snyk test --file=ISEP-1190402/desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --sarif-file-output=./snyk_results/sarif/snyk-deps.sarif || true
+        snyk test --file=desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --json > ./snyk_results/json/snyk-deps.json || true
+        snyk test --file=desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --sarif-file-output=./snyk_results/sarif/snyk-deps.sarif || true
 
     - name: Verify generated JSON files
       run: |
