@@ -1,4 +1,4 @@
-name: DAST Security Scan
+name: DAST
 
 on:
   push:
