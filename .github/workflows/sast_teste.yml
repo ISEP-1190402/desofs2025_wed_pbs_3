@@ -105,6 +105,10 @@ jobs:
         pdfkit.from_file("./src/snyk_results/reports/security_report.html", "./src/snyk_results/reports/security_report.pdf")
         EOF
 
+    - name: Install Python dependencies
+      run: |
+        pip3 install pdfkit
+
     - name: Generate PDF Report
       run: |
         python3 ./src/generate_report.py
