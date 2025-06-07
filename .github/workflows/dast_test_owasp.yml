@@ -159,29 +159,26 @@ jobs:
             head -20 $GITHUB_WORKSPACE/zap-work/report_md.md || true
           fi
 
-        # 8. Restore NuGet packages (NOVO STEP)
+      # 8. Restore NuGet packages (CORRIGIDO)
       - name: Restore NuGet packages
-        working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          echo "📦 Restoring NuGet packages..."
-          dotnet restore    
+          echo "📦 Restoring NuGet packages for all projects..."
+          dotnet restore --verbosity normal
 
-
-      # 8. Finalize SonarCloud Analysis
+      # 9. Finalize SonarCloud Analysis (CORRIGIDO)
       - name: Complete SonarCloud Analysis
-        working-directory: ${{ env.PROJECT_DIR }}
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           echo "🔨 Building project for SonarCloud..."
-          dotnet build --configuration Release --no-restore
+          dotnet build --configuration Release --no-restore --verbosity normal
           
           echo "📤 Finalizing SonarCloud analysis..."
           dotnet sonarscanner end "/d:sonar.login=${{ secrets.SONAR_TOKEN }}"
           
           echo "✅ SonarCloud analysis completed!"
 
-      # 9. Upload do relatório (usando v4, a mais recente)
+      # 10. Upload do relatório (usando v4, a mais recente)
       - name: Upload ZAP reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -190,7 +187,7 @@ jobs:
           path: zap-work/
           retention-days: 30
 
-      # 10. Generate Security Summary Report
+      # 11. Generate Security Summary Report
       - name: Generate Security Summary
         if: always()
         run: |
@@ -220,43 +217,4 @@ jobs:
           fi
           
           echo "" >> security-summary.md
-          echo "## 📁 Available Reports" >> security-summary.md
-          echo "" >> security-summary.md
-          echo "- **JSON Report:** report_json.json" >> security-summary.md
-          echo "- **HTML Report:** report_html.html" >> security-summary.md
-          echo "- **Markdown Report:** report_md.md" >> security-summary.md
-          echo "- **XML Report:** report_xml.xml" >> security-summary.md
-          echo "" >> security-summary.md
-          echo "**Artifact Name:** zap-security-reports-${{ github.ref_name }}-${{ github.run_number }}" >> security-summary.md
-          
-          # Show summary in logs
-          echo "📋 Security Analysis Summary:"
-          echo "============================="
-          cat security-summary.md
-
-      # 11. Upload Security Summary
-      - name: Upload Security Summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: security-summary-${{ github.ref_name }}-${{ github.run_number }}
-          path: security-summary.md
-          retention-days: 30
-
-      # 12. Show API logs for debugging
-      - name: Show API Container Logs
-        if: failure()
-        run: |
-          echo "📋 API Container Logs for debugging:"
-          echo "===================================="
-          docker logs api
-
-      # 13. Parar container
-      - name: Stop Container
-        if: always()
-        run: |
-          echo "🧹 Cleaning up containers..."
-          docker stop api || true
-          docker rm api || true
-          docker network rm zap-net || true
-          echo "✅ Cleanup completed"
+          echo "## 📁 Available Reports" >> security-su
