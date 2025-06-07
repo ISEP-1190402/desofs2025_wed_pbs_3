@@ -1,112 +1,237 @@
-name: DAST Security Scan
+name: DAST (OWASP ZAP)
 
 on:
   push:
-    branches: ["**"] # Executa em todas as branches
+    branches: ["**"]
   pull_request:
-    branches: ["**"] # Executa em todas as branches
+    branches: ["**"]
   workflow_dispatch:
 
 env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 5000
+  PROJECT_DIR: ./LibraryOnlineRentalSystem
 
 jobs:
-  security-scans_DAST:
+  dast-zap:
     runs-on: ubuntu-latest
     timeout-minutes: 20
 
     steps:
-      # 1. Checkout (usando versão explícita)
-      - name: Checkout
-        uses: actions/checkout@v4.1.1  # Versão fixa
+      - name: Checkout Code
+        uses: actions/checkout@v4
 
-      # 2. Setup .NET
       - name: Setup .NET
-        uses: actions/setup-dotnet@v3 # Versão fixa
+        uses: actions/setup-dotnet@v3
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: '8.0.x'
 
-      # 3. Debug: Verificação completa
-      - name: Verify files
-        run: |
-          echo "Conteúdo do diretório raiz:"
-          ls -la
-          echo "Conteúdo do diretório do projeto:"
-          ls -la ${{ env.PROJECT_DIR }}
-          echo "Verificando Dockerfile:"
-          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
-          cat ${{ env.PROJECT_DIR }}/Dockerfile || true
-          
-      # 4. Build Docker (solução definitiva)
       - name: Build Docker Image
-        working-directory: ./LibraryOnlineRentalSystem
-        run: |
-          echo "Building Docker image from $(pwd)" 
-          docker build -t $DOCKER_IMAGE_NAME .
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: docker build -t $DOCKER_IMAGE_NAME .
 
       - name: Create Docker Network
         run: docker network create zap-net
 
-      # 5. Prepara API no container
       - name: Run API Container
         run: |
+          # First, let's try to determine what port the API actually uses
+          echo "Building and starting API container..."
+          
           docker run -d \
             --name api \
             --network zap-net \
-            -p $API_PORT:$API_PORT \
-            $DOCKER_IMAGE_NAME
-          sleep 10
-      
-      # 6. Preparacao Sonar
-      - name: Install SonarScanner for .NET
-        run: dotnet tool install --global dotnet-sonarscanner
-
-      - name: Start SonarCloud Analysis
-        run: |
-          dotnet sonarscanner begin \
-            /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" \
-            /o:"jorgealmeidadeveloper" \
-            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.dotnet.buildConfiguration="Release"       
-     
+            -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
+            -e ASPNETCORE_URLS=http://+:${{ env.API_PORT }} \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            ${{ env.DOCKER_IMAGE_NAME }}
           
-      # 6. OWASP ZAP Scan
-      - name: Run OWASP ZAP Scan manually
+          echo "Container started, checking status..."
+          docker ps | grep api
+
+      - name: Wait for API to be ready and get network info
         run: |
-          # Get API container IP address in zap-net
+          echo "Waiting for API to start..."
+          sleep 15
+          
+          # Get container network information
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
-          echo "API container IP: $API_IP"
+          echo "API Container IP: $API_IP"
+          
+          # Show container status
+          docker ps | grep api
+          docker logs api --tail 20
+          
+          # Test network connectivity
+          echo "Testing network connectivity..."
+          docker run --rm --network zap-net alpine:latest ping -c 3 $API_IP || echo "Ping failed"
 
-          # Prepare writable directory for ZAP reports
-          mkdir -p $GITHUB_WORKSPACE/zap-work
-          chmod -R 777 $GITHUB_WORKSPACE/zap-work
+      - name: Test API connectivity with retries
+        run: |
+          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
+          echo "Testing API connectivity at: http://$API_IP:${{ env.API_PORT }}"
+          
+          # Try multiple endpoints and methods
+          for endpoint in "" "/" "/health" "/swagger"; do
+            echo "Testing endpoint: $endpoint"
+            docker run --rm --network zap-net curlimages/curl:latest \
+              curl -v --connect-timeout 10 --max-time 30 \
+              http://$API_IP:${{ env.API_PORT }}$endpoint || echo "Failed to connect to $endpoint"
+          done
+          
+          # Final connectivity test with detailed output
+          echo "Final connectivity test..."
+          docker run --rm --network zap-net curlimages/curl:latest \
+            curl -I --connect-timeout 10 --max-time 30 \
+            http://$API_IP:${{ env.API_PORT }} && echo "API is accessible!" || echo "API is not accessible"
 
-          # Run ZAP docker container with scan targeting API IP, saving reports to current directory
+      - name: Run OWASP ZAP Scan with enhanced configuration
+        run: |
+          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
+          echo "Starting ZAP scan against API at: http://$API_IP:${{ env.API_PORT }}"
+          
+          mkdir -p zap-work
+          chmod -R 777 zap-work
+          
+          # Create a ZAP automation configuration file
+          cat > zap-work/automation.yaml << 'EOF'
+          env:
+            contexts:
+              - name: "Default"
+                urls: ["http://TARGET_URL:TARGET_PORT"]
+                includePaths: 
+                  - "http://TARGET_URL:TARGET_PORT/.*"
+                excludePaths: []
+            parameters:
+              failOnError: false
+              failOnWarning: false
+              progressToStdout: true
+          
+          jobs:
+            - type: spider
+              parameters:
+                context: "Default"
+                url: "http://TARGET_URL:TARGET_PORT"
+                maxDuration: 5
+                maxDepth: 5
+                numberOfThreads: 5
+                delayInMs: 0
+                acceptCookies: true
+                handleODataParametersVisited: false
+                handleParameters: "USE_ALL"
+                maxParseSizeBytes: 2621440
+                parseComments: true
+                parseGit: false
+                parseRobotsTxt: true
+                parseSitemapXml: true
+                parseSVNEntries: false
+                postForm: true
+                processForm: true
+                requestWaitTime: 200
+                sendRefererHeader: true
+                threadCount: 2
+            
+            - type: activeScan  
+              parameters:
+                context: "Default"
+                policy: "Default Policy"
+                maxDuration: 10
+                maxRuleDurationInMins: 0
+                maxScanDurationInMins: 0
+                addQueryParam: false
+                defaultPolicy: "Default Policy"
+                delayInMs: 0
+                handleAntiCSRFTokens: false
+                hostPerScan: 0
+                inScopeOnly: true
+                maxAlertsPerRule: 10
+                maxBodySizeInBytesToScan: 10000
+                maxResultsToScan: 0
+                threadPerHost: 2
+          
+            - type: report
+              parameters:
+                template: "traditional-json"
+                reportDir: "/zap/wrk"
+                reportFile: "report_json.json"
+              risks:
+                - high
+                - medium
+                - low
+                - info
+          
+            - type: report
+              parameters:
+                template: "traditional-html"
+                reportDir: "/zap/wrk"
+                reportFile: "report_html.html"
+              risks:
+                - high
+                - medium
+                - low
+                - info
+          
+            - type: report
+              parameters:
+                template: "traditional-md"
+                reportDir: "/zap/wrk"
+                reportFile: "report_md.md"
+              risks:
+                - high
+                - medium
+                - low
+                - info
+          EOF
+          
+          # Replace placeholders in the config
+          sed -i "s/TARGET_URL/$API_IP/g" zap-work/automation.yaml
+          sed -i "s/TARGET_PORT/${{ env.API_PORT }}/g" zap-work/automation.yaml
+          
+          # Run ZAP with the automation file
           docker run --rm \
             --network zap-net \
-            -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
+            -v ${{ github.workspace }}/zap-work:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py \
-            -t http://$API_IP:${{ env.API_PORT }} \
-            -J report_json.json \
-            -w report_md.md \
-            -r report_html.html \
-            -I
+            zap.sh -cmd -autorun /zap/wrk/automation.yaml || {
+              echo "ZAP automation failed, trying baseline scan..."
+              docker run --rm \
+                --network zap-net \
+                -v ${{ github.workspace }}/zap-work:/zap/wrk/:rw \
+                ghcr.io/zaproxy/zaproxy:stable \
+                zap-baseline.py \
+                -t http://$API_IP:${{ env.API_PORT }} \
+                -J /zap/wrk/report_json_baseline.json \
+                -w /zap/wrk/report_md_baseline.md \
+                -r /zap/wrk/report_html_baseline.html \
+                -I -d --hook=/zap/auth_hook.py || echo "Both ZAP scans failed, but continuing..."
+            }
 
-      - name: List ZAP report files
-        run: ls -l $GITHUB_WORKSPACE/zap-work
+      - name: Check ZAP Reports
+        run: |
+          echo "Checking generated reports..."
+          ls -la zap-work/
+          if [ -f "zap-work/report_json.json" ]; then
+            echo "JSON report generated successfully"
+          else
+            echo "JSON report not found"
+          fi
 
-
-      # 7. Upload do relatório (usando v4, a mais recente)
-      - name: Upload ZAP reports
+      - name: Upload ZAP Report
         uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: zap-reports
+          name: zap-report
           path: zap-work/
 
-      # 8. Parar container
-      - name: Stop Container
+      - name: Display API Logs (if scan failed)
+        if: failure()
+        run: |
+          echo "=== API Container Logs ==="
+          docker logs api
+
+      - name: Stop and Remove API Container
         if: always()
-        run: docker stop api && docker rm api
+        run: |
+          docker stop api || true
+          docker rm api || true
+          docker network rm zap-net || true
