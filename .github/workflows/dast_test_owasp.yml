@@ -1,11 +1,17 @@
-name: DAST API Security Scan
+name: Multi-Branch Security Scan
 
 on:
   push:
-    branches: ["**"]
+    branches: ["**"]  # Todas as branches
   pull_request:
-    branches: ["**"]
+    branches: ["**"]  # Todos os PRs
   workflow_dispatch:
+    inputs:
+      skip_sonar:
+        description: 'Skip SonarCloud analysis'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
   DOCKER_IMAGE_NAME: library-api
@@ -13,14 +19,19 @@ env:
   PROJECT_DIR: ./LibraryOnlineRentalSystem
 
 jobs:
-  security-scans_DAST:
+  security-analysis:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    
+    strategy:
+      fail-fast: false  # Continua mesmo se uma parte falhar
 
     steps:
       # 1. Checkout
       - name: Checkout
         uses: actions/checkout@v4.1.1
+        with:
+          fetch-depth: 0  # Busca histórico completo para SonarCloud
 
       # 2. Setup .NET
       - name: Setup .NET
@@ -28,139 +39,26 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # 3. Debug: Verificação completa
-      - name: Verify files
+      # 3. Display branch information
+      - name: Display Branch Info
         run: |
-          echo "Conteúdo do diretório raiz:"
-          ls -la
-          echo "Conteúdo do diretório do projeto:"
-          ls -la ${{ env.PROJECT_DIR }}
-          echo "Verificando Dockerfile:"
-          ls -la ${{ env.PROJECT_DIR }}/Dockerfile || echo "Dockerfile não encontrado"
+          echo "🌿 Branch: ${{ github.ref_name }}"
+          echo "🔄 Event: ${{ github.event_name }}"
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            echo "📋 PR #${{ github.event.pull_request.number }}: ${{ github.head_ref }} → ${{ github.base_ref }}"
+          fi
 
       # 4. Build Docker
       - name: Build Docker Image
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          echo "Building Docker image from $(pwd)"
+          echo "🔨 Building Docker image..."
           docker build -t ${{ env.DOCKER_IMAGE_NAME }} .
 
-      # 5. Create Docker Network
-      - name: Create Docker Network
-        run: docker network create zap-net
-
-      # 6. Run API Container
-      - name: Run API Container
+      # 5. DAST Security Scan
+      - name: DAST Security Scan
+        id: dast
         run: |
-          docker run -d \
-            --name api \
-            --network zap-net \
-            -p 5000:5000 \
-            -e ASPNETCORE_URLS=http://+:5000 \
-            ${{ env.DOCKER_IMAGE_NAME }}
+          echo "🛡️ Starting DAST Security Scan..."
           
-          # Aguarda a API inicializar
-          echo "Aguardando API inicializar..."
-          sleep 30
-          
-          # Verifica se a API está respondendo
-          for i in {1..10}; do
-            if docker exec api curl -f http://localhost:5000/health 2>/dev/null || docker exec api curl -f http://localhost:5000 2>/dev/null; then
-              echo "API está rodando!"
-              break
-            elif [ $i -eq 10 ]; then
-              echo "API não iniciou após 10 tentativas"
-              docker logs api
-              exit 1
-            else
-              echo "Tentativa $i/10: API ainda não está pronta"
-              sleep 10
-            fi
-          done
-
-      # 7. Get API IP and Test Connection
-      - name: Test API Connection
-        run: |
-          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
-          echo "API container IP: $API_IP"
-          
-          # Testa conectividade do ZAP para a API
-          docker run --rm \
-            --network zap-net \
-            ghcr.io/zaproxy/zaproxy:stable \
-            bash -c "curl -v http://$API_IP:5000/health || curl -v http://$API_IP:5000 || echo 'Connection failed'"
-
-      # 8. OWASP ZAP Scan
-      - name: Run OWASP ZAP Scan
-        run: |
-          # Get API container IP address
-          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
-          echo "API container IP: $API_IP"
-          
-          # Prepare writable directory for ZAP reports
-          mkdir -p $GITHUB_WORKSPACE/zap-work
-          chmod -R 777 $GITHUB_WORKSPACE/zap-work
-          
-          # Run ZAP scan with better error handling
-          docker run --rm \
-            --network zap-net \
-            -v $GITHUB_WORKSPACE/zap-work:/zap/wrk:rw \
-            ghcr.io/zaproxy/zaproxy:stable \
-            zap-baseline.py \
-            -t http://$API_IP:5000 \
-            -J zap-report.json \
-            -w zap-report.md \
-            -r zap-report.html \
-            -I \
-            -d || echo "ZAP scan completed with warnings"
-
-      # 9. List ZAP report files
-      - name: List ZAP report files
-        if: always()
-        run: |
-          echo "Conteúdo do diretório zap-work:"
-          ls -la $GITHUB_WORKSPACE/zap-work/
-
-      # 10. Upload ZAP reports
-      - name: Upload ZAP reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: zap-reports
-          path: zap-work/
-
-      # 11. Show container logs for debugging
-      - name: Show API Container Logs
-        if: failure()
-        run: |
-          echo "=== API Container Logs ==="
-          docker logs api
-
-      # 12. Cleanup
-      - name: Stop Container
-        if: always()
-        run: |
-          docker stop api || true
-          docker rm api || true
-          docker network rm zap-net || true
-
-      # 13. SonarCloud Analysis (movido para o final)
-      - name: Install SonarScanner for .NET
-        if: success()
-        run: dotnet tool install --global dotnet-sonarscanner
-
-      - name: Build and Analyze with SonarCloud
-        if: success()
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: |
-          dotnet sonarscanner begin \
-            /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" \
-            /o:"jorgealmeidadeveloper" \
-            /d:sonar.login="${{ secrets.SONAR_TOKEN }}" \
-            /d:sonar.host.url="https://sonarcloud.io" \
-            /d:sonar.dotnet.buildConfiguration="Release"
-          
-          dotnet build --configuration Release
-          
-          dotnet sonarscanner end \
-            /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+          # Create network and st
