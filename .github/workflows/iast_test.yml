@@ -1,4 +1,4 @@
-name: Full_Security_IAST  (SAST + DAST = Simulated IAST)
+name: Full_Security_  ( SAST + DAST = Simulated IAST)
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
     - name: Install Snyk CLI
       run: npm install -g snyk@latest
 
-    # 5. Rodar Snyk (SAST + Deps) e exportar SARIF
+    # 5. Rodar Snyk (SAST + Deps) e exportar múltiplos formatos
     - name: Run Snyk Scans
       working-directory: ./LibraryOnlineRentalSystem
       env:
@@ -43,19 +43,128 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
       run: |
         mkdir -p ./snyk_results
-        snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=./snyk_results/snyk-deps.sarif || true
-        snyk code test --severity-threshold=high --sarif-file-output=./snyk_results/snyk-code.sarif || true
-        ls -la ./snyk_results/
+        
+        # Scan de dependências - múltiplos formatos
+        echo "=== Executando Snyk Dependencies Scan ===" | tee ./snyk_results/snyk-deps.txt
+        snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --sarif-file-output=./snyk_results/snyk-deps.sarif 2>&1 | tee -a ./snyk_results/snyk-deps.txt || true
+        snyk test --file=LibraryOnlineRentalSystem.csproj --all-projects --json-file-output=./snyk_results/snyk-deps.json || true
+        
+        # Scan de código - múltiplos formatos  
+        echo "=== Executando Snyk Code Scan ===" | tee ./snyk_results/snyk-code.txt
+        snyk code test --severity-threshold=high --sarif-file-output=./snyk_results/snyk-code.sarif 2>&1 | tee -a ./snyk_results/snyk-code.txt || true
+        snyk code test --severity-threshold=high --json-file-output=./snyk_results/snyk-code.json || true
+        
+        # Listar arquivos gerados
+        echo "=== Arquivos gerados pelo Snyk ===" | tee ./snyk_results/files-summary.txt
+        ls -la ./snyk_results/ | tee -a ./snyk_results/files-summary.txt
 
-    - name: Upload Snyk SARIF
+    # 6. Gerar relatório consolidado em Markdown
+    - name: Generate Snyk Markdown Report
+      working-directory: ./LibraryOnlineRentalSystem
+      run: |
+        cat > ./snyk_results/snyk-report.md << 'EOF'
+        # Relatório de Segurança - Snyk
+        
+        **Data da Análise:** $(date '+%Y-%m-%d %H:%M:%S')
+        **Projeto:** LibraryOnlineRentalSystem
+        **Branch:** ${{ github.ref_name }}
+        **Commit:** ${{ github.sha }}
+        
+        ## Resumo Executivo
+        
+        Este relatório contém os resultados das análises de segurança realizadas pelo Snyk:
+        - **Análise de Dependências**: Vulnerabilidades em bibliotecas de terceiros
+        - **Análise de Código**: Problemas de segurança no código fonte
+        
+        ---
+        
+        ## Análise de Dependências
+        
+        ### Resultados:
+        ```
+        EOF
+        
+        # Adicionar resultados de dependências
+        if [ -f "./snyk_results/snyk-deps.txt" ]; then
+          cat ./snyk_results/snyk-deps.txt >> ./snyk_results/snyk-report.md
+        else
+          echo "Nenhum resultado de dependências encontrado" >> ./snyk_results/snyk-report.md
+        fi
+        
+        cat >> ./snyk_results/snyk-report.md << 'EOF'
+        ```
+        
+        ---
+        
+        ## Análise de Código
+        
+        ### Resultados:
+        ```
+        EOF
+        
+        # Adicionar resultados de código
+        if [ -f "./snyk_results/snyk-code.txt" ]; then
+          cat ./snyk_results/snyk-code.txt >> ./snyk_results/snyk-report.md
+        else
+          echo "Nenhum resultado de código encontrado" >> ./snyk_results/snyk-report.md
+        fi
+        
+        cat >> ./snyk_results/snyk-report.md << 'EOF'
+        ```
+        
+        ---
+        
+        ## Arquivos Gerados
+        
+        ```
+        EOF
+        
+        cat ./snyk_results/files-summary.txt >> ./snyk_results/snyk-report.md
+        
+        echo '```' >> ./snyk_results/snyk-report.md
+        echo "" >> ./snyk_results/snyk-report.md
+        echo "**Relatório gerado automaticamente pelo GitHub Actions**" >> ./snyk_results/snyk-report.md
+
+    # 7. Converter Relatório para PDF
+    - name: Convert Markdown to PDF
+      working-directory: ./LibraryOnlineRentalSystem
+      run: |
+        # Instalar pandoc e wkhtmltopdf
+        sudo apt-get update
+        sudo apt-get install -y pandoc wkhtmltopdf
+        
+        # Converter Markdown para HTML
+        pandoc ./snyk_results/snyk-report.md -o ./snyk_results/snyk-report.html --standalone --css=<(echo "
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1, h2, h3 { color: #333; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        pre, code { background-color: #f4f4f4; padding: 10px; border-radius: 5px; overflow-x: auto; }
+        .header { text-align: center; margin-bottom: 30px; }
+        ")
+        
+        # Converter HTML para PDF
+        wkhtmltopdf \
+          --page-size A4 \
+          --margin-top 0.75in \
+          --margin-right 0.75in \
+          --margin-bottom 0.75in \
+          --margin-left 0.75in \
+          --encoding UTF-8 \
+          --print-media-type \
+          ./snyk_results/snyk-report.html \
+          ./snyk_results/snyk-report.pdf
+        
+        echo "PDF gerado com sucesso!"
+        ls -la ./snyk_results/snyk-report.pdf
+
+    # 8. Upload dos resultados Snyk (todos os formatos)
+    - name: Upload Snyk Results
       uses: actions/upload-artifact@v4
       with:
-        name: snyk-sarif-results
+        name: snyk-complete-results
         path: |
-          ./LibraryOnlineRentalSystem/snyk_results/snyk-deps.sarif
-          ./LibraryOnlineRentalSystem/snyk_results/snyk-code.sarif
+          ./LibraryOnlineRentalSystem/snyk_results/
 
-    # 5. Build imagem Docker
+    # 9. Build imagem Docker
     - name: Build Docker Image
       working-directory: ./LibraryOnlineRentalSystem
       run: docker build -t $DOCKER_IMAGE_NAME .
