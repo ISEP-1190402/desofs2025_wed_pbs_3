@@ -1,4 +1,4 @@
-name: Full Security  (.NET + SAST + DAST + Simulated IAST)
+name: Full_Security_IAST  (SAST + DAST = Simulated IAST)
 
 on:
   push:
