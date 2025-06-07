@@ -28,7 +28,7 @@ jobs:
         with:
           dotnet-version: 8.0.x
 
-      # 3. Cache Dependencies
+      # 3. Cache .NET packages
       - name: Cache .NET packages
         uses: actions/cache@v3
         with:
@@ -55,6 +55,7 @@ jobs:
             --name api \
             --network zap-net \
             -p $API_PORT:$API_PORT \
+            -e ASPNETCORE_URLS=http://+:${API_PORT} \
             --health-cmd="curl -f http://localhost:$API_PORT/health || exit 1" \
             --health-interval=10s \
             --health-timeout=5s \
@@ -65,7 +66,7 @@ jobs:
       - name: Wait for API Health Check
         run: |
           echo "Waiting for API to be healthy..."
-          timeout 60s bash -c 'until docker inspect --format="{{.State.Health.Status}}" api | grep -q "healthy"; do
+          timeout 120s bash -c 'until docker inspect --format="{{.State.Health.Status}}" api | grep -q "healthy"; do
             echo "API container status: $(docker inspect --format="{{.State.Health.Status}}" api)"
             sleep 5
           done'
@@ -88,21 +89,15 @@ jobs:
       # 10. OWASP ZAP Security Scan
       - name: Run OWASP ZAP DAST Scan
         run: |
-          # Get API container IP
-          API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
-          echo "API container IP: $API_IP"
-          
-          # Prepare reports directory
           mkdir -p $GITHUB_WORKSPACE/zap-reports
           chmod -R 777 $GITHUB_WORKSPACE/zap-reports
           
-          # Run ZAP baseline scan
           docker run --rm \
             --network zap-net \
             -v $GITHUB_WORKSPACE/zap-reports:/zap/wrk:rw \
             ghcr.io/zaproxy/zaproxy:stable \
             zap-baseline.py \
-            -t http://$API_IP:${{ env.API_PORT }} \
+            -t http://api:${{ env.API_PORT }} \
             -J zap-report.json \
             -w zap-report.md \
             -r zap-report.html \
@@ -117,10 +112,9 @@ jobs:
           echo "ZAP scan completed. Report files:"
           ls -la $GITHUB_WORKSPACE/zap-reports/
           
-          # Check if high/medium severity issues found
           if [ -f "$GITHUB_WORKSPACE/zap-reports/zap-report.json" ]; then
             echo "Analyzing security findings..."
-            # Add logic to parse JSON and set job status based on severity
+            # Aqui você pode adicionar lógica para verificar severidade
           fi
 
       # 12. Upload ZAP Reports
