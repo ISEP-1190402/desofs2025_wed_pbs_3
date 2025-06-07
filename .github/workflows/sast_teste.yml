@@ -1,0 +1,368 @@
+name: Snyk Security SAST
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"] 
+
+jobs:
+  security-scan:
+    name: Run Snyk Security SAST
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+
+    steps:
+    # 1. Checkout código
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      with:
+        path: ./src
+    
+    # 2. Verificar Estrutura do Projeto
+    - name: Verify project structure
+      working-directory: ./src
+      run: |
+        echo "Verifying project structure"
+        ls -la
+        test -f "LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj" || {
+          echo "::error::Project file not found"
+          exit 1
+        }
+    
+    # 3. Setup .NET
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.0.x'
+        
+    # 4. Restaurar dependencias
+    - name: Restore dependencies
+      working-directory: ./src/LibraryOnlineRentalSystem
+      run: dotnet restore
+
+    # 5. Setup Node.js para Snyk e ferramentas de PDF
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+
+    # 6. Instalação Snyk e ferramentas para PDF
+    - name: Install Snyk CLI and PDF tools
+      run: |
+        npm install -g snyk@latest
+        npm install -g puppeteer
+        sudo apt-get update
+        sudo apt-get install -y wkhtmltopdf
+
+    # 7. Criar diretórios para resultados
+    - name: Create results directories
+      working-directory: ./src/LibraryOnlineRentalSystem
+      run: |
+        mkdir -p ./snyk_results/json
+        mkdir -p ./snyk_results/sarif
+        mkdir -p ./snyk_results/reports
+
+    # 8. Executar Snyk Scans completos
+    - name: Run Snyk Scans
+      working-directory: ./src/LibraryOnlineRentalSystem
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        echo "Running Snyk dependency scan..."
+        snyk test --file=LibraryOnlineRentalSystem.csproj --json > ./snyk_results/json/snyk-deps.json || true
+        snyk test --file=LibraryOnlineRentalSystem.csproj --sarif-file-output=./snyk_results/sarif/snyk-deps.sarif || true
+        
+        echo "Running Snyk code scan..."
+        snyk code test --json > ./snyk_results/json/snyk-code.json || true
+        snyk code test --sarif-file-output=./snyk_results/sarif/snyk-code.sarif || true
+        
+        echo "Running Snyk container scan (if applicable)..."
+        snyk container test --json > ./snyk_results/json/snyk-container.json || true
+        
+        echo "Running Snyk IaC scan (if applicable)..."
+        snyk iac test --json > ./snyk_results/json/snyk-iac.json || true
+        
+        echo "Listing generated files..."
+        ls -la ./snyk_results/json/
+        ls -la ./snyk_results/sarif/
+
+    # 9. Criar script Python para gerar relatório PDF
+    - name: Create PDF report generator script
+      run: |
+        cat > generate_report.py << 'EOF'
+        import json
+        import os
+        import sys
+        from datetime import datetime
+        import subprocess
+
+        def load_json_safe(file_path):
+            """Carrega JSON de forma segura, retornando dict vazio se houver erro."""
+            try:
+                if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        return json.load(f)
+            except (json.JSONDecodeError, Exception) as e:
+                print(f"Warning: Could not load {file_path}: {e}")
+            return {}
+
+        def generate_html_report(deps_data, code_data, container_data, iac_data, project_name):
+            """Gera relatório HTML completo."""
+            
+            # Processar dados de dependências
+            deps_vulns = deps_data.get('vulnerabilities', [])
+            deps_summary = deps_data.get('summary', {})
+            
+            # Processar dados de código
+            code_runs = code_data.get('runs', [])
+            code_results = []
+            if code_runs:
+                code_results = code_runs[0].get('results', [])
+            
+            # Contar vulnerabilidades por severidade
+            severity_count = {'high': 0, 'medium': 0, 'low': 0, 'critical': 0}
+            
+            for vuln in deps_vulns:
+                severity = vuln.get('severity', 'unknown').lower()
+                if severity in severity_count:
+                    severity_count[severity] += 1
+            
+            for result in code_results:
+                level = result.get('level', 'note').lower()
+                if level == 'error':
+                    severity_count['high'] += 1
+                elif level == 'warning':
+                    severity_count['medium'] += 1
+                elif level == 'note':
+                    severity_count['low'] += 1
+
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>Snyk Security Report - {project_name}</title>
+                <style>
+                    body {{ font-family: Arial, sans-serif; margin: 20px; color: #333; }}
+                    .header {{ background-color: #4A90E2; color: white; padding: 20px; text-align: center; margin-bottom: 30px; }}
+                    .summary {{ background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 30px; }}
+                    .section {{ margin-bottom: 30px; }}
+                    .section h2 {{ color: #4A90E2; border-bottom: 2px solid #4A90E2; padding-bottom: 10px; }}
+                    .vulnerability {{ background-color: #fff; border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }}
+                    .critical {{ border-left: 5px solid #d32f2f; }}
+                    .high {{ border-left: 5px solid #f57c00; }}
+                    .medium {{ border-left: 5px solid #fbc02d; }}
+                    .low {{ border-left: 5px solid #388e3c; }}
+                    .severity {{ font-weight: bold; padding: 5px 10px; border-radius: 3px; color: white; }}
+                    .severity.critical {{ background-color: #d32f2f; }}
+                    .severity.high {{ background-color: #f57c00; }}
+                    .severity.medium {{ background-color: #fbc02d; color: #333; }}
+                    .severity.low {{ background-color: #388e3c; }}
+                    .metrics {{ display: flex; justify-content: space-around; text-align: center; }}
+                    .metric {{ background-color: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }}
+                    .metric-value {{ font-size: 2em; font-weight: bold; color: #4A90E2; }}
+                    table {{ width: 100%; border-collapse: collapse; margin-top: 15px; }}
+                    th, td {{ border: 1px solid #ddd; padding: 12px; text-align: left; }}
+                    th {{ background-color: #f8f9fa; }}
+                    .no-issues {{ color: #28a745; font-weight: bold; text-align: center; padding: 20px; }}
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <h1>Snyk Security Report</h1>
+                    <p>Project: {project_name}</p>
+                    <p>Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                </div>
+
+                <div class="summary">
+                    <h2>Executive Summary</h2>
+                    <div class="metrics">
+                        <div class="metric">
+                            <div class="metric-value">{severity_count['critical']}</div>
+                            <div>Critical</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">{severity_count['high']}</div>
+                            <div>High</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">{severity_count['medium']}</div>
+                            <div>Medium</div>
+                        </div>
+                        <div class="metric">
+                            <div class="metric-value">{severity_count['low']}</div>
+                            <div>Low</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📦 Dependency Vulnerabilities</h2>
+            """
+            
+            if deps_vulns:
+                for vuln in deps_vulns:
+                    severity = vuln.get('severity', 'unknown').lower()
+                    html_content += f"""
+                    <div class="vulnerability {severity}">
+                        <h3>{vuln.get('title', 'Unknown Vulnerability')}</h3>
+                        <p><span class="severity {severity}">{severity.upper()}</span></p>
+                        <p><strong>Package:</strong> {vuln.get('packageName', 'Unknown')}</p>
+                        <p><strong>Version:</strong> {vuln.get('version', 'Unknown')}</p>
+                        <p><strong>Description:</strong> {vuln.get('description', 'No description available')}</p>
+                        <p><strong>CVE:</strong> {', '.join(vuln.get('identifiers', {}).get('CVE', ['Not available']))}</p>
+                    </div>
+                    """
+            else:
+                html_content += '<div class="no-issues">✅ No dependency vulnerabilities found!</div>'
+            
+            html_content += """
+                </div>
+
+                <div class="section">
+                    <h2>🔍 Code Analysis Issues</h2>
+            """
+            
+            if code_results:
+                for result in code_results:
+                    rule_id = result.get('ruleId', 'Unknown')
+                    message = result.get('message', {}).get('text', 'No description')
+                    level = result.get('level', 'note')
+                    locations = result.get('locations', [])
+                    
+                    severity_class = 'high' if level == 'error' else 'medium' if level == 'warning' else 'low'
+                    
+                    html_content += f"""
+                    <div class="vulnerability {severity_class}">
+                        <h3>{rule_id}</h3>
+                        <p><span class="severity {severity_class}">{level.upper()}</span></p>
+                        <p><strong>Description:</strong> {message}</p>
+                    """
+                    
+                    if locations:
+                        html_content += "<p><strong>Locations:</strong></p><ul>"
+                        for location in locations:
+                            physical_location = location.get('physicalLocation', {})
+                            artifact_location = physical_location.get('artifactLocation', {})
+                            region = physical_location.get('region', {})
+                            file_path = artifact_location.get('uri', 'Unknown file')
+                            line = region.get('startLine', 'Unknown line')
+                            html_content += f"<li>{file_path}:{line}</li>"
+                        html_content += "</ul>"
+                    
+                    html_content += "</div>"
+            else:
+                html_content += '<div class="no-issues">✅ No code analysis issues found!</div>'
+            
+            html_content += f"""
+                </div>
+
+                <div class="section">
+                    <h2>📊 Scan Information</h2>
+                    <table>
+                        <tr><th>Scan Type</th><th>Status</th><th>Issues Found</th></tr>
+                        <tr><td>Dependencies</td><td>{'✅ Completed' if deps_data else '❌ No data'}</td><td>{len(deps_vulns)}</td></tr>
+                        <tr><td>Code Analysis</td><td>{'✅ Completed' if code_data else '❌ No data'}</td><td>{len(code_results)}</td></tr>
+                        <tr><td>Container</td><td>{'✅ Completed' if container_data else '❌ No data'}</td><td>-</td></tr>
+                        <tr><td>Infrastructure as Code</td><td>{'✅ Completed' if iac_data else '❌ No data'}</td><td>-</td></tr>
+                    </table>
+                </div>
+
+                <div class="section">
+                    <h2>🔧 Recommendations</h2>
+                    <ul>
+                        <li>Address critical and high severity vulnerabilities immediately</li>
+                        <li>Update dependencies to latest secure versions</li>
+                        <li>Review and fix code analysis issues</li>
+                        <li>Implement regular security scanning in CI/CD pipeline</li>
+                        <li>Consider using Snyk to monitor for new vulnerabilities</li>
+                    </ul>
+                </div>
+
+                <footer style="margin-top: 50px; text-align: center; color: #666; border-top: 1px solid #ddd; padding-top: 20px;">
+                    <p>Generated by Snyk Security Scanner | {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}</p>
+                </footer>
+            </body>
+            </html>
+            """
+            
+            return html_content
+
+        def main():
+            # Caminhos dos arquivos
+            base_path = "./src/LibraryOnlineRentalSystem/snyk_results/json"
+            
+            # Carregar dados
+            deps_data = load_json_safe(f"{base_path}/snyk-deps.json")
+            code_data = load_json_safe(f"{base_path}/snyk-code.json")
+            container_data = load_json_safe(f"{base_path}/snyk-container.json")
+            iac_data = load_json_safe(f"{base_path}/snyk-iac.json")
+            
+            # Nome do projeto
+            project_name = "LibraryOnlineRentalSystem"
+            
+            # Gerar HTML
+            html_content = generate_html_report(deps_data, code_data, container_data, iac_data, project_name)
+            
+            # Salvar HTML
+            html_path = "./src/LibraryOnlineRentalSystem/snyk_results/reports/security_report.html"
+            with open(html_path, 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
+            print(f"HTML report generated: {html_path}")
+            
+            # Converter para PDF
+            pdf_path = "./src/LibraryOnlineRentalSystem/snyk_results/reports/security_report.pdf"
+            try:
+                subprocess.run([
+                    'wkhtmltopdf',
+                    '--page-size', 'A4',
+                    '--margin-top', '0.75in',
+                    '--margin-right', '0.75in',
+                    '--margin-bottom', '0.75in',
+                    '--margin-left', '0.75in',
+                    '--encoding', 'UTF-8',
+                    '--enable-local-file-access',
+                    html_path,
+                    pdf_path
+                ], check=True)
+                print(f"PDF report generated: {pdf_path}")
+            except subprocess.CalledProcessError as e:
+                print(f"Error generating PDF: {e}")
+                sys.exit(1)
+
+        if __name__ == "__main__":
+            main()
+        EOF
+
+    # 10. Executar geração do relatório PDF
+    - name: Generate PDF Report
+      run: |
+        python3 generate_report.py
+
+    # 11. Verificar arquivos gerados
+    - name: Verify generated files
+      run: |
+        echo "Checking generated files..."
+        ls -la ./src/LibraryOnlineRentalSystem/snyk_results/reports/
+        file ./src/LibraryOnlineRentalSystem/snyk_results/reports/security_report.pdf || echo "PDF not found"
+
+    # 12. Upload dos resultados
+    - name: Upload Security Reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: snyk-security-reports
+        path: |
+          ./src/LibraryOnlineRentalSystem/snyk_results/reports/
+          ./src/LibraryOnlineRentalSystem/snyk_results/json/
+          ./src/LibraryOnlineRentalSystem/snyk_results/sarif/
+
+    # 13. Upload SARIF para GitHub Security
+    - name: Upload SARIF to GitHub Security
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: ./src/LibraryOnlineRentalSystem/snyk_results/sarif/
+      if: always()
