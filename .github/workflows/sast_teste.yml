@@ -2,7 +2,7 @@ name: Snyk SAST Code
 
 on:
   push:
-    branches: ["**"]
+    branches: ["development"]
   pull_request:
     branches: ["**"]
 
