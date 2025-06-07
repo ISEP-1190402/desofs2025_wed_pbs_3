@@ -8,13 +8,12 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:5000
-      - ConnectionStrings__LibraryDatabase=Server=mysql;Port=3306;Database=${MYSQL_DATABASE};User=${DB_USER};Password=${DB_PASSWORD};
+      - ConnectionStrings__LibraryDatabase=Server=libraryorsdb-desofs.mysql.database.azure.com;Port=3306;Database=${MYSQL_DATABASE};User=${DB_USER}@libraryorsdb-desofs;Password=${DB_PASSWORD};SslMode=Required;
       - Keycloak__Authority=http://keycloak:8080/realms/library
       - Keycloak__Audience=library-client
       - Keycloak__ClientId=library-client
       - Keycloak__ClientSecret=${KEYCLOAK_CLIENT_SECRET}
     depends_on:
-      - mysql
       - keycloak
 
   keycloak:
@@ -25,23 +24,8 @@ services:
       - KEYCLOAK_ADMIN=${KEYCLOAK_ADMIN}
       - KEYCLOAK_ADMIN_PASSWORD=${KEYCLOAK_ADMIN_PASSWORD}
       - KC_DB=mysql
-      - KC_DB_URL=jdbc:mysql://mysql:3306/keycloak
-      - KC_DB_USERNAME=${DB_USER}
+      - KC_DB_URL=jdbc:mysql://libraryorsdb-desofs.mysql.database.azure.com:3306/keycloak?useSSL=true&requireSSL=true
+      - KC_DB_USERNAME=${DB_USER}@libraryorsdb-desofs
       - KC_DB_PASSWORD=${DB_PASSWORD}
     command: start-dev
-    depends_on:
-      - mysql
 
-  mysql:
-    image: mysql:8.0
-    ports:
-      - "3307:3306"
-    environment:
-      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
-      - MYSQL_DATABASE=${MYSQL_DATABASE}
-    volumes:
-      - mysql_data:/var/lib/mysql
-      - ./init-keycloak-db.sql:/docker-entrypoint-initdb.d/init-keycloak-db.sql
-
-volumes:
-  mysql_data: 
