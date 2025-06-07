@@ -50,11 +50,59 @@ jobs:
         snyk code test --json > ./snyk_results/json/snyk-code.json || true
         snyk code test --sarif-file-output=./snyk_results/sarif/snyk-code.sarif || true
 
+    - name: Run Snyk Open Source Dependency Scan
+      working-directory: ./src
+      env:
+        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      run: |
+        echo "Running Snyk dependency scan..."
+        snyk test --json > ./snyk_results/json/snyk-deps.json || true
+        snyk test --sarif-file-output=./snyk_results/sarif/snyk-deps.sarif || true
+
     - name: Create PDF report generator script
       run: |
         cat > ./src/generate_report.py << 'EOF'
-        # (INSIRA AQUI O CÓDIGO PYTHON COMPLETO DO RELATÓRIO, MAS MANTENHA APENAS A PARTE DE "code_data")
-        # Você pode reutilizar o script que já tem, simplificando para usar só `snyk-code.json`
+        # ⚠️ Substitua isso pelo script Python final depois
+        # Exemplo mínimo para incluir vulnerabilidades de código e dependências
+        import json
+        from pathlib import Path
+
+        def load_json(path):
+            try:
+                with open(path) as f:
+                    return json.load(f)
+            except:
+                return {}
+
+        code = load_json("./src/snyk_results/json/snyk-code.json")
+        deps = load_json("./src/snyk_results/json/snyk-deps.json")
+
+        html = "<h1>Snyk Security Report</h1>"
+
+        html += "<h2>Code Vulnerabilities</h2>"
+        if 'runs' in code:
+            html += f"<p>Runs found: {len(code['runs'])}</p>"
+        else:
+            html += "<p>No code issues found or failed to parse.</p>"
+
+        html += "<h2>Dependency Vulnerabilities</h2>"
+        if 'vulnerabilities' in deps:
+            html += f"<p>Issues found: {len(deps['vulnerabilities'])}</p>"
+            for vuln in deps['vulnerabilities']:
+                html += f"<div><strong>{vuln.get('title')}</strong><br>"
+                html += f"Package: {vuln.get('packageName')}<br>"
+                html += f"Severity: {vuln.get('severity')}<br>"
+                html += f"ID: {vuln.get('id')}</div><br>"
+        else:
+            html += "<p>No dependency issues found or failed to parse.</p>"
+
+        # Save HTML to file
+        with open("./src/snyk_results/reports/security_report.html", "w") as f:
+            f.write(html)
+
+        # Convert to PDF
+        import pdfkit
+        pdfkit.from_file("./src/snyk_results/reports/security_report.html", "./src/snyk_results/reports/security_report.pdf")
         EOF
 
     - name: Generate PDF Report
