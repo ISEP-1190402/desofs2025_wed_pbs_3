@@ -163,7 +163,25 @@ jobs:
       - name: Restore NuGet packages
         run: |
           echo "📦 Restoring NuGet packages for all projects..."
-          dotnet restore --verbosity normal
+          
+          # Restore projeto principal
+          echo "Restoring main project..."
+          dotnet restore ${{ env.PROJECT_DIR }} --verbosity normal
+          
+          # Procura e restore projetos de teste
+          echo "Looking for test projects..."
+          if [ -d "LibraryOnlineRentalSystem.Tests" ]; then
+            echo "Restoring test project..."
+            dotnet restore LibraryOnlineRentalSystem.Tests --verbosity normal
+          fi
+          
+          # Procura por outros projetos .csproj na raiz se existirem
+          for proj in $(find . -maxdepth 2 -name "*.csproj" -not -path "${{ env.PROJECT_DIR }}/*" -not -path "./LibraryOnlineRentalSystem.Tests/*"); do
+            if [ -f "$proj" ]; then
+              echo "Restoring additional project: $proj"
+              dotnet restore "$proj" --verbosity normal
+            fi
+          done
 
       # 9. Finalize SonarCloud Analysis (CORRIGIDO)
       - name: Complete SonarCloud Analysis
@@ -171,7 +189,15 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           echo "🔨 Building project for SonarCloud..."
-          dotnet build --configuration Release --no-restore --verbosity normal
+          
+          # Build projeto principal
+          dotnet build ${{ env.PROJECT_DIR }} --configuration Release --no-restore --verbosity normal
+          
+          # Build projetos de teste se existirem
+          if [ -d "LibraryOnlineRentalSystem.Tests" ]; then
+            echo "Building test project..."
+            dotnet build LibraryOnlineRentalSystem.Tests --configuration Release --no-restore --verbosity normal
+          fi
           
           echo "📤 Finalizing SonarCloud analysis..."
           dotnet sonarscanner end "/d:sonar.login=${{ secrets.SONAR_TOKEN }}"
@@ -217,4 +243,43 @@ jobs:
           fi
           
           echo "" >> security-summary.md
-          echo "## 📁 Available Reports" >> security-su
+          echo "## 📁 Available Reports" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "- **JSON Report:** report_json.json" >> security-summary.md
+          echo "- **HTML Report:** report_html.html" >> security-summary.md
+          echo "- **Markdown Report:** report_md.md" >> security-summary.md
+          echo "- **XML Report:** report_xml.xml" >> security-summary.md
+          echo "" >> security-summary.md
+          echo "**Artifact Name:** zap-security-reports-${{ github.ref_name }}-${{ github.run_number }}" >> security-summary.md
+          
+          # Show summary in logs
+          echo "📋 Security Analysis Summary:"
+          echo "============================="
+          cat security-summary.md
+
+      # 12. Upload Security Summary
+      - name: Upload Security Summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-summary-${{ github.ref_name }}-${{ github.run_number }}
+          path: security-summary.md
+          retention-days: 30
+
+      # 13. Show API logs for debugging
+      - name: Show API Container Logs
+        if: failure()
+        run: |
+          echo "📋 API Container Logs for debugging:"
+          echo "===================================="
+          docker logs api
+
+      # 14. Parar container
+      - name: Stop Container
+        if: always()
+        run: |
+          echo "🧹 Cleaning up containers..."
+          docker stop api || true
+          docker rm api || true
+          docker network rm zap-net || true
+          echo "✅ Cleanup completed"
