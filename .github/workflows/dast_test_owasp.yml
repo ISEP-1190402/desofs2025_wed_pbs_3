@@ -87,7 +87,7 @@ jobs:
 
       # ✅ 10. Build the solution (.sln is mandatory for correct analysis)
       - name: Build Solution
-        run: dotnet build LibraryOnlineRentalSystem.sln --configuration Release
+        run: dotnet build LibraryOnlineRentalSystem --configuration Release
 
       # 11. Run OWASP ZAP DAST Scan
       - name: Run OWASP ZAP DAST Scan
