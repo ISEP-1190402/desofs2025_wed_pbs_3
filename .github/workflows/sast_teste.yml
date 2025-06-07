@@ -37,7 +37,7 @@ jobs:
         mkdir -p ./snyk_results/sarif
 
     - name: Restore .NET dependencies
-      working-directory: ./src/ISEP-1190402/desofs2025_wed_pbs_3/LibraryOnlineRentalSystem
+      working-directory: ./src/desofs2025_wed_pbs_3/LibraryOnlineRentalSystem
       run: dotnet restore
 
     - name: Run Snyk Code SAST Scan
