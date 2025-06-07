@@ -59,8 +59,8 @@ jobs:
         echo "Running Snyk dependency scan..."
         snyk test --json > ./snyk_results/json/snyk-deps.json || true
         snyk test --sarif-file-output=./snyk_results/sarif/snyk-deps.sarif || true
-        snyk test --file=ISEP-1190402/desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --json > ./snyk_results/json/snyk-deps.json || true
-        snyk test --file=ISEP-1190402/desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --sarif-file-output=./snyk_results/sarif/snyk-deps.sarif || true
+        snyk test --file=desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --json > ./snyk_results/json/snyk-deps.json || true
+        snyk test --file=desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --sarif-file-output=./snyk_results/sarif/snyk-deps.sarif || true
 
     - name: Verify generated JSON files
       run: |
