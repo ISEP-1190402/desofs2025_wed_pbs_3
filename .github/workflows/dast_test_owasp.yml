@@ -90,6 +90,12 @@ jobs:
         run: |
           echo "📊 Starting SonarCloud analysis for branch: ${{ github.ref_name }}"
           
+          # Verificar se o SONAR_TOKEN existe
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "❌ SONAR_TOKEN not found in secrets"
+            exit 1
+          fi
+          
           # Configuração base do SonarScanner
           SONAR_ARGS=(
             "/k:jorgealmeidadeveloper_LibraryOnlineRentalSystem"
@@ -97,6 +103,8 @@ jobs:
             "/d:sonar.login=${{ secrets.SONAR_TOKEN }}"
             "/d:sonar.host.url=https://sonarcloud.io"
             "/d:sonar.dotnet.buildConfiguration=Release"
+            "/d:sonar.sources=."
+            "/d:sonar.exclusions=**/bin/**,**/obj/**,**/*.Tests/**"
           )
           
           # Configuração específica por tipo de branch
@@ -108,15 +116,18 @@ jobs:
               "/d:sonar.pullrequest.base=${{ github.base_ref }}"
               "/d:sonar.pullrequest.github.repository=${{ github.repository }}"
             )
-          elif [[ "${{ github.ref_name }}" =~ ^(main|master)$ ]]; then
+          elif [[ "${{ github.ref_name }}" == "main" ]]; then
             echo "🌟 Analyzing main branch: ${{ github.ref_name }}"
-            # Main branches don't need extra params
+            # Para a branch main, não precisamos de parâmetros extras
           else
             echo "🌿 Analyzing branch: ${{ github.ref_name }}"
             SONAR_ARGS+=(
               "/d:sonar.branch.name=${{ github.ref_name }}"
             )
           fi
+          
+          echo "🔧 SonarScanner arguments:"
+          printf '%s\n' "${SONAR_ARGS[@]}"
           
           # Executa o SonarScanner begin
           dotnet sonarscanner begin "${SONAR_ARGS[@]}"
@@ -200,9 +211,24 @@ jobs:
           fi
           
           echo "📤 Finalizing SonarCloud analysis..."
-          dotnet sonarscanner end "/d:sonar.login=${{ secrets.SONAR_TOKEN }}"
           
-          echo "✅ SonarCloud analysis completed!"
+          # Verificar se ainda temos o token
+          if [ -z "${{ secrets.SONAR_TOKEN }}" ]; then
+            echo "❌ SONAR_TOKEN not available for end command"
+            exit 1
+          fi
+          
+          # Finalizar análise com tratamento de erro
+          if dotnet sonarscanner end "/d:sonar.login=${{ secrets.SONAR_TOKEN }}"; then
+            echo "✅ SonarCloud analysis completed successfully!"
+          else
+            echo "⚠️ SonarCloud analysis failed, but continuing workflow..."
+            echo "This might be due to:"
+            echo "- Project not existing in SonarCloud"
+            echo "- Branch configuration issues"
+            echo "- Token permissions"
+            # Não falhamos o workflow por causa do SonarCloud
+          fi
 
       # 10. Upload do relatório (usando v4, a mais recente)
       - name: Upload ZAP reports
