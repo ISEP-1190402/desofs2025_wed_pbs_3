@@ -5,7 +5,7 @@ namespace LibraryOnlineRentalSystem.Domain.Rentals;
 
 public class Rental : Entity<RentalID>, IAggregateRoot
 {
-    public RentalID IdRental;
+    public RentalID Id;
     public RentalStartDate StartDate;
     public RentalEndDate EndDate;
     public RentedBookID RentedBookIdentifier;
@@ -19,7 +19,7 @@ public class Rental : Entity<RentalID>, IAggregateRoot
     [JsonConstructor]
     public Rental(string rentalId, string startDateTime, string endDateTime, string bookId, string userEmail)
     {
-        IdRental = new RentalID(rentalId);
+        Id = new RentalID(rentalId);
 
         if (!DateTime.TryParse(startDateTime, out var start))
             throw new ArgumentException("Invalid start date/time format.");
@@ -61,7 +61,7 @@ public class Rental : Entity<RentalID>, IAggregateRoot
     public RentalDTO toDTO()
     {
         return new RentalDTO(
-            IdRental.Value,
+            Id.Value,
             StartDate.StartDateTime.ToString("o"),
             EndDate.EndDateTime.ToString("o"),
             RentedBookIdentifier.GetRentedBookId(),

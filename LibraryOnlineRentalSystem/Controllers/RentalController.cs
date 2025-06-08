@@ -18,7 +18,7 @@ public class RentalController
 
     // POST: api/rental
     [HttpPost]
-    public async Task<ActionResult<RentalDTO>> CreateRental([FromBody] CreatedRentalDTO dto)
+    public async Task<ActionResult<RentalDTO>> CreateRental(CreatedRentalDTO dto)
     {
         var rental = await _rentalService.CreateARentalAsync(dto);
         return rental;
