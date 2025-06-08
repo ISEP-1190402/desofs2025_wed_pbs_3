@@ -29,34 +29,35 @@ namespace LibraryOnlineRentalSystem
         {
             services.AddDbContext<LibraryDbContext>(opt =>
                 opt.UseMySql(
-                    Configuration.GetConnectionString("LibraryDatabase"),
-                    ServerVersion.AutoDetect(Configuration.GetConnectionString("LibraryDatabase"))
-                )
-                .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
+                        Configuration["LibraryDatabase"],
+                        ServerVersion.AutoDetect(Configuration["LibraryDatabase"])
+                    )
+                    .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
             );
+            Console.WriteLine(Configuration["LibraryDatabase"]);
 
             ConfigureMyServices(services);
             ConfigureCors(services);
 
             // Add Keycloak Authentication
             services.AddAuthentication(options =>
-            {
-                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-            })
-            .AddJwtBearer(options =>
-            {
-                options.Authority = Configuration["Keycloak:Authority"];
-                options.Audience = Configuration["Keycloak:Audience"];
-                options.RequireHttpsMetadata = false; // Set to true in production
-                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true
-                };
-            });
+                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+                })
+                .AddJwtBearer(options =>
+                {
+                    options.Authority = Configuration["Keycloak:Authority"];
+                    options.Audience = Configuration["Keycloak:Audience"];
+                    options.RequireHttpsMetadata = false; // Set to true in production
+                    options.TokenValidationParameters = new TokenValidationParameters
+                    {
+                        ValidateIssuer = true,
+                        ValidateAudience = true,
+                        ValidateLifetime = true,
+                        ValidateIssuerSigningKey = true
+                    };
+                });
 
             services.AddHttpClient();
             services.AddControllers().AddNewtonsoftJson();
@@ -71,7 +72,7 @@ namespace LibraryOnlineRentalSystem
             app.UseStaticFiles();
             app.UseRouting();
             app.UseCors("AllowAll");
-            
+
             app.UseAuthentication();
             app.UseAuthorization();
 
@@ -104,8 +105,8 @@ namespace LibraryOnlineRentalSystem
             services.AddCors(options =>
             {
                 options.AddPolicy("AllowAll",
-                    builder => 
-                    { 
+                    builder =>
+                    {
                         builder
                             .AllowAnyOrigin()
                             .AllowAnyMethod()
