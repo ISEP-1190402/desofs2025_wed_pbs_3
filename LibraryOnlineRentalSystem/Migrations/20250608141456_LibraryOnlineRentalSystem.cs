@@ -40,6 +40,26 @@ namespace LibraryOnlineRentalSystem.Migrations
                 .Annotation("MySql:CharSet", "utf8mb4");
 
             migrationBuilder.CreateTable(
+                name: "Rentals",
+                columns: table => new
+                {
+                    Id = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EndDate_EndDateTime = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    StartDate_StartDateTime = table.Column<DateTime>(type: "datetime(6)", nullable: true),
+                    StatusOfRental_RentStatus = table.Column<int>(type: "int", nullable: true),
+                    RentedBookIdentifier_BookId = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    EmailUser_EmailAddress = table.Column<string>(type: "longtext", nullable: true)
+                        .Annotation("MySql:CharSet", "utf8mb4")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Rentals", x => x.Id);
+                })
+                .Annotation("MySql:CharSet", "utf8mb4");
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
@@ -71,6 +91,9 @@ namespace LibraryOnlineRentalSystem.Migrations
         {
             migrationBuilder.DropTable(
                 name: "Books");
+
+            migrationBuilder.DropTable(
+                name: "Rentals");
 
             migrationBuilder.DropTable(
                 name: "Users");

@@ -1,15 +1,23 @@
 using LibraryOnlineRentalSystem.Domain.Common;
+using Newtonsoft.Json;
 
 namespace LibraryOnlineRentalSystem.Domain.Rentals;
 
-public class Rental: Entity<RentalID>, IAggregateRoot
+public class Rental : Entity<RentalID>, IAggregateRoot
 {
-    private RentalID IdRental;
-    private RentalPeriod PeriodOfTheRental;
-    private Status RentalStatus;
-    private String BookID;
+    public RentalID IdRental;
+    public RentalStartDate StartDate;
+    public RentalEndDate EndDate;
+    public RentedBookID RentedBookIdentifier;
+    public RentalStatus StatusOfRental;
+    public UserEmail EmailUser;
 
-    public Rental(string rentalId, string startDateTime, string endDateTime, int statusId)
+    public Rental()
+    {
+    }
+
+    [JsonConstructor]
+    public Rental(string rentalId, string startDateTime, string endDateTime, string bookId, string userEmail)
     {
         IdRental = new RentalID(rentalId);
 
@@ -18,37 +26,47 @@ public class Rental: Entity<RentalID>, IAggregateRoot
         if (!DateTime.TryParse(endDateTime, out var end))
             throw new ArgumentException("Invalid end date/time format.");
 
-        PeriodOfTheRental = new RentalPeriod(start, end);
-
-        var status = BookingStatusHelper.GetStatusById(statusId);
-        if (status == null)
-            throw new ArgumentException("Invalid status id.");
-
-        RentalStatus = status.Value;
+        StartDate = new RentalStartDate(start);
+        EndDate = new RentalEndDate(end);
+        RentedBookIdentifier = new RentedBookID(bookId);
+        StatusOfRental = new RentalStatus(Status.Active);
+        EmailUser = new UserEmail(userEmail);
     }
 
     public void CancelBooking()
     {
-        RentalStatus = Status.Cancelled;
+        StatusOfRental = new RentalStatus(Status.Cancelled);
     }
 
     public void MarkAsCompleted()
     {
-        RentalStatus=  Status.Completed;
+        StatusOfRental = new RentalStatus(Status.Completed);
     }
 
     public void MarkAsActive()
     {
-        RentalStatus= Status.Active;
+        StatusOfRental = new RentalStatus(Status.Active);
     }
 
     public void MarkAsPending()
     {
-        RentalStatus= Status.Pending;
+        StatusOfRental = new RentalStatus(Status.Pending);
     }
 
-    public Status GetCurrentStatus()
+    public RentalStatus GetCurrentStatus()
     {
-        return RentalStatus;
+        return StatusOfRental;
+    }
+
+    public RentalDTO toDTO()
+    {
+        return new RentalDTO(
+            IdRental.Value,
+            StartDate.StartDateTime.ToString("o"),
+            EndDate.EndDateTime.ToString("o"),
+            RentedBookIdentifier.GetRentedBookId(),
+            StatusOfRental.RentStatus.ToString(),
+            EmailUser.ToString()
+        );
     }
 }

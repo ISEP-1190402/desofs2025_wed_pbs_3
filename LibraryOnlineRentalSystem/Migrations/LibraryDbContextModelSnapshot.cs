@@ -35,6 +35,16 @@ namespace LibraryOnlineRentalSystem.Migrations
                     b.ToTable("Books");
                 });
 
+            modelBuilder.Entity("LibraryOnlineRentalSystem.Domain.Rentals.Rental", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("varchar(255)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Rentals");
+                });
+
             modelBuilder.Entity("LibraryOnlineRentalSystem.Domain.User.User", b =>
                 {
                     b.Property<Guid>("Id")
@@ -169,6 +179,101 @@ namespace LibraryOnlineRentalSystem.Migrations
 
                     b.Navigation("Publisher")
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("LibraryOnlineRentalSystem.Domain.Rentals.Rental", b =>
+                {
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Rentals.RentalEndDate", "EndDate", b1 =>
+                        {
+                            b1.Property<string>("RentalId")
+                                .HasColumnType("varchar(255)");
+
+                            b1.Property<DateTime>("EndDateTime")
+                                .HasColumnType("datetime(6)");
+
+                            b1.HasKey("RentalId");
+
+                            b1.ToTable("Rentals");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RentalId");
+                        });
+
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Rentals.RentalStartDate", "StartDate", b1 =>
+                        {
+                            b1.Property<string>("RentalId")
+                                .HasColumnType("varchar(255)");
+
+                            b1.Property<DateTime>("StartDateTime")
+                                .HasColumnType("datetime(6)");
+
+                            b1.HasKey("RentalId");
+
+                            b1.ToTable("Rentals");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RentalId");
+                        });
+
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Rentals.RentalStatus", "StatusOfRental", b1 =>
+                        {
+                            b1.Property<string>("RentalId")
+                                .HasColumnType("varchar(255)");
+
+                            b1.Property<int>("RentStatus")
+                                .HasColumnType("int");
+
+                            b1.HasKey("RentalId");
+
+                            b1.ToTable("Rentals");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RentalId");
+                        });
+
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Rentals.RentedBookID", "RentedBookIdentifier", b1 =>
+                        {
+                            b1.Property<string>("RentalId")
+                                .HasColumnType("varchar(255)");
+
+                            b1.Property<string>("BookId")
+                                .IsRequired()
+                                .HasColumnType("longtext");
+
+                            b1.HasKey("RentalId");
+
+                            b1.ToTable("Rentals");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RentalId");
+                        });
+
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Rentals.UserEmail", "EmailUser", b1 =>
+                        {
+                            b1.Property<string>("RentalId")
+                                .HasColumnType("varchar(255)");
+
+                            b1.Property<string>("EmailAddress")
+                                .IsRequired()
+                                .HasColumnType("longtext");
+
+                            b1.HasKey("RentalId");
+
+                            b1.ToTable("Rentals");
+
+                            b1.WithOwner()
+                                .HasForeignKey("RentalId");
+                        });
+
+                    b.Navigation("EmailUser");
+
+                    b.Navigation("EndDate");
+
+                    b.Navigation("RentedBookIdentifier");
+
+                    b.Navigation("StartDate");
+
+                    b.Navigation("StatusOfRental");
                 });
 
             modelBuilder.Entity("LibraryOnlineRentalSystem.Domain.User.User", b =>

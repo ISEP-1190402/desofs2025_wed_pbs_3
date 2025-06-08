@@ -1,8 +1,10 @@
 using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Common;
+using LibraryOnlineRentalSystem.Domain.Rentals;
 using LibraryOnlineRentalSystem.Domain.User;
 using LibraryOnlineRentalSystem.Repository.BookRepository;
 using LibraryOnlineRentalSystem.Repository.Common;
+using LibraryOnlineRentalSystem.Repository.RentalRepository;
 using LibraryOnlineRentalSystem.Repository.UserRepository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -58,6 +60,8 @@ namespace LibraryOnlineRentalSystem
                         ValidateIssuerSigningKey = true
                     };
                 });
+            Console.WriteLine(Configuration["Keycloak:Authority"]);
+            Console.WriteLine(Configuration["Keycloak:Audience"]);
 
             services.AddHttpClient();
             services.AddControllers().AddNewtonsoftJson();
@@ -92,6 +96,8 @@ namespace LibraryOnlineRentalSystem
             services.AddTransient<IWorkUnity, WorkUnity>();
             services.AddTransient<BookService>();
             services.AddTransient<IBookRepository, BookRepository>();
+            services.AddTransient<RentalService>();
+            services.AddTransient<IRentalRepository, RentalRepository>();
             services.AddTransient<UserService>();
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<IAuditLogger, AuditLogger>();
