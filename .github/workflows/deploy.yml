@@ -35,6 +35,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+      - name: Install SonarScanner for MSBuild
+        run: dotnet tool install --global dotnet-sonarscanner   
+        
+      - name: Add dotnet tools to PATH
+        run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
+
       - name: Restore NuGet packages
         working-directory: ${{ env.PROJECT_DIR }}
         run: dotnet restore
