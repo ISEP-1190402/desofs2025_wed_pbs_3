@@ -53,6 +53,8 @@ jobs:
       # Snyk code scan (optional if you want Snyk SAST)
       - name: Snyk Code Scan
         uses: snyk/actions/code@master
+        with:
+          command: test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
