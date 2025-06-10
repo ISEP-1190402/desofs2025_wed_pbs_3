@@ -33,7 +33,7 @@ public class UserService
         _httpClient = httpClient;
         _configuration = configuration;
     }
-    
+
     public async Task CreateUserAsync(NewUserDTO req)
     {
         if (await _userRepository.GetByEmailAsync(req.Email) != null)
@@ -82,9 +82,10 @@ public class UserService
 
             var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
             var keycloakUrl = authority.Replace("/realms/library", "");
-            
-            _httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
-            
+
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
+
             var response = await _httpClient.PostAsync($"{keycloakUrl}/admin/realms/library/users", content);
             if (!response.IsSuccessStatusCode)
             {
@@ -95,18 +96,24 @@ public class UserService
             await Task.Delay(2000);
 
             string userId = null;
-            for (int i = 0; i < 5; i++) {
-                var getUserResponse = await _httpClient.GetAsync($"{keycloakUrl}/admin/realms/library/users?username={req.UserName}");
+            for (int i = 0; i < 5; i++)
+            {
+                var getUserResponse =
+                    await _httpClient.GetAsync($"{keycloakUrl}/admin/realms/library/users?username={req.UserName}");
                 var userContent = await getUserResponse.Content.ReadAsStringAsync();
                 Console.WriteLine($"Attempt {i + 1} to find user. Response: {userContent}");
                 var users = JsonSerializer.Deserialize<List<KeycloakUser>>(userContent);
-                if (users != null && users.Count > 0 && !string.IsNullOrEmpty(users[0].Id)) {
+                if (users != null && users.Count > 0 && !string.IsNullOrEmpty(users[0].Id))
+                {
                     userId = users[0].Id;
                     break;
                 }
+
                 await Task.Delay(2000);
             }
-            if (userId == null) {
+
+            if (userId == null)
+            {
                 throw new BusinessRulesException("Failed to find user in Keycloak after creation.");
             }
 
@@ -134,7 +141,8 @@ public class UserService
             new KeyValuePair<string, string>("password", "admin")
         });
 
-        var response = await _httpClient.PostAsync($"{keycloakUrl}/realms/master/protocol/openid-connect/token", content);
+        var response =
+            await _httpClient.PostAsync($"{keycloakUrl}/realms/master/protocol/openid-connect/token", content);
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
@@ -151,23 +159,18 @@ public class UserService
 
     private class KeycloakTokenResponse
     {
-        [JsonPropertyName("access_token")]
-        public string AccessToken { get; set; }
+        [JsonPropertyName("access_token")] public string AccessToken { get; set; }
     }
 
     private class KeycloakUser
     {
-        [JsonPropertyName("id")]
-        public string Id { get; set; }
-        
-        [JsonPropertyName("username")]
-        public string Username { get; set; }
-        
-        [JsonPropertyName("email")]
-        public string Email { get; set; }
-        
-        [JsonPropertyName("enabled")]
-        public bool Enabled { get; set; }
+        [JsonPropertyName("id")] public string Id { get; set; }
+
+        [JsonPropertyName("username")] public string Username { get; set; }
+
+        [JsonPropertyName("email")] public string Email { get; set; }
+
+        [JsonPropertyName("enabled")] public bool Enabled { get; set; }
     }
 
     private class KeycloakRole
@@ -226,5 +229,11 @@ public class UserService
 
         await _workUnit.CommitAsync();
         await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
+    }
+
+    public bool UserExists(string userEmail)
+    {
+        var user = _userRepository.GetByEmailAsync(userEmail).Result;
+        return user != null;
     }
 }

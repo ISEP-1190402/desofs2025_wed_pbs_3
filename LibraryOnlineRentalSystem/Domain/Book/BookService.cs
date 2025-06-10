@@ -54,4 +54,10 @@ public class BookService
 
         return book.toDTO();
     }
+
+    public bool BookExists(string reservedBookId)
+    {
+        var book = _bookRepository.GetByIdAsync(new BookID(reservedBookId)).Result;
+        return book != null;
+    }
 }

@@ -1,4 +1,7 @@
+using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Rentals;
+using LibraryOnlineRentalSystem.Domain.User;
+using LibraryOnlineRentalSystem.Utils;
 using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
@@ -9,18 +12,53 @@ namespace LibraryOnlineRentalSystem.Controllers;
 public class RentalController
 {
     private readonly RentalService _rentalService;
+    private readonly UserService _userService;
+    private readonly BookService _bookService;
 
-
-    public RentalController(RentalService rentalService)
+    public RentalController(RentalService rentalService, UserService userService, BookService bookService)
     {
         _rentalService = rentalService;
+        _userService = userService;
+        _bookService = bookService;
     }
 
     // POST: api/rental
     [HttpPost]
     public async Task<ActionResult<RentalDTO>> CreateRental(CreatedRentalDTO dto)
     {
+        if (!_userService.UserExists(dto.UserEmail) || !_bookService.BookExists(dto.ReservedBookId))
+        {
+            return null;
+        }
+
+        DateTime start;
+        DateTime end;
+
+        if (!DateTime.TryParse(dto.StartDate, out start))
+        {
+            throw new ArgumentException("Invalid start date");
+        }
+
+        if (!DateTime.TryParse(dto.EndDate, out end))
+        {
+            throw new ArgumentException("Invalid end date.");
+        }
+
+        if (end < start)
+        {
+            throw new ArgumentException("The end date cannot be earlier than the start date.");
+        }
+
+
+        // Check Stock
+
+
         var rental = await _rentalService.CreateARentalAsync(dto);
+        if (rental != null)
+        {
+            FilePrint.RentalFilePrint(rental.ToString());
+        }
+
         return rental;
     }
 

@@ -1,11 +1,13 @@
 using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Common;
+using LibraryOnlineRentalSystem.Domain.User;
 
 namespace LibraryOnlineRentalSystem.Domain.Rentals;
 
 public class RentalService
 {
     private readonly IRentalRepository _rentalRepository;
+    
     private readonly IWorkUnity _workUnity;
 
     public RentalService(IRentalRepository rentalRepository, IWorkUnity workUnity)
