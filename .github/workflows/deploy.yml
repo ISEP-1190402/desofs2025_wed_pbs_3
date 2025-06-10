@@ -11,46 +11,57 @@ jobs:
   sast:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Run SAST with SonarCloud
-      uses: SonarSource/sonarcloud-github-action@master
-      with:
-        projectKey: jorgealmeidadeveloper_LibraryOnlineRentalSystem
-        organization: jorgealmeidadeveloper
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Set up JDK (se for Java)
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Build (ajuste para sua linguagem)
+        run: |
+          # Exemplo para Java/Maven:
+          mvn clean verify
+
+      - name: Run SAST with SonarCloud
+        uses: SonarSource/sonarcloud-github-action@master
+        with:
+          projectKey: jorgealmeidadeveloper_LibraryOnlineRentalSystem
+          organization: jorgealmeidadeveloper
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   dependency-check:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Run Snyk
-      uses: snyk/actions/node@master
-      with:
-        command: test --all-projects
-      env:
-        SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      - name: Run Snyk
+        uses: snyk/actions/node@master
+        with:
+          command: test --all-projects
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
   iac-security:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Run Checkov
-      uses: bridgecrewio/checkov-action@master
-      with:
-        directory: .
-        framework: terraform
+      - name: Run Checkov
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: terraform
 
   container-scan:
     runs-on: ubuntu-latest
     steps:
-    - name: Run Trivy
-      uses: aquasecurity/trivy-action@master
-      with:
-        image-ref: 'myapp:latest'
-        format: 'sarif'
-        output: 'trivy-results.sarif'
+      - name: Run Trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'myapp:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
