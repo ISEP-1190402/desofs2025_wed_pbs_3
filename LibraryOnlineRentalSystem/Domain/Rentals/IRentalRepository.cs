@@ -14,4 +14,5 @@ public interface IRentalRepository : IRepository<Rental, RentalID>
     Task<List<Rental>> GetAllPendingRentalsOfUserAssync(string userEmail);
     Task<List<Rental>> GetAllCompleteRentalsOfUserAssync(string userEmail);
     Task<Rental> CancelRental(string rentalId);
+    int GetBusyAmmountOfBooks(RentedBookID rentedBookId, RentalStartDate rentalStartDate, RentalEndDate rentalEndDate);
 }

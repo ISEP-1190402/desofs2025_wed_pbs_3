@@ -265,15 +265,20 @@ namespace LibraryOnlineRentalSystem.Migrations
                                 .HasForeignKey("RentalId");
                         });
 
-                    b.Navigation("EmailUser");
+                    b.Navigation("EmailUser")
+                        .IsRequired();
 
-                    b.Navigation("EndDate");
+                    b.Navigation("EndDate")
+                        .IsRequired();
 
-                    b.Navigation("RentedBookIdentifier");
+                    b.Navigation("RentedBookIdentifier")
+                        .IsRequired();
 
-                    b.Navigation("StartDate");
+                    b.Navigation("StartDate")
+                        .IsRequired();
 
-                    b.Navigation("StatusOfRental");
+                    b.Navigation("StatusOfRental")
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("LibraryOnlineRentalSystem.Domain.User.User", b =>

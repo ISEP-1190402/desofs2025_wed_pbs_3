@@ -5,12 +5,12 @@ namespace LibraryOnlineRentalSystem.Domain.Rentals;
 
 public class Rental : Entity<RentalID>, IAggregateRoot
 {
-    public RentalID Id;
-    public RentalStartDate StartDate;
-    public RentalEndDate EndDate;
-    public RentedBookID RentedBookIdentifier;
-    public RentalStatus StatusOfRental;
-    public UserEmail EmailUser;
+    public RentalID Id { get; private set; }
+    public RentalStartDate StartDate { get; private set; }
+    public RentalEndDate EndDate { get; private set; }
+    public RentedBookID RentedBookIdentifier { get; private set; }
+    public RentalStatus StatusOfRental { get; private set; }
+    public UserEmail EmailUser { get; private set; }
 
     public Rental()
     {

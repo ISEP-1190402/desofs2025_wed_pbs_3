@@ -231,9 +231,10 @@ public class UserService
         await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
     }
 
-    public bool UserExists(string userEmail)
+    public async Task<bool> UserExists(string userEmail)
     {
-        var user = _userRepository.GetByEmailAsync(userEmail).Result;
+        User? user = await _userRepository.GetByEmailAsync(userEmail);
         return user != null;
     }
+
 }

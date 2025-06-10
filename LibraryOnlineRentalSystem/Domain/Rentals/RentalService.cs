@@ -7,7 +7,7 @@ namespace LibraryOnlineRentalSystem.Domain.Rentals;
 public class RentalService
 {
     private readonly IRentalRepository _rentalRepository;
-    
+
     private readonly IWorkUnity _workUnity;
 
     public RentalService(IRentalRepository rentalRepository, IWorkUnity workUnity)
@@ -130,5 +130,12 @@ public class RentalService
         var listDto = list.ConvertAll(rental =>
             rental.toDTO());
         return listDto;
+    }
+
+
+    public int GetBusyAmmountOfBooks(RentedBookID rentedBookId, RentalStartDate rentalStartDate,
+        RentalEndDate rentalEndDate)
+    {
+        return  _rentalRepository.GetBusyAmmountOfBooks(rentedBookId, rentalStartDate, rentalEndDate);
     }
 }

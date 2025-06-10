@@ -22,45 +22,44 @@ public class RentalController
         _bookService = bookService;
     }
 
-    // POST: api/rental
     [HttpPost]
     public async Task<ActionResult<RentalDTO>> CreateRental(CreatedRentalDTO dto)
     {
-        if (!_userService.UserExists(dto.UserEmail) || !_bookService.BookExists(dto.ReservedBookId))
+        if (!DateTime.TryParse(dto.StartDate, out var start))
         {
             return null;
         }
 
-        DateTime start;
-        DateTime end;
-
-        if (!DateTime.TryParse(dto.StartDate, out start))
+        if (!DateTime.TryParse(dto.EndDate, out var end))
         {
-            throw new ArgumentException("Invalid start date");
-        }
-
-        if (!DateTime.TryParse(dto.EndDate, out end))
-        {
-            throw new ArgumentException("Invalid end date.");
+            return null;
         }
 
         if (end < start)
         {
-            throw new ArgumentException("The end date cannot be earlier than the start date.");
+            return null;
         }
 
+        var ammountOfBooks = _bookService.GetAmmountOfBooks(new BookID(dto.ReservedBookId));
+        /**TODO var availableAmmountOfBooks = _rentalService.GetBusyAmmountOfBooks(
+             new RentedBookID(dto.ReservedBookId),
+             new RentalStartDate(DateTime.Parse(dto.StartDate)),
+             new RentalEndDate(DateTime.Parse(dto.EndDate))
+         );
 
-        // Check Stock
-
-
-        var rental = await _rentalService.CreateARentalAsync(dto);
-        if (rental != null)
+        if (ammountOfBooks - availableAmmountOfBooks == 0)
         {
-            FilePrint.RentalFilePrint(rental.ToString());
+            return null;
         }
+        **/
+        var rental = await _rentalService.CreateARentalAsync(dto);
+
+        FilePrint.RentalFilePrint(dto.StartDate);
+        Console.WriteLine(rental.ToString());
 
         return rental;
     }
+
 
     // PUT: api/rental/cancel/{id}
     [HttpPut("cancel/{id}")]

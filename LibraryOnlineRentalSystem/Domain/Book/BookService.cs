@@ -32,12 +32,12 @@ public class BookService
 
     public async Task<BookDTO> AddBook(NewBookDTO bookToAddDto)
     {
-        var id=_bookRepository.GetAllAsync().Result.Count + 1+"";
+        var id = _bookRepository.GetAllAsync().Result.Count + 1 + "";
 
-        var addedBook= new Book(id,bookToAddDto.AmountOfCopies,bookToAddDto.Author,bookToAddDto.Category,
-            bookToAddDto.Description,bookToAddDto.Isbn,bookToAddDto.Publisher);
+        var addedBook = new Book(id, bookToAddDto.AmountOfCopies, bookToAddDto.Author, bookToAddDto.Category,
+            bookToAddDto.Description, bookToAddDto.Isbn, bookToAddDto.Publisher);
 
-            
+
         await _bookRepository.AddAsync(addedBook);
 
         await _workUnity.CommitAsync();
@@ -48,16 +48,21 @@ public class BookService
 
     public async Task<ActionResult<BookDTO>> UpdateStock(string id, BookStockDTO bookStockUpdateDto)
     {
-        var book=  _bookRepository.UpdateBookStock(id,bookStockUpdateDto.AmountOfCopies);
-        
+        var book = _bookRepository.UpdateBookStock(id, bookStockUpdateDto.AmountOfCopies);
+
         await _workUnity.CommitAsync();
 
         return book.toDTO();
     }
 
-    public bool BookExists(string reservedBookId)
+    public async Task<bool> BookExists(string id)
     {
-        var book = _bookRepository.GetByIdAsync(new BookID(reservedBookId)).Result;
+        var book = await _bookRepository.GetByIdAsync(new BookID(id));
         return book != null;
+    }
+
+    public int GetAmmountOfBooks(BookID bookId)
+    {
+        return _bookRepository.GetAmmountOfBooks(bookId);
     }
 }
