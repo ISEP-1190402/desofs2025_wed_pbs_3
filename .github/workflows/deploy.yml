@@ -24,14 +24,24 @@ jobs:
       - name: Build the project
         run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --no-restore --configuration Release
 
-      - name: Run SAST with SonarCloud
-        uses: SonarSource/sonarcloud-github-action@master
-        with:
-          projectKey: jorgealmeidadeveloper_LibraryOnlineRentalSystem
-          organization: jorgealmeidadeveloper
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Install SonarScanner for MSBuild
+        run: |
+          dotnet tool install --global dotnet-sonarscanner
+          export PATH="$PATH:$HOME/.dotnet/tools"
+
+      - name: Begin SonarCloud analysis
+        run: |
+          dotnet sonarscanner begin /k:"jorgealmeidadeveloper_LibraryOnlineRentalSystem" /o:"jorgealmeidadeveloper" /d:sonar.host.url="https://sonarcloud.io" /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+
+      - name: Build the project
+        run: dotnet build LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --configuration Release
+
+      - name: End SonarCloud analysis
+        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"  
+    env:
+      
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   dependency-check:
     runs-on: ubuntu-latest
