@@ -13,16 +13,16 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up JDK (se for Java)
-        uses: actions/setup-java@v3
+      - name: Set up .NET SDK
+        uses: actions/setup-dotnet@v3
         with:
-          distribution: 'temurin'
-          java-version: '17'
+          dotnet-version: '7.0.x'  # ou a versão que você usa no projeto
 
-      - name: Build (ajuste para sua linguagem)
-        run: |
-          # Exemplo para Java/Maven:
-          mvn clean verify
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build the project
+        run: dotnet build --no-restore --configuration Release
 
       - name: Run SAST with SonarCloud
         uses: SonarSource/sonarcloud-github-action@master
