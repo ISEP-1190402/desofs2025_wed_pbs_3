@@ -1,1 +1,160 @@
+name: CSA Pipeline (Sonar + Snyk + ZAP)
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE_NAME: library-api
+  API_PORT: 5000
+  PROJECT_DIR: ./LibraryOnlineRentalSystem
+  SONAR_PROJECT_KEY: your-sonar-project-key
+  SONAR_ORG: your-sonar-organization
+  SONAR_HOST_URL: https://sonarcloud.io
+
+jobs:
+  csa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore NuGet packages
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dotnet restore
+
+      - name: Build and Test
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          dotnet build --configuration Release
+          dotnet test --configuration Release --no-build --verbosity normal
+
+      # SonarCloud analysis
+      - name: SonarCloud Scan
+        uses: sonarsource/sonarcloud-github-action@v1.11.0
+        with:
+          organization: ${{ env.SONAR_ORG }}
+          projectKey: ${{ env.SONAR_PROJECT_KEY }}
+          projectName: ${{ env.DOCKER_IMAGE_NAME }}
+          scannerMode: 'CLI'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      # Snyk code scan (optional if you want Snyk SAST)
+      - name: Snyk Code Scan
+        uses: snyk/actions/code@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # Build Docker image
+      - name: Build Docker Image
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: docker build -t $DOCKER_IMAGE_NAME .
+
+      # Snyk container scan
+      - name: Snyk Container Scan
+        uses: snyk/actions/docker@master
+        with:
+          command: test
+          image: ${{ env.DOCKER_IMAGE_NAME }}
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      # Create Docker network for ZAP
+      - name: Create Docker Network
+        run: docker network create zap-net || true
+
+      # Run API container
+      - name: Run API Container
+        run: |
+          docker run -d --name api --network zap-net -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
+            -e ASPNETCORE_URLS=http://+:${{ env.API_PORT }} \
+            -e ASPNETCORE_ENVIRONMENT=Development \
+            ${{ env.DOCKER_IMAGE_NAME }}
+
+      - name: Wait for API to start
+        run: sleep 15
+
+      - name: Get API IP
+        id: api_ip
+        run: echo "::set-output name=ip::$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)"
+
+      # OWASP ZAP scan
+      - name: Run OWASP ZAP Scan
+        run: |
+          mkdir -p zap-work
+          chmod -R 777 zap-work
+          
+          cat > zap-work/automation.yaml << EOF
+          env:
+            contexts:
+              - name: "Default"
+                urls: ["http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}"]
+                includePaths:
+                  - "http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}/.*"
+                excludePaths: []
+            parameters:
+              failOnError: true
+              failOnWarning: false
+              progressToStdout: true
+
+          jobs:
+            - type: spider
+              parameters:
+                context: "Default"
+                url: "http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}"
+                maxDuration: 5
+                maxDepth: 5
+                numberOfThreads: 5
+                delayInMs: 0
+                acceptCookies: true
+                handleParameters: "USE_ALL"
+
+            - type: activeScan
+              parameters:
+                context: "Default"
+                policy: "Default Policy"
+                maxDuration: 10
+                inScopeOnly: true
+                threadPerHost: 2
+
+            - type: report
+              parameters:
+                template: "traditional-json"
+                reportDir: "/zap/wrk"
+                reportFile: "report_json.json"
+              risks:
+                - high
+                - medium
+                - low
+                - info
+
+          EOF
+
+          docker run --rm --network zap-net -v ${{ github.workspace }}/zap-work:/zap/wrk/:rw \
+            ghcr.io/zaproxy/zaproxy:stable zap.sh -cmd -autorun /zap/wrk/automation.yaml
+
+      - name: Upload ZAP Reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-report
+          path: zap-work/
+
+      # Cleanup
+      - name: Stop and Remove API Container
+        if: always()
+        run: |
+          docker stop api || true
+          docker rm api || true
+          docker network rm zap-net || true
 
