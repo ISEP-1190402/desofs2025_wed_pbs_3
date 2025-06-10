@@ -19,10 +19,10 @@ jobs:
           dotnet-version: '7.0.x'  # ou a versão que você usa no projeto
 
       - name: Restore dependencies
-        run: dotnet restore
+        run: dotnet restore src/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj
 
       - name: Build the project
-        run: dotnet build --no-restore --configuration Release
+        run: dotnet build src/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --no-restore --configuration Release
 
       - name: Run SAST with SonarCloud
         uses: SonarSource/sonarcloud-github-action@master
