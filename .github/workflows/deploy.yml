@@ -52,7 +52,7 @@ jobs:
 
       # Snyk code scan (optional if you want Snyk SAST)
       - name: Snyk Code Scan
-        uses: snyk/actions/code@master
+        uses: snyk/actions@v2
         with:
           command: test
         env:
