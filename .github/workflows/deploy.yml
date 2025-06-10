@@ -41,7 +41,7 @@ jobs:
 
       # SonarCloud analysis
       - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@v1.12.0
+        uses: sonarsource/sonarcloud-github-action@v1
         with:
           organization: ${{ env.SONAR_ORG }}
           projectKey: ${{ env.SONAR_PROJECT_KEY }}
