@@ -24,33 +24,41 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET SDK
         uses: actions/setup-dotnet@v3
         with:
           dotnet-version: '8.0.x'
+
+      - name: Setup Java 17 (required by SonarScanner)
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '17'
 
       - name: Restore NuGet packages
         working-directory: ${{ env.PROJECT_DIR }}
         run: dotnet restore
 
-      - name: Build and Test
+      # SonarCloud Begin (prepare analysis)
+      - name: SonarCloud Begin Analysis
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
-          dotnet build --configuration Release
-          dotnet test --configuration Release --no-build --verbosity normal
+          dotnet sonarscanner begin /k:"${{ env.SONAR_PROJECT_KEY }}" /o:"${{ env.SONAR_ORG }}" /d:sonar.host.url="${{ env.SONAR_HOST_URL }}" /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
 
-      # SonarCloud analysis
-      - name: SonarCloud Scan
-        uses: sonarsource/sonarcloud-github-action@v1
-        with:
-          organization: ${{ env.SONAR_ORG }}
-          projectKey: ${{ env.SONAR_PROJECT_KEY }}
-          projectName: ${{ env.DOCKER_IMAGE_NAME }}
-          scannerMode: 'CLI'
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      - name: Build solution
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dotnet build --configuration Release
 
-      # Snyk code scan (optional if you want Snyk SAST)
+      - name: Run Tests
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dotnet test --configuration Release --no-build --verbosity normal
+
+      # SonarCloud End (finalize analysis)
+      - name: SonarCloud End Analysis
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: dotnet sonarscanner end /d:sonar.login="${{ secrets.SONAR_TOKEN }}"
+
+      # Snyk code scan (SAST)
       - name: Snyk Code Scan
         uses: snyk/actions@master
         with:
@@ -159,4 +167,3 @@ jobs:
           docker stop api || true
           docker rm api || true
           docker network rm zap-net || true
-
