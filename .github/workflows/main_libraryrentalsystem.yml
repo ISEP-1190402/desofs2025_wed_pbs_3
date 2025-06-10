@@ -24,10 +24,10 @@ jobs:
           dotnet-version: '8.x'
 
       - name: Build with dotnet
-        run: dotnet build ISEP-1190402/desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --configuration Release
+        run: dotnet build ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish ISEP-1190402/desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        run: dotnet publish ./desofs2025_wed_pbs_3/LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
