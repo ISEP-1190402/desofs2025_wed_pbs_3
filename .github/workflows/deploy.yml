@@ -12,8 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - name: Run SAST with SonarCloud
       uses: SonarSource/sonarcloud-github-action@master
+      with:
+        projectKey: jorgealmeidadeveloper_LibraryOnlineRentalSystem
+        organization: jorgealmeidadeveloper
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -22,6 +26,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - name: Run Snyk
       uses: snyk/actions/node@master
       env:
@@ -31,6 +36,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+
     - name: Run Checkov
       uses: bridgecrewio/checkov-action@master
       with:
