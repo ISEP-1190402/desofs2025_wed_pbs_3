@@ -2,7 +2,7 @@ name: CSA Pipeline (Sonar + Snyk + ZAP)
 
 on:
   push:
-    branches: ["main"]
+    branches: ["**"]
   pull_request:
     branches: ["**"]
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 45
 
     steps:
-      - name: Checkout-Code
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -265,4 +265,4 @@ EOF
           docker stop api || true
           docker rm api || true
           docker network rm zap-net || true
-          docker rmi ${{ env.DOCKER_IMAGE_NAME }}
+          docker rmi ${{ env.DOCKER_IMAGE_NAME }} || true
