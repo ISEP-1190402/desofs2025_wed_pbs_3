@@ -146,13 +146,6 @@ jobs:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
 
-       #Upload Snyk Container Results
-      - name: Upload Snyk Container Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-        name: snyk-container-results
-        path: snyk-container-results.json 
 
       # Create Docker network for ZAP
       - name: Create Docker Network
