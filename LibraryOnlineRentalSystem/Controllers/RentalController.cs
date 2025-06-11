@@ -9,7 +9,7 @@ namespace LibraryOnlineRentalSystem.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class RentalController
+public class RentalController : ControllerBase
 {
     private readonly RentalService _rentalService;
     private readonly UserService _userService;
@@ -26,34 +26,36 @@ public class RentalController
     [HttpPost]
     public async Task<ActionResult<RentalDTO>> CreateRental(CreatedRentalDTO dto)
     {
-      /**  if (!DateTime.TryParse(dto.StartDate, out var start))
+        try
         {
-            return null;
+            var startDate = DateTime.Parse(dto.StartDate);
+            var endDate = DateTime.Parse(dto.EndDate);
+
+            if (endDate < startDate)
+            {
+                // Retorna BadRequest com uma mensagem explicativa
+                return BadRequest("End date cannot be before start date.");
+            }
+        }
+        catch (Exception e)
+        {
+            // Retorna BadRequest se houver erro ao converter datas
+            return BadRequest("Invalid date format.");
         }
 
-        if (!DateTime.TryParse(dto.EndDate, out var end))
-        {
-            return null;
-        }
 
-        if (end < start)
-        {
-            return null;
-        }
-
-        var ammountOfBooks = _bookService.GetAmmountOfBooks(new BookID(dto.ReservedBookId));
+        /*var ammountOfBooks = _bookService.GetAmmountOfBooks(new BookID(dto.ReservedBookId));
         var availableAmmountOfBooks = _rentalService.GetBusyAmmountOfBooks(
                 new RentedBookID(dto.ReservedBookId),
                 new RentalStartDate(DateTime.Parse(dto.StartDate)),
-                new RentalEndDate(DateTime.Parse(dto.EndDate)))
-            ;
+                new RentalEndDate(DateTime.Parse(dto.EndDate)));
 
         if (ammountOfBooks - availableAmmountOfBooks == 0)
         {
-            return null;
-        }
+            return Forbid("We don't have enough books available.");
+        }*/
 
-        **/
+
         var rental = await _rentalService.CreateARentalAsync(dto);
 
         FilePrint.RentalFilePrint(dto.ToString());
@@ -67,7 +69,7 @@ public class RentalController
     public async Task<ActionResult<RentalDTO>> CancelRental(string id)
     {
         var rental = await _rentalService.CancelARental(id);
-        if (rental == null) return null;
+        if (rental == null) return NotFound("Rental not found.");
         return rental;
     }
 
@@ -157,7 +159,7 @@ public class RentalController
     {
         var rentals = await _rentalService.GetAllRentalsAsync();
         var rental = rentals.FirstOrDefault(r => r.IdRentalValue == id);
-        if (rental == null) return null;
+        if (rental == null) return NotFound("Rental not found.");
         return rental;
     }
 }

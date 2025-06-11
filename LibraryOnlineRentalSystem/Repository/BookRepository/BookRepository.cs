@@ -34,6 +34,13 @@ public class BookRepository : GeneralRepository<Book, BookID>,
 
     public int GetAmmountOfBooks(BookID bookId)
     {
-        return context().SingleOrDefault(b => b.Id == bookId).AmountOfCopies.BookAmountOfCopies;
+        try
+        {
+            return context().SingleOrDefault(b => b.Id == bookId).AmountOfCopies.BookAmountOfCopies;
+        }
+        catch (NullReferenceException ex)
+        {
+            return 0;
+        }
     }
 }

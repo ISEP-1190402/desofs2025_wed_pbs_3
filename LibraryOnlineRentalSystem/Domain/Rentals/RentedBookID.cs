@@ -12,7 +12,7 @@ public class RentedBookID
         BookId = rentalBookId ?? throw new BusinessRulesException("Book cannot be null");
     }
 
-    private string BookId { get; }
+    public string BookId { get; private set; }
 
     public string GetRentedBookId()
     {
