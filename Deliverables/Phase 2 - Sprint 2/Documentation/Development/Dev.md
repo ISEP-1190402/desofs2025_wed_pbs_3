@@ -71,4 +71,6 @@ public async Task<IActionResult> Register([FromBody] NewUserDTO request)
     }
 }
 ```
+Logs can be queried using Log Analytics in Azure Portal with Kusto Query Language (KQL).
 
+![Logs_example.PNG](Pictures/Logs_example.PNG)
