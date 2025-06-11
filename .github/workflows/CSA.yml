@@ -260,7 +260,7 @@ jobs:
           path: zap-work/
           retention-days: 30
 
-      - name: Upload Test Results
+      - name: Upload Test Resultss
         uses: actions/upload-artifact@v4
         if: always()
         with:
