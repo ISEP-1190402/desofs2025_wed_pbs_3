@@ -97,19 +97,6 @@ curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/adm
   }'
 check_error "Failed to create admin user"
 
-echo "Fetching available required actions..."
-AVAILABLE_ACTIONS=$(curl -ks -H "Authorization: Bearer $ADMIN_TOKEN" \
-  https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/authentication/required-actions \
-  | jq -r '.[] | select(.alias != null) | .alias')
-
-for action in $AVAILABLE_ACTIONS; do
-  echo "Disabling required action: $action"
-  curl -ks -X PUT "https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/authentication/required-actions/$action" \
-    -H "Authorization: Bearer $ADMIN_TOKEN" \
-    -H "Content-Type: application/json" \
-    -d '{"enabled": false}'
-done
-
 echo "Getting admin user ID..."
 ADMIN_USER_ID=$(curl -ks -X GET "https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/users?username=admin" \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
