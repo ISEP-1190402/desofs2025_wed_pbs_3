@@ -31,12 +31,12 @@ namespace LibraryOnlineRentalSystem
         {
             services.AddDbContext<LibraryDbContext>(opt =>
                 opt.UseMySql(
-                        Configuration["LibraryDatabase"],
-                        ServerVersion.AutoDetect(Configuration["LibraryDatabase"])
+                        Configuration["ConnectionStrings:LibraryDatabase"],
+                        ServerVersion.AutoDetect(Configuration["ConnectionStrings:LibraryDatabase"])
                     )
                     .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
             );
-            Console.WriteLine(Configuration["LibraryDatabase"]);
+            Console.WriteLine(Configuration["ConnectionStrings:LibraryDatabase"]);
 
             ConfigureMyServices(services);
             ConfigureCors(services);
