@@ -2,14 +2,14 @@ name: Build and deploy - libraryrentalsystem to IIS
 
 on:
   push:
-    branches: ["**"]
+    branches: ["main"] # ou ajuste para o padrão do seu projeto
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: windows-latest
     permissions:
-      contents: read #This is required for actions/checkout
+      contents: read
 
     steps:
       - uses: actions/checkout@v4
@@ -21,17 +21,17 @@ jobs:
 
       - name: Build with dotnet
         run: |
-             cd LibraryOnlineRentalSystem
-             dotnet build --configuration Release
+          cd LibraryOnlineRentalSystem
+          dotnet build --configuration Release
 
       - name: dotnet publish
-        run: dotnet publish LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
+        run: dotnet publish LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj -c Release -o ./publish
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
+          path: ./publish
 
   deploy:
     runs-on: windows-latest
@@ -47,7 +47,16 @@ jobs:
         with:
           name: .net-app
 
+      - name: Install Web Deploy
+        run: |
+          Invoke-WebRequest -Uri "https://download.microsoft.com/download/E/1/5/E15C5A8B-2294-49AA-8C4E-5CA7A0B0C7F5/WebDeploy_amd64_en-US.msi" -OutFile "WebDeploy.msi"
+          Start-Process msiexec.exe -Wait -ArgumentList '/I WebDeploy.msi /quiet'
+        shell: pwsh
+
       - name: Deploy to IIS on VM via Web Deploy
         run: |
-          msdeploy.exe -verb:sync -source:contentPath="$(pwd)/.net-app" -dest:contentPath="${{ secrets.IIS_SITE_NAME }}",computerName="https://${{ secrets.IIS_SERVER }}:8172/msdeploy.axd?site=${{ secrets.IIS_SITE_NAME }}",userName="${{ secrets.IIS_USERNAME }}",password="${{ secrets.IIS_PASSWORD }}",authType="Basic" -allowUntrusted
+          "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" `
+            -verb:sync `
+            -source:contentPath="$(pwd)/.net-app" `
+            -dest:contentPath="${{ secrets.IIS_SITE_NAME }}",computerName="https://${{ secrets.IIS_SERVER }}:8172/msdeploy.axd?site=${{ secrets.IIS_SITE_NAME }}",userName="${{ secrets.IIS_USERNAME }}",password="${{ secrets.IIS_PASSWORD }}",authType="Basic" -allowUntrusted
         shell: pwsh
