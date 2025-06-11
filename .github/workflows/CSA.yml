@@ -109,7 +109,9 @@ jobs:
 
       # Snyk code scan (SAST)
       - name: Snyk Code Scan
-        run: snyk code test --severity-threshold=medium
+        run: 
+            snyk config set disableSuggestions=true
+            snyk code test --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
@@ -133,7 +135,9 @@ jobs:
 
       # Snyk container scan
       - name: Snyk Container Scan
-        run: snyk container test ${{ env.DOCKER_IMAGE_NAME }} --severity-threshold=medium
+        run: 
+            snyk config set disableSuggestions=true
+            snyk container test ${{ env.DOCKER_IMAGE_NAME }} --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
