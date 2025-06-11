@@ -1,112 +1,180 @@
+using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Domain.Rentals;
-using LibraryOnlineRentalSystem.Repository.Common;
 using Microsoft.EntityFrameworkCore;
+using LibraryOnlineRentalSystem.Repository.Common;
 
 namespace LibraryOnlineRentalSystem.Repository.RentalRepository;
 
-public class RentalRepository : GeneralRepository<Rental, RentalID>,
-    IRentalRepository
+public class RentalRepository : IRentalRepository
 {
     private readonly LibraryDbContext _context;
+    private readonly DbSet<Rental> _rentals;
 
-    public RentalRepository(LibraryDbContext context) : base(context.Rentals)
+    public RentalRepository(LibraryDbContext context)
     {
-        _context = context;
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+        _rentals = context.Set<Rental>();
     }
+
+    public async Task<Rental?> GetByIdAsync(RentalID id)
+    {
+        if (id == null || string.IsNullOrWhiteSpace(id.Value))
+            throw new ArgumentException("Rental ID cannot be null or empty", nameof(id));
+
+        return await _rentals
+            .FirstOrDefaultAsync(r => r.Id == id);
+    }
+
+    public async Task<List<Rental>> GetAllAsync()
+    {
+        return await _rentals.ToListAsync();
+    }
+
+    public async Task<List<Rental>> GetAllAsyncOfUser(string userEmail)
+    {
+        if (string.IsNullOrWhiteSpace(userEmail))
+            throw new ArgumentException("User email cannot be empty", nameof(userEmail));
+
+        return await _rentals
+            .Where(r => r.EmailUser.EmailAddress == userEmail)
+            .ToListAsync();
+    }
+    
 
     public async Task<List<Rental>> GetAllActiveRentalsAssync()
     {
-        var activeRentals = await _context.Rentals
-            .Where(r => r.StatusOfRental.RentStatus == Status.Active)
+        return await _rentals
+            .Where(r => r.StatusOfRental.IsActive)
             .ToListAsync();
-        return activeRentals;
-    }
-
-    public async Task<List<Rental>> GetAllCancelledRentalsAssync()
-    {
-        var cancelledRentals = await _context.Rentals
-            .Where(r => r.StatusOfRental.RentStatus == Status.Cancelled)
-            .ToListAsync();
-        return cancelledRentals;
     }
 
     public async Task<List<Rental>> GetAllPendingRentalsAssync()
     {
-        var pendingRentals = await _context.Rentals
-            .Where(r => r.StatusOfRental.RentStatus == Status.Pending)
+        return await _rentals
+            .Where(r => r.StatusOfRental.IsPending)
             .ToListAsync();
-        return pendingRentals;
     }
 
     public async Task<List<Rental>> GetAllCompletedRentalsAssync()
     {
-        var completedRentals = await _context.Rentals
-            .Where(r => r.StatusOfRental.RentStatus == Status.Completed)
+        return await _rentals
+            .Where(r => r.StatusOfRental.IsCompleted)
             .ToListAsync();
-        return completedRentals;
     }
 
-    //USER
-    public async Task<List<Rental>> GetAllAsyncOfUser(string userEmail)
+    public async Task<List<Rental>> GetAllCancelledRentalsAssync()
     {
-        var activeRentals = await _context.Rentals
-            .Where(r => r.EmailUser.EmailAddress == userEmail)
+        return await _rentals
+            .Where(r => r.StatusOfRental.IsCancelled)
             .ToListAsync();
-        return activeRentals;
     }
 
+    public async Task<List<Rental>> GetAllCompletedRentalsOfUserAssync(string userEmail)
+    {
+        if (string.IsNullOrWhiteSpace(userEmail))
+            throw new ArgumentException("User email cannot be empty", nameof(userEmail));
+
+        return await _rentals
+            .Where(r => r.EmailUser.EmailAddress == userEmail && r.StatusOfRental.IsCompleted)
+            .ToListAsync();
+    }
+
+    public async Task<Rental> AddAsync(Rental entity)
+    {
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
+        await _rentals.AddAsync(entity);
+        await _context.SaveChangesAsync();
+        return entity;
+    }
     public async Task<List<Rental>> GetAllActiveRentalsOfUserAssync(string userEmail)
     {
-        var activeRentals = await _context.Rentals
-            .Where(r => r.StatusOfRental.RentStatus == Status.Active
-                        && r.EmailUser.EmailAddress == userEmail)
+        if (string.IsNullOrWhiteSpace(userEmail))
+            throw new ArgumentException("User email cannot be empty", nameof(userEmail));
+
+        return await _rentals
+            .Where(r => r.EmailUser.EmailAddress == userEmail && r.StatusOfRental.IsActive)
             .ToListAsync();
-        return activeRentals;
     }
 
     public async Task<List<Rental>> GetAllCancelledRentalsOfUserAssync(string userEmail)
     {
-        var cancelledRentals = await _context.Rentals
-            .Where(r => r.StatusOfRental.RentStatus == Status.Cancelled
-                        && r.EmailUser.EmailAddress == userEmail)
+        if (string.IsNullOrWhiteSpace(userEmail))
+            throw new ArgumentException("User email cannot be empty", nameof(userEmail));
+
+        return await _rentals
+            .Where(r => r.EmailUser.EmailAddress == userEmail && r.StatusOfRental.IsCancelled)
             .ToListAsync();
-        return cancelledRentals;
     }
 
     public async Task<List<Rental>> GetAllPendingRentalsOfUserAssync(string userEmail)
     {
-        var pendingRentals = await _context.Rentals
-            .Where(r => r.StatusOfRental.RentStatus == Status.Pending
-                        && r.EmailUser.EmailAddress == userEmail)
+        if (string.IsNullOrWhiteSpace(userEmail))
+            throw new ArgumentException("User email cannot be empty", nameof(userEmail));
+
+        return await _rentals
+            .Where(r => r.EmailUser.EmailAddress == userEmail && r.StatusOfRental.IsPending)
             .ToListAsync();
-        return pendingRentals;
     }
 
-    public async Task<List<Rental>> GetAllCompleteRentalsOfUserAssync(string userEmail)
+    public void Update(Rental entity)
     {
-        var completedRentals = await _context.Rentals
-            .Where(r => r.StatusOfRental.RentStatus == Status.Completed
-                        && r.EmailUser.EmailAddress == userEmail)
-            .ToListAsync();
-        return completedRentals;
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
+        _rentals.Update(entity);
     }
 
-    public async Task<Rental> CancelRental(string rentalId)
+    public void Remove(Rental entity)
+    {
+        if (entity == null)
+            throw new ArgumentNullException(nameof(entity));
+
+        _rentals.Remove(entity);
+    }
+
+    public async Task<bool> CancelRentalAsync(string rentalId)
+    {
+        if (string.IsNullOrWhiteSpace(rentalId))
+            throw new ArgumentException("Rental ID cannot be empty", nameof(rentalId));
+
+        var rental = await GetByIdAsync(new RentalID(rentalId));
+        if (rental == null)
+            return false;
+
+        rental.CancelBooking();
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<bool> CompleteRentalAsync(string rentalId)
+    {
+        if (string.IsNullOrWhiteSpace(rentalId))
+            throw new ArgumentException("Rental ID cannot be empty", nameof(rentalId));
+
+        var rental = await GetByIdAsync(new RentalID(rentalId));
+        if (rental == null)
+            return false;
+
+        rental.MarkAsCompleted();
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task SaveChangesAsync()
     {
         try
         {
-            var rental = context().SingleOrDefault(b => b.Id == new RentalID(rentalId));
-            if (rental == null)
-                return null;
-
-            rental.CancelBooking();
-
-            _context.SaveChanges();
-            return rental;
+            await _context.SaveChangesAsync();
         }
-        catch (Exception ex)
+        catch (DbUpdateConcurrencyException ex)
         {
-            return null;
+            throw new InvalidOperationException("A concurrency error occurred while saving to the database.", ex);
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new InvalidOperationException("An error occurred while saving to the database.", ex);
         }
     }
 }

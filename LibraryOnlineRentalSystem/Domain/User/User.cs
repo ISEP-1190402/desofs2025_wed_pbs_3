@@ -2,7 +2,7 @@
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
-public class User : Entity<UserId>, IAggregateRoot
+public class User : Entity<UserID>, IAggregateRoot
 {
     protected User() { }
     public User(string id, string name, string email, string userName, string phoneNumber, string nif, string biography, string hashedPassword)
@@ -15,7 +15,7 @@ public class User : Entity<UserId>, IAggregateRoot
         if (string.IsNullOrEmpty(biography)) throw new ArgumentException("Biography is required", nameof(biography));
         if (string.IsNullOrEmpty(hashedPassword)) throw new ArgumentException("HashedPassword is required", nameof(hashedPassword));
 
-        Id = new UserId(id);
+        Id = new UserID(id);
         Name = new Name(name);
         Email = new Email(email);
         UserName = new UserName(userName);

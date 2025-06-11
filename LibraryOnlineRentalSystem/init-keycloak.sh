@@ -127,4 +127,4 @@ curl -ks -X POST "https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/ad
   -d "[$ADMIN_ROLE]"
 check_error "Failed to assign admin role"
 
-echo "✅ Keycloak initialization completed successfully!"
+echo "Keycloak initialization completed successfully!"

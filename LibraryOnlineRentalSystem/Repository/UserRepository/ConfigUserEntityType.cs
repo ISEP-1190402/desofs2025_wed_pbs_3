@@ -13,7 +13,7 @@ public class ConfigUserEntityType : IEntityTypeConfiguration<User>
         builder.Property(u => u.Id)
             .HasConversion(
                 id => id.AsGuid(),
-                guid => new UserId(guid))
+                guid => new UserID(guid))
             .IsRequired();
 
         builder.OwnsOne(u => u.Name)

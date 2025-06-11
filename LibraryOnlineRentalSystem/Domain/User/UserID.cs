@@ -3,14 +3,14 @@ using LibraryOnlineRentalSystem.Domain.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
-public class UserId : EntityId
+public class UserID : EntityId
 {
-    public UserId(Guid value) : base(value)
+    public UserID(Guid value) : base(value)
     {
         if (value == Guid.Empty) throw new BusinessRulesException("Guid cannot be null or empty.");
     }
     
-    public UserId(string value) : base(value)
+    public UserID(string value) : base(value)
     {
         if (string.IsNullOrEmpty(value)) throw new BusinessRulesException("Guid cannot be null or empty.");
     }
