@@ -29,6 +29,19 @@ namespace LibraryOnlineRentalSystem
 
         public void ConfigureServices(IServiceCollection services)
         {
+
+            services.AddLogging(loggingBuilder =>
+           {
+               loggingBuilder.AddConsole();
+           });
+
+            services.AddApplicationInsightsTelemetry(options =>
+            {
+                options.ConnectionString = "InstrumentationKey=7cf64314-a013-42a7-9871-7ff3c401d98b;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=d37599ab-0a53-4de7-9452-8fd271a3dc6d";
+            });
+
+            services.AddControllersWithViews();
+
             services.AddDbContext<LibraryDbContext>(opt =>
                 opt.UseMySql(
                         Configuration["ConnectionStrings:LibraryDatabase"],

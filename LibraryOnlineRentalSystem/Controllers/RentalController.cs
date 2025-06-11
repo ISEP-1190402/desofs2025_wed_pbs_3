@@ -15,11 +15,14 @@ public class RentalController : ControllerBase
     private readonly UserService _userService;
     private readonly BookService _bookService;
 
-    public RentalController(RentalService rentalService, UserService userService, BookService bookService)
+    private readonly ILogger<RentalController> _logger;
+
+    public RentalController(RentalService rentalService, UserService userService, BookService bookService, ILogger<RentalController> logger)
     {
         _rentalService = rentalService;
         _userService = userService;
         _bookService = bookService;
+        _logger = logger;
     }
 
     // POST: api/rental
@@ -28,6 +31,8 @@ public class RentalController : ControllerBase
     {
         try
         {
+            _logger.LogInformation("Rental creation requested at {Time}", DateTime.UtcNow);
+
             var startDate = DateTime.Parse(dto.StartDate);
             var endDate = DateTime.Parse(dto.EndDate);
 
@@ -61,6 +66,7 @@ public class RentalController : ControllerBase
         FilePrint.RentalFilePrint(dto.ToString());
         Console.WriteLine(rental.ToString());
 
+        _logger.LogInformation("Rental created with ID {Id} at {Time}", rental.IdRentalValue, DateTime.UtcNow);
         return rental;
     }
 
@@ -68,15 +74,22 @@ public class RentalController : ControllerBase
     [HttpPut("cancel/{id}")]
     public async Task<ActionResult<RentalDTO>> CancelRental(string id)
     {
+        _logger.LogInformation("Rental cancel requested for ID {Id} at {Time}", id, DateTime.UtcNow);
         var rental = await _rentalService.CancelARental(id);
-        if (rental == null) return NotFound("Rental not found.");
+        if (rental == null)
+        {
+            _logger.LogWarning("Rental cancel failed - ID {Id} not found at {Time}", id, DateTime.UtcNow);
+            return NotFound("Rental not found.");
+        }
+        _logger.LogInformation("Rental cancelled for ID {Id} at {Time}", id, DateTime.UtcNow);
         return rental;
     }
 
-    // GET: api/rental/user/{email}
+    // GET: api/rental/user/{email} 
     [HttpGet("user/{email}")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllRentalsOfUser(string email)
     {
+        _logger.LogInformation("Fetching rentals for user {Email} at {Time}", email, DateTime.UtcNow);
         var rentals = await _rentalService.GetAllRentalsOfUserAsync(email);
         return rentals;
     }
@@ -85,6 +98,7 @@ public class RentalController : ControllerBase
     [HttpGet("user/{email}/active")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllActiveRentalsOfUser(string email)
     {
+        _logger.LogInformation("Fetching active rentals for user {Email} at {Time}", email, DateTime.UtcNow);
         var rentals = await _rentalService.GetAllActiveRentalsOfUserAsync(email);
         return rentals;
     }
@@ -93,6 +107,8 @@ public class RentalController : ControllerBase
     [HttpGet("user/{email}/cancelled")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllCancelledRentalsOfUser(string email)
     {
+        _logger.LogInformation("Fetching cancelled rentals for user {Email} at {Time}", email, DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllCancelledRentalsOfUserAsync(email);
         return rentals;
     }
@@ -101,6 +117,8 @@ public class RentalController : ControllerBase
     [HttpGet("user/{email}/pending")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllPendingRentalsOfUser(string email)
     {
+        _logger.LogInformation("Fetching pending rentals for user {Email} at {Time}", email, DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllPendingRentalsOfUserAsync(email);
         return rentals;
     }
@@ -109,6 +127,8 @@ public class RentalController : ControllerBase
     [HttpGet("user/{email}/completed")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllCompletedRentalsOfUser(string email)
     {
+        _logger.LogInformation("Fetching completed rentals for user {Email} at {Time}", email, DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllCompletedRentalsOfUserAsync(email);
         return rentals;
     }
@@ -117,6 +137,8 @@ public class RentalController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<List<RentalDTO>>> GetAllRentals()
     {
+        _logger.LogInformation("Fetching all rentals stored at {Time}", DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllRentalsAsync();
         return rentals;
     }
@@ -125,6 +147,8 @@ public class RentalController : ControllerBase
     [HttpGet("active")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllActiveRentals()
     {
+        _logger.LogInformation("Fetching all active rentals at {Time}", DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllActiveRentalsAsync();
         return rentals;
     }
@@ -133,6 +157,8 @@ public class RentalController : ControllerBase
     [HttpGet("cancelled")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllCancelledRentals()
     {
+        _logger.LogInformation("Fetching all cancelled rentals at {Time}", DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllCancelledRentalsAsync();
         return rentals;
     }
@@ -141,6 +167,8 @@ public class RentalController : ControllerBase
     [HttpGet("pending")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllPendingRentals()
     {
+        _logger.LogInformation("Fetching all pending rentals at {Time}", DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllPendingRentalsAsync();
         return rentals;
     }
@@ -149,17 +177,25 @@ public class RentalController : ControllerBase
     [HttpGet("completed")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllCompletedRentals()
     {
+        _logger.LogInformation("Fetching all completed rentals at {Time}", DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllCompletedRentalsAsync();
         return rentals;
     }
 
-    // GET: api/rental/{id}
+    // GET: api/rental/{id} 
     [HttpGet("{id}")]
     public async Task<ActionResult<RentalDTO>> GetRentalById(string id)
     {
+        _logger.LogInformation("Fetching rental with ID {Id} at {Time}", id, DateTime.UtcNow);
+
         var rentals = await _rentalService.GetAllRentalsAsync();
         var rental = rentals.FirstOrDefault(r => r.IdRentalValue == id);
-        if (rental == null) return NotFound("Rental not found.");
+        if (rental == null)
+        {
+            _logger.LogWarning("Rental with ID {Id} not found at {Time}", id, DateTime.UtcNow);
+            return NotFound("Rental not found.");
+        }
         return rental;
     }
 }
