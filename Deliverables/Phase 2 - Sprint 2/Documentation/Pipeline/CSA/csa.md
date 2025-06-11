@@ -3,6 +3,8 @@ CSA Realiza uma análise de segurança e qualidade de código feito em .NET.
 
 Está pipeline  é dividida em várias etapas organizadas logicamente para validar o projeto a cada, pull request. Passando a ser validado por algum membro da equipa.
 
+![alt text](image.png)
+
 Depois a mesma faz analise pelo Snyk, onde varre o codigo-fonte com SAST, fazendo uma analise estatica. 
 
 Logo em seguida utiliza o recurso do SonarCloud para ver a qualidade do codigo e bugs existentes. 
