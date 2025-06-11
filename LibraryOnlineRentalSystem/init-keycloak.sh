@@ -19,7 +19,7 @@ check_error() {
 }
 
 echo "Getting admin token..."
-ADMIN_TOKEN=$(curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/realms/master/protocol/openid-connect/token \
+ADMIN_TOKEN=$(curl -X POST http://localhost:8082/realms/master/protocol/openid-connect/token \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "username=${KEYCLOAK_ADMIN}" \
   -d "password=${KEYCLOAK_ADMIN_PASSWORD}" \
@@ -28,7 +28,7 @@ ADMIN_TOKEN=$(curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azur
 check_error "Failed to get admin token"
 
 echo "Creating realm..."
-curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms \
+curl -X POST http://localhost:8082/admin/realms \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -54,15 +54,15 @@ curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/adm
 check_error "Failed to create realm"
 
 echo "Waiting for Admin role to be available..."
-until curl -ks -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/roles/Admin" | grep -q '"name":"Admin"'; do
+until curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:8082/admin/realms/library/roles/Admin" | grep -q '"name":"Admin"'; do
     sleep 2
     echo "Still waiting for Admin role..."
 done
 echo "Admin role is now available."
 
 echo "Creating client..."
-curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/clients \
+curl -X POST http://localhost:8082/admin/realms/library/clients \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -82,7 +82,7 @@ curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/adm
 check_error "Failed to create client"
 
 echo "Creating admin user..."
-curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/users \
+curl -X POST http://localhost:8082/admin/realms/library/users \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
@@ -98,17 +98,17 @@ curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/adm
 check_error "Failed to create admin user"
 
 echo "Getting admin user ID..."
-ADMIN_USER_ID=$(curl -ks -X GET "https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/users?username=admin" \
+ADMIN_USER_ID=$(curl -X GET "http://localhost:8082/admin/realms/library/users?username=admin" \
   -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
 check_error "Failed to get admin user ID"
 
 echo "Fetching Admin role object..."
-ADMIN_ROLE=$(curl -ks -H "Authorization: Bearer $ADMIN_TOKEN" \
-  "https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/roles/Admin")
+ADMIN_ROLE=$(curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:8082/admin/realms/library/roles/Admin")
 check_error "Failed to fetch Admin role"
 
 echo "Assigning admin role to admin user..."
-curl -ks -X POST "https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/users/${ADMIN_USER_ID}/role-mappings/realm" \
+curl -X POST "http://localhost:8082/admin/realms/library/users/${ADMIN_USER_ID}/role-mappings/realm" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d "[$ADMIN_ROLE]"
