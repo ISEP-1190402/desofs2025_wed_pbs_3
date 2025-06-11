@@ -11,10 +11,9 @@ env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 5000
   PROJECT_DIR: ./LibraryOnlineRentalSystem
-  # Replace these with your actual SonarCloud values
   SONAR_PROJECT_KEY: jorgealmeidadeveloper_LibraryOnlineRentalSystem
   SONAR_ORG: jorgealmeidadeveloper
-  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}           # Set this in GitHub repository secrets
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
   SONAR_HOST_URL: https://sonarcloud.io
 
 jobs:
@@ -26,14 +25,14 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+          fetch-depth: 0
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0.x'
 
-      - name: Setup Java 17 (required by SonarScanner)
+      - name: Setup Java 17 (Sonar Requirement)
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
@@ -46,52 +45,41 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Install SonarScanner for MSBuild
+      - name: Install SonarScanner
         run: dotnet tool install --global dotnet-sonarscanner --version 5.15.0
-        
+
       - name: Add dotnet tools to PATH
         run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
 
-      - name: Verify SonarCloud Configuration
+      - name: Verify SonarCloud Config
         run: |
           echo "Project Key: ${{ env.SONAR_PROJECT_KEY }}"
           echo "Organization: ${{ env.SONAR_ORG }}"
           echo "Host URL: ${{ env.SONAR_HOST_URL }}"
-          if [[ -z "${{ env.SONAR_PROJECT_KEY }}" ]]; then
-            echo "❌ ERROR: SONAR_PROJECT_KEY is not set"
-            echo "Please set SONAR_PROJECT_KEY in your repository variables"
-            exit 1
-          fi
-          if [[ -z "${{ env.SONAR_ORG }}" ]]; then
-            echo "❌ ERROR: SONAR_ORG is not set"
-            echo "Please set SONAR_ORG in your repository variables"
-            exit 1
-          fi
+          [[ -z "${{ env.SONAR_PROJECT_KEY }}" ]] && echo "❌ SONAR_PROJECT_KEY is not set" && exit 1
+          [[ -z "${{ env.SONAR_ORG }}" ]] && echo "❌ SONAR_ORG is not set" && exit 1
 
-      # Create SonarCloud project if it doesn't exist
       - name: Create SonarCloud Project (if needed)
         run: |
-          echo "🔍 Checking if SonarCloud project exists..."
           HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
             -H "Authorization: Bearer ${{ env.SONAR_TOKEN }}" \
             "https://sonarcloud.io/api/projects/search?projects=${{ env.SONAR_PROJECT_KEY }}")
-          
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "✅ Project already exists"
-          else
-            echo "🆕 Creating new SonarCloud project..."
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "Creating new SonarCloud project..."
             curl -X POST \
               -H "Authorization: Bearer ${{ env.SONAR_TOKEN }}" \
               -H "Content-Type: application/x-www-form-urlencoded" \
               -d "project=${{ env.SONAR_PROJECT_KEY }}&name=${{ github.event.repository.name }}&organization=${{ env.SONAR_ORG }}" \
-              "https://sonarcloud.io/api/projects/create" || echo "⚠️ Project creation failed, will try manual analysis"
+              "https://sonarcloud.io/api/projects/create" || echo "⚠️ Project creation failed"
+          else
+            echo "✅ Project already exists"
           fi
 
-      - name: Restore NuGet packages
+      - name: Restore NuGet Packages
         working-directory: ${{ env.PROJECT_DIR }}
         run: dotnet restore
 
-      # SonarCloud Begin (prepare analysis)
       - name: SonarCloud Begin Analysis
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
@@ -103,7 +91,7 @@ jobs:
             /d:sonar.cs.opencover.reportsPaths=**/coverage.opencover.xml \
             /d:sonar.coverage.exclusions="**/Migrations/**,**/wwwroot/**,**/*Tests*/**"
 
-      - name: Build solution
+      - name: Build Solution
         working-directory: ${{ env.PROJECT_DIR }}
         run: dotnet build --configuration Release --no-restore
 
@@ -117,51 +105,44 @@ jobs:
             --verbosity normal \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
-      # SonarCloud End (finalize analysis)
       - name: SonarCloud End Analysis
         working-directory: ${{ env.PROJECT_DIR }}
         run: dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
 
-      # Snyk authentication and setup
       - name: Setup Snyk
         uses: snyk/actions/setup@master
 
-      # Snyk code scan (SAST)
       - name: Snyk Code Scan
         run: snyk code test --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
 
-      # Build Docker image
       - name: Build Docker Image
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           if [ ! -f Dockerfile ]; then
-            echo "⚠️  No Dockerfile found. Creating a basic one..."
+            echo "Creating default Dockerfile..."
             cat > Dockerfile << 'EOF'
-          FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-          WORKDIR /app
-          COPY bin/Release/net8.0/publish/ .
-          EXPOSE 5000
-          ENTRYPOINT ["dotnet", "LibraryOnlineRentalSystem.dll"]
-          EOF
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+WORKDIR /app
+COPY bin/Release/net8.0/publish/ .
+EXPOSE 5000
+ENTRYPOINT ["dotnet", "LibraryOnlineRentalSystem.dll"]
+EOF
             dotnet publish --configuration Release --output bin/Release/net8.0/publish/
           fi
           docker build -t $DOCKER_IMAGE_NAME .
 
-      # Snyk container scan
       - name: Snyk Container Scan
         run: snyk container test ${{ env.DOCKER_IMAGE_NAME }} --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
 
-      # Create Docker network for ZAP
       - name: Create Docker Network
         run: docker network create zap-net || true
 
-      # Run API container
       - name: Run API Container
         run: |
           docker run -d --name api --network zap-net -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
@@ -169,15 +150,14 @@ jobs:
             -e ASPNETCORE_ENVIRONMENT=Development \
             ${{ env.DOCKER_IMAGE_NAME }}
 
-      - name: Wait for API to start
+      - name: Wait for API to Start
         run: |
-          echo "Waiting for API to start..."
           for i in {1..30}; do
             if docker exec api curl -f http://localhost:${{ env.API_PORT }}/health 2>/dev/null; then
               echo "API is ready!"
               break
             fi
-            echo "Attempt $i: API not ready yet..."
+            echo "Waiting for API to be ready... Attempt $i"
             sleep 2
           done
 
@@ -186,57 +166,55 @@ jobs:
         run: |
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
           echo "api_ip=$API_IP" >> $GITHUB_OUTPUT
-          echo "API IP: $API_IP"
 
-      # OWASP ZAP scan with improved configuration
       - name: Run OWASP ZAP Scan
         run: |
-          mkdir -p zap-work
-          chmod -R 777 zap-work
-          
-          # Create ZAP automation configuration
-          cat > zap-work/automation.yaml << 'EOF'
-          env:
-            contexts:
-              - name: "Library API"
-                urls: ["http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"]
-                includePaths:
-                  - "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}/.*"
-                excludePaths:
-                  - ".*\\.js$"
-                  - ".*\\.css$"
-                  - ".*\\.png$"
-                  - ".*\\.jpg$"
-            parameters:
-              failOnError: false
-              failOnWarning: false
-              progressToStdout: true
+          mkdir -p zap-work && chmod -R 777 zap-work
 
-          jobs:
-          
-            - type: report
-              parameters:
-                template: "traditional-json"
-                reportDir: "/zap/wrk"
-                reportFile: "zap-report.json"
-              risks:
-                - high
-                - medium
-                - low
-                - info
+          cat > zap-work/automation.yaml <<EOF
+env:
+  contexts:
+    - name: "Library API"
+      urls: ["http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"]
+      includePaths:
+        - "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}/.*"
+      excludePaths:
+        - ".*\\.js$"
+        - ".*\\.css$"
+        - ".*\\.png$"
+        - ".*\\.jpg$"
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
 
-            - type: report
-              parameters:
-                template: "traditional-html"
-                reportDir: "/zap/wrk"
-                reportFile: "zap-report.html"
-              risks:
-                - high
-                - medium
-                - low
-          EOF
+jobs:
+  - type: spider
+    parameters:
+      context: "Library API"
+      url: "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"
+      maxDuration: 3
+      maxDepth: 3
 
-          # Run ZAP scan
+  - type: activeScan
+    parameters:
+      context: "Library API"
+      inScopeOnly: true
+      policy: "Default Policy"
+
+  - type: report
+    parameters:
+      template: "traditional-json"
+      reportDir: "/zap/wrk"
+      reportFile: "zap-report.json"
+
+  - type: report
+    parameters:
+      template: "traditional-html"
+      reportDir: "/zap/wrk"
+      reportFile: "zap-report.html"
+EOF
+
           docker run --rm --network zap-net \
             -v ${{ github.workspace }}/zap-work:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
@@ -247,14 +225,9 @@ jobs:
         run: |
           if [ -f "zap-work/zap-report.json" ]; then
             echo "📊 ZAP Scan Results:"
-            if command -v jq &> /dev/null; then
-              jq -r '.site[0].alerts[]? | "🚨 \(.name) - Risk: \(.riskdesc) - Count: \(.count)"' zap-work/zap-report.json | head -10 || echo "Report generated successfully"
-            else
-              echo "✅ ZAP scan completed - reports generated"
-            fi
-            echo "📄 Reports saved to artifacts"
+            jq -r '.site[0].alerts[]? | "🚨 \(.name) - Risk: \(.riskdesc) - Count: \(.count)"' zap-work/zap-report.json | head -10 || true
           else
-            echo "⚠️  ZAP report not found, but scan may have completed"
+            echo "⚠️ ZAP report not found."
           fi
 
       - name: Upload ZAP Reports
@@ -273,7 +246,6 @@ jobs:
           path: ${{ env.PROJECT_DIR }}/TestResults/
           retention-days: 30
 
-      # Security Summary
       - name: Security Scan Summary
         if: always()
         run: |
@@ -281,17 +253,16 @@ jobs:
           echo "| Tool | Status | Notes |" >> $GITHUB_STEP_SUMMARY
           echo "|------|--------|-------|" >> $GITHUB_STEP_SUMMARY
           echo "| SonarCloud | ✅ | Code quality and security analysis completed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Snyk Code | ⚠️ | SAST scan completed (check for vulnerabilities) |" >> $GITHUB_STEP_SUMMARY
+          echo "| Snyk Code | ⚠️ | Static scan completed |" >> $GITHUB_STEP_SUMMARY
           echo "| Snyk Container | ⚠️ | Container scan completed |" >> $GITHUB_STEP_SUMMARY
-          echo "| OWASP ZAP | ⚠️ | Dynamic security testing completed |" >> $GITHUB_STEP_SUMMARY
+          echo "| OWASP ZAP | ⚠️ | Dynamic security testing done |" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "📋 Check the uploaded artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY
+          echo "📋 Check artifacts for full results." >> $GITHUB_STEP_SUMMARY
 
-      # Cleanup
       - name: Cleanup Docker Resources
         if: always()
         run: |
           docker stop api || true
           docker rm api || true
           docker network rm zap-net || true
-          docker rmi ${{ env.DOCKER_IMAGE_NAME }} || true
+          docker rmi ${{ env.DOCKER_IMAGE_NAME }}
