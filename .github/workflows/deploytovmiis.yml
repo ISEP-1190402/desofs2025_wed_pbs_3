@@ -1,4 +1,4 @@
-name: Build and deploy - libraryrentalsystem
+name: Build and deploy - libraryrentalsystem to IIS
 
 on:
   push:
