@@ -36,7 +36,7 @@ services:
     ports:
       - "3307:3306"
     environment:
-      - MYSQL_ROOT_PASSWORD=${KEYCLOAK_BD_USERNAME}
+      - MYSQL_ROOT_PASSWORD=${KEYCLOAK_BD_PASSWORD}
       - MYSQL_DATABASE=${KC_DATABASE}
     volumes:
       - mysql_data:/var/lib/mysql
