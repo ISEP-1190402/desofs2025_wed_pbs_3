@@ -14,6 +14,7 @@ env:
   # Replace these with your actual SonarCloud values
   SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}  # Set this in GitHub repository variables
   SONAR_ORG: ${{ vars.SONAR_ORG }}                  # Set this in GitHub repository variables
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}           # Set this in GitHub repository secrets
   SONAR_HOST_URL: https://sonarcloud.io
 
 jobs:
@@ -79,7 +80,7 @@ jobs:
             /k:"${{ env.SONAR_PROJECT_KEY }}" \
             /o:"${{ env.SONAR_ORG }}" \
             /d:sonar.host.url="${{ env.SONAR_HOST_URL }}" \
-            /d:sonar.token="${{ secrets.SONAR_TOKEN }}" \
+            /d:sonar.token="${{ env.SONAR_TOKEN }}" \
             /d:sonar.cs.opencover.reportsPaths=**/coverage.opencover.xml \
             /d:sonar.coverage.exclusions="**/Migrations/**,**/wwwroot/**,**/*Tests*/**"
 
@@ -100,7 +101,7 @@ jobs:
       # SonarCloud End (finalize analysis)
       - name: SonarCloud End Analysis
         working-directory: ${{ env.PROJECT_DIR }}
-        run: dotnet sonarscanner end /d:sonar.token="${{ secrets.SONAR_TOKEN }}"
+        run: dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
 
       # Snyk authentication and setup
       - name: Setup Snyk
