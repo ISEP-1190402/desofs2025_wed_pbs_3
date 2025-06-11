@@ -109,18 +109,10 @@ jobs:
 
       # Snyk code scan (SAST)
       - name: Snyk Code Scan
-        run: snyk code test --severity-threshold=medium -- json > snyk-code-results.json
+        run: snyk code test --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
-
-        # Upload Snyk Code Results
-      - name: Upload Snyk Code Results
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-        name: snyk-code-results
-        path: snyk-code-results.json
 
       # Build Docker image
       - name: Build Docker Image
@@ -141,11 +133,10 @@ jobs:
 
       # Snyk container scan
       - name: Snyk Container Scan
-        run: snyk container test ${{ env.DOCKER_IMAGE_NAME }} --severity-threshold=medium --json > snyk-container-results.json
+        run: snyk container test ${{ env.DOCKER_IMAGE_NAME }} --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
-
 
       # Create Docker network for ZAP
       - name: Create Docker Network
