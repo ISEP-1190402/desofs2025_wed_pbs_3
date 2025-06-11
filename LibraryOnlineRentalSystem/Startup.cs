@@ -51,7 +51,7 @@ namespace LibraryOnlineRentalSystem
                 {
                     options.Authority = Configuration["Keycloak:Authority"];
                     options.Audience = Configuration["Keycloak:Audience"];
-                    options.RequireHttpsMetadata = false; // Set to true in production
+                    options.RequireHttpsMetadata = true; // Set to true in production
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
