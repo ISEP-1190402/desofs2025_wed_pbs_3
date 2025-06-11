@@ -1,4 +1,5 @@
 using LibraryOnlineRentalSystem.Domain.Common;
+using LibraryOnlineRentalSystem.Domain.Rentals;
 using LibraryOnlineRentalSystem.Repository.Common;
 using Microsoft.AspNetCore.Mvc;
 
@@ -59,5 +60,10 @@ public class BookService
     {
         var book = _bookRepository.GetByIdAsync(new BookID(reservedBookId)).Result;
         return book != null;
+    }
+
+    public int GetAmmountOfBooks(BookID bookId)
+    {
+        return _bookRepository.GetAmmountOfBooks(bookId);
     }
 }

@@ -31,4 +31,9 @@ public class BookRepository : GeneralRepository<Book, BookID>,
             return null;
         }
     }
+
+    public int GetAmmountOfBooks(BookID bookId)
+    {
+        return context().SingleOrDefault(b => b.Id == bookId).AmountOfCopies.BookAmountOfCopies;
+    }
 }

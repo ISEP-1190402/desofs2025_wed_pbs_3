@@ -131,4 +131,10 @@ public class RentalService
             rental.toDTO());
         return listDto;
     }
+
+    public int GetBusyAmmountOfBooks(RentedBookID rentedBookId, RentalStartDate rentalStartDate,
+        RentalEndDate rentalEndDate)
+    {
+        return  _rentalRepository.GetBusyAmmountOfBooks(rentedBookId, rentalStartDate, rentalEndDate);
+    }
 }

@@ -17,4 +17,9 @@ public class CreatedRentalDTO
     public string EndDate { get; set; }
     public string ReservedBookId { get; set; }
     public string UserEmail { get; set; }
+    public override string ToString()
+    {
+        return $"CreatedRentalDTO [StartDate={StartDate}, EndDate={EndDate}, ReservedBookId={ReservedBookId}, UserEmail={UserEmail}]";
+    }
+
 }

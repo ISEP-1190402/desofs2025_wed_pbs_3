@@ -109,4 +109,16 @@ public class RentalRepository : GeneralRepository<Rental, RentalID>,
             return null;
         }
     }
+
+    public int GetBusyAmmountOfBooks(RentedBookID rentedBookId, RentalStartDate rentalStartDate,
+        RentalEndDate rentalEndDate)
+    {
+        var completedRentals =  _context.Rentals
+            .Where(r => r.RentedBookIdentifier == rentedBookId
+                        && r.StartDate.StartDateTime >= rentalStartDate.StartDateTime
+                        && r.EndDate.EndDateTime <= rentalEndDate.EndDateTime)
+            .ToListAsync();
+        return completedRentals.Result.Count();
+       
+    }
 }
