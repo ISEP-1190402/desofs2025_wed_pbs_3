@@ -27,9 +27,13 @@ RUN dotnet publish "./LibraryOnlineRentalSystem.csproj" -c $BUILD_CONFIGURATION 
 FROM base AS final
 WORKDIR /app
 
-# Install curl as root
+# Install curl and ca-certificates as root
 USER root
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && \
+    apt-get install -y curl ca-certificates && \
+    curl -o /usr/local/share/ca-certificates/DigiCertGlobalRootCA.crt.pem https://dl.cacerts.digicert.com/DigiCertGlobalRootCA.crt.pem && \
+    update-ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 USER $APP_UID
 
 COPY --from=publish /app/publish .
