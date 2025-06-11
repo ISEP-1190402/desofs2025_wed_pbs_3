@@ -200,8 +200,6 @@ jobs:
                 url: "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"
                 maxDuration: 3
                 maxDepth: 3
-                numberOfThreads: 3
-                delayInMs: 500
                 acceptCookies: true
                 handleParameters: "USE_ALL"
 
@@ -209,8 +207,6 @@ jobs:
               parameters:
                 context: "Library API"
                 policy: "Default Policy"
-                maxDuration: 8
-                inScopeOnly: true
                 threadPerHost: 2
                 delayInMs: 200
 
