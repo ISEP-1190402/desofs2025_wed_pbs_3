@@ -12,8 +12,8 @@ env:
   API_PORT: 5000
   PROJECT_DIR: ./LibraryOnlineRentalSystem
   # Replace these with your actual SonarCloud values
-  SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY }}  # Set this in GitHub repository variables
-  SONAR_ORG: ${{ vars.SONAR_ORG }}                  # Set this in GitHub repository variables
+  SONAR_PROJECT_KEY: jorgealmeidadeveloper_LibraryOnlineRentalSystem
+  SONAR_ORG: jorgealmeidadeveloper
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}           # Set this in GitHub repository secrets
   SONAR_HOST_URL: https://sonarcloud.io
 
@@ -260,7 +260,7 @@ jobs:
           path: zap-work/
           retention-days: 30
 
-      - name: Upload Test Resultss
+      - name: Upload Test Results
         uses: actions/upload-artifact@v4
         if: always()
         with:
