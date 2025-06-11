@@ -9,6 +9,7 @@ We've fixed an identified issue related to Migrations by removing the project de
 The rental aggregate was created this sprint. However, when creating a rental, an issue was identified in the EF (Entity Framework) that could not be corrected.
 
 ![rental problem - ef.png](Pictures/rental%20problem%20-%20ef.png)
+![rental error - ef.png](Pictures/rental%20error%20-%20ef.png)
 
 In any case, for demonstration purposes, the validation that was affecting the functionality has been removed.
 
