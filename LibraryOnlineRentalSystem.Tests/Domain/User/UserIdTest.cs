@@ -6,14 +6,14 @@ using System;
 namespace LibraryOnlineRentalSystem.Tests.Domain.User
 {
     [TestFixture]
-    [TestOf(typeof(UserId))]
-    public class UserIdTest
+    [TestOf(typeof(UserID))]
+    public class UserIDTest
     {
         [Test]
         public void Constructor_GuidValue_SetsValue()
         {
             var guid = Guid.NewGuid();
-            var userId = new UserId(guid);
+            var userId = new UserID(guid);
             Assert.That(userId.AsGuid(), Is.EqualTo(guid));
             Assert.That(userId.AsString(), Is.EqualTo(guid.ToString()));
         }
@@ -21,14 +21,14 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
         [Test]
         public void Constructor_GuidEmpty_ThrowsBusinessRulesException()
         {
-            Assert.Throws<BusinessRulesException>(() => new UserId(Guid.Empty));
+            Assert.Throws<BusinessRulesException>(() => new UserID(Guid.Empty));
         }
 
         [Test]
         public void Constructor_ValidStringGuid_SetsValue()
         {
             var guid = Guid.NewGuid();
-            var userId = new UserId(guid.ToString());
+            var userId = new UserID(guid.ToString());
             Assert.That(userId.AsGuid(), Is.EqualTo(guid));
             Assert.That(userId.AsString(), Is.EqualTo(guid.ToString()));
         }
@@ -51,7 +51,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
         public void createFromString_ReturnsGuid()
         {
             var guid = Guid.NewGuid();
-            var userId = new UserId(guid);
+            var userId = new UserID(guid);
             var result = userId.GetType().GetMethod("createFromString", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance)
                 .Invoke(userId, new object[] { guid.ToString() });
             Assert.That(result, Is.TypeOf<Guid>());
@@ -62,7 +62,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
         public void AsString_ReturnsGuidAsString()
         {
             var guid = Guid.NewGuid();
-            var userId = new UserId(guid);
+            var userId = new UserID(guid);
             Assert.That(userId.AsString(), Is.EqualTo(guid.ToString()));
         }
 
@@ -70,7 +70,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
         public void AsGuid_ReturnsGuid()
         {
             var guid = Guid.NewGuid();
-            var userId = new UserId(guid);
+            var userId = new UserID(guid);
             Assert.That(userId.AsGuid(), Is.EqualTo(guid));
         }
     }

@@ -7,7 +7,6 @@ public class RentedBookID
     public RentedBookID()
     {
     }
-
     public RentedBookID(string rentalBookId)
     {
         BookId = rentalBookId ?? throw new BusinessRulesException("Book cannot be null");

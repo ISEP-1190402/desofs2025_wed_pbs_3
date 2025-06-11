@@ -181,7 +181,7 @@ public class UserService
 
     public async Task<UserDTO?> GetUserByIdAsync(Guid id)
     {
-        var user = await _userRepository.GetByIdAsync(new UserId(id));
+        var user = await _userRepository.GetByIdAsync(new UserID(id));
         if (user == null) return null;
 
         return new UserDTO(
@@ -211,7 +211,7 @@ public class UserService
 
     public async Task UpdateUserAsync(Guid id, UpdateUserRequest request)
     {
-        var user = await _userRepository.GetByIdAsync(new UserId(id));
+        var user = await _userRepository.GetByIdAsync(new UserID(id));
         if (user == null)
             throw new BusinessRulesException("User not found");
 
@@ -231,10 +231,9 @@ public class UserService
         await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
     }
 
-    public async Task<bool> UserExists(string userEmail)
+    public bool UserExists(string userEmail)
     {
-        User? user = await _userRepository.GetByEmailAsync(userEmail);
+        var user = _userRepository.GetByEmailAsync(userEmail).Result;
         return user != null;
     }
-
 }

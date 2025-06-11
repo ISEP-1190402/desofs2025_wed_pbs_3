@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore;
+using DotNetEnv;
 using Microsoft.AspNetCore.Hosting;
 
 namespace LibraryOnlineRentalSystem
@@ -8,6 +9,7 @@ namespace LibraryOnlineRentalSystem
     {
         public static void Main(string[] args)
         {
+            DotNetEnv.Env.Load();
             CreateWebHostBuilder(args).Build().Run();
         }
 

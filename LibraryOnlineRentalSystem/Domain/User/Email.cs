@@ -39,7 +39,7 @@ public class Email : ICloneable, IValueObject
         if (this == obj) return true;
         if (obj is not Email other) return false;
 
-        return EmailAddress.ToLower() == other.EmailAddress.ToLower();
+        return EmailAddress.ToLowerInvariant() == other.EmailAddress.ToLowerInvariant();
     }
 
     public override int GetHashCode()

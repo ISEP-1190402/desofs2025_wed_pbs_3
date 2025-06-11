@@ -132,10 +132,16 @@ public class RentalService
         return listDto;
     }
 
-
     public int GetBusyAmmountOfBooks(RentedBookID rentedBookId, RentalStartDate rentalStartDate,
         RentalEndDate rentalEndDate)
     {
-        return  _rentalRepository.GetBusyAmmountOfBooks(rentedBookId, rentalStartDate, rentalEndDate);
+        try
+        {
+            return _rentalRepository.GetBusyAmmountOfBooks(rentedBookId, rentalStartDate, rentalEndDate);
+        }
+        catch (NullReferenceException ex)
+        {
+            return 0;
+        }
     }
 }

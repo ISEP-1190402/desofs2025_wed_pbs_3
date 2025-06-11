@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace LibraryOnlineRentalSystem.Repository.UserRepository;
 
-public class UserRepository : GeneralRepository<User, UserId>, IUserRepository
+public class UserRepository : GeneralRepository<User, UserID>, IUserRepository
 {
     private readonly LibraryDbContext _context;
 
@@ -13,7 +13,7 @@ public class UserRepository : GeneralRepository<User, UserId>, IUserRepository
         _context = context;
     }
 
-    public async Task<User?> GetByIdAsync(UserId id)
+    public async Task<User?> GetByIdAsync(UserID id)
     {
         return await _context.Users.FirstOrDefaultAsync(u => u.Id.Equals(id));
     }

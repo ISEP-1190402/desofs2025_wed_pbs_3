@@ -6,7 +6,6 @@ namespace LibraryOnlineRentalSystem.Domain.Rentals;
 
 public class RentalID : EntityId
 {
-    
     [JsonConstructor]
     public RentalID(string value) : base(value)
     {
@@ -14,7 +13,8 @@ public class RentalID : EntityId
         rentalID = value;
     }
 
-    private string rentalID { get; }
+    public string rentalID { get; private set; }
+
     override
         protected object createFromString(string text)
     {
@@ -34,7 +34,7 @@ public class RentalID : EntityId
 
         if (obj == null || obj.GetType() != GetType()) return false;
 
-        var that = (RentalID) obj;
+        var that = (RentalID)obj;
 
         return this.rentalID.Equals(that.rentalID);
     }
@@ -43,5 +43,4 @@ public class RentalID : EntityId
     {
         return $"{rentalID}";
     }
-    
 }
