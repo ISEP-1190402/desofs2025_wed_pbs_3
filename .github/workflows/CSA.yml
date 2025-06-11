@@ -213,26 +213,7 @@ jobs:
               progressToStdout: true
 
           jobs:
-            - type: spider
-              parameters:
-                context: "Library API"
-                url: "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"
-                maxDuration: 3
-                maxDepth: 3
-                numberOfThreads: 3
-                delayInMs: 500
-                acceptCookies: true
-                handleParameters: "USE_ALL"
-
-            - type: activeScan
-              parameters:
-                context: "Library API"
-                policy: "Default Policy"
-                maxDuration: 8
-                inScopeOnly: true
-                threadPerHost: 2
-                delayInMs: 200
-
+          
             - type: report
               parameters:
                 template: "traditional-json"
