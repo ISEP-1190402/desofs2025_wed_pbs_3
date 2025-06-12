@@ -35,21 +35,20 @@ namespace LibraryOnlineRentalSystem
                loggingBuilder.AddConsole();
            });
 
-            services.AddApplicationInsightsTelemetry(options =>
+            /*services.AddApplicationInsightsTelemetry(options =>
             {
-                options.ConnectionString = "InstrumentationKey=7cf64314-a013-42a7-9871-7ff3c401d98b;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=d37599ab-0a53-4de7-9452-8fd271a3dc6d";
-            });
+                options.ConnectionString = Configuration["Telemetry_InstrumentionKey"];
+            });*/
 
             services.AddControllersWithViews();
 
             services.AddDbContext<LibraryDbContext>(opt =>
                 opt.UseMySql(
-                        Configuration["ConnectionStrings:LibraryDatabase"],
-                        ServerVersion.AutoDetect(Configuration["ConnectionStrings:LibraryDatabase"])
+                        Configuration["LibraryDatabase"],
+                        ServerVersion.AutoDetect(Configuration["LibraryDatabase"])
                     )
                     .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
             );
-            Console.WriteLine(Configuration["ConnectionStrings:LibraryDatabase"]);
 
             ConfigureMyServices(services);
             ConfigureCors(services);
@@ -62,8 +61,8 @@ namespace LibraryOnlineRentalSystem
                 })
                 .AddJwtBearer(options =>
                 {
-                    options.Authority = Configuration["Keycloak:Authority"];
-                    options.Audience = Configuration["Keycloak:Audience"];
+                    options.Authority = Configuration["Keycloak__Authority"];
+                    options.Audience = Configuration["Keycloak__Audience"];
                     options.RequireHttpsMetadata = false; // Set to true in production
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
@@ -73,8 +72,6 @@ namespace LibraryOnlineRentalSystem
                         ValidateIssuerSigningKey = true
                     };
                 });
-            Console.WriteLine(Configuration["Keycloak:Authority"]);
-            Console.WriteLine(Configuration["Keycloak:Audience"]);
 
             services.AddHttpClient();
             services.AddControllers().AddNewtonsoftJson();
