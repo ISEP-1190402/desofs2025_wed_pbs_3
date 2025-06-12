@@ -136,8 +136,8 @@ public class UserService
         {
             new KeyValuePair<string, string>("grant_type", "password"),
             new KeyValuePair<string, string>("client_id", "admin-cli"),
-            new KeyValuePair<string, string>("username", "admin"),
-            new KeyValuePair<string, string>("password", "admin")
+            new KeyValuePair<string, string>("username", "desofs-kc"),
+            new KeyValuePair<string, string>("password", "xc.uUrqxbz6tDYyQryhK")
         });
 
         var response =
