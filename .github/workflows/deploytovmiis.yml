@@ -50,10 +50,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: dotnet-app
-          path: ./publish-temp
+          path: ${{env.DOTNET_ROOT}}/myapp
 
       - name: List files for debug (opcional)
-        run: Get-ChildItem -Recurse ./publish-temp
+        run: Get-ChildItem -Recurse ${{env.DOTNET_ROOT}}/myapp
         shell: pwsh
 
       - name: Deploy to IIS folder
