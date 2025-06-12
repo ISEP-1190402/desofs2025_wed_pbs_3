@@ -62,7 +62,6 @@ public class UserService
                 username = req.UserName,
                 email = req.Email,
                 enabled = true,
-                emailVerified = true,
                 credentials = new[]
                 {
                     new
