@@ -11,14 +11,38 @@ Logo em seguida utiliza o recurso do SonarCloud para ver a qualidade do codigo e
 
 Depois com o Owasp fazem uma analise Dinamica(DAST), onde vai testar diretamente os endpoints.
 
-Logo abaixo obtemos o relatorio com as informações geradas desta pipeline.
+Abaixo disponibilizamos os resultados consolidados de cada relatório, contendo:
 
-**Relatorio Zap do CSA.**
+Total de alertas identificados: [3]
+
+Nível de criticidade:
+
+🟠 Alto: [0]
+
+🟡 Médio: [2]
+
+🔵 Baixo: [1]
+
+Descrição do relatório:
+
+✅ Descrição completa dos alertas
+
+✅ Classificação de risco (CVSS)
+
+✅ CVEs associados (com links para bases oficiais)
+
+✅ Evidências técnicas (trechos de código/requisições)
+
+✅ Recomendações de correção
+
+
+# Relatorio Zap do CSA.
 ![alt text](alert.png)
 **Alert e Vunerabilidades .**
 ![alt text](alert_detail.png)
 ![alt text](alert_detail-2.png)
 ![alt text](alert_detail-3.png)
+
 
 Neste Relatorio indentificamos tres tipos de alertas, com suas serveridades dentro da escala de riscos, High, Medium e Low.
 Tais eles são: 
