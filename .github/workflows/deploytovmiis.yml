@@ -1,35 +1,52 @@
-name: Build and deploy - libraryrentalsystem to IIS (local runner)
+name: "Build and Deploy - Self Hosted"
 
 on:
-  push:
-    branches: ["main"]   # ajuste se quiser outro branch
   workflow_dispatch:
+    branches:
+      - main  
+
+env:
+  WORKING_DIRECTORY: 'LibraryOnlineRentalSystem'
+  DOTNET_VERSION: '8.0.x'          
 
 jobs:
-  build-and-deploy:
-    runs-on: [self-hosted, windows]
-    permissions:
-      contents: read
+  build:
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET
+      - name: Setup .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.x'
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: dotnet restore
 
       - name: Build
-        run: |
-          cd LibraryOnlineRentalSystem
-          dotnet build --configuration Release
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: dotnet build --configuration Release --no-restore
 
       - name: Publish
-        run: |
-          dotnet publish LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj -c Release -o ./publish
+        working-directory: ${{ env.WORKING_DIRECTORY }}
+        run: dotnet publish --configuration Release --output 'published'
 
-      - name: Deploy to IIS (LibraryOnlineRentalSystem)
-        run: |
-          Remove-Item -Recurse -Force "C:\inetpub\wwwroot\LibraryOnlineRentalSystem\*" -ErrorAction SilentlyContinue
-          Copy-Item -Recurse -Force ./publish\* "C:\inetpub\wwwroot\LibraryOnlineRentalSystem\"
-        shell: pwsh
+      - name: Upload a Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: application
+          path: '${{ env.WORKING_DIRECTORY }}/published'
+
+  deploy:
+    needs: build
+    runs-on: self-hosted
+
+    steps:
+      - name: Download new binaries over the top of the app
+        uses: actions/download-artifact@v4
+        with:
+          name: application
+          path: "c:/inetpub/wwwroot/LibraryOnlineRentalSystem"
+
