@@ -1,64 +1,35 @@
-name: Build and deploy - libraryrentalsystem to IIS
+name: Build and deploy - libraryrentalsystem to IIS (local runner)
 
 on:
   push:
-    branches: ["main"] # ou ajuste para o padrão do seu projeto
+    branches: ["main"]   # ajuste se quiser outro branch
   workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: windows-latest
+  build-and-deploy:
+    runs-on: [self-hosted, windows]
     permissions:
       contents: read
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up .NET Core
+      - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.x'
 
-      - name: Build with dotnet
+      - name: Build
         run: |
           cd LibraryOnlineRentalSystem
           dotnet build --configuration Release
 
-      - name: dotnet publish
-        run: dotnet publish LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj -c Release -o ./publish
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: .net-app
-          path: ./publish
-
-  deploy:
-    runs-on: windows-latest
-    needs: build
-    environment:
-      name: 'Production'
-    permissions:
-      contents: read
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: .net-app
-
-      - name: Install Web Deploy
+      - name: Publish
         run: |
-          Invoke-WebRequest -Uri "https://download.microsoft.com/download/b/d/8/bd882ec4-12e0-481a-9b32-0fae8e3c0b78/webdeploy_amd64_en-US.msi" -OutFile "WebDeploy.msi"
-          Start-Process msiexec.exe -Wait -ArgumentList '/I WebDeploy.msi /quiet'
-        shell: pwsh
+          dotnet publish LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj -c Release -o ./publish
 
-      - name: Deploy to IIS on VM via Web Deploy
+      - name: Deploy to IIS (LibraryOnlineRentalSystem)
         run: |
-          & "C:\Program Files\IIS\Microsoft Web Deploy V3\msdeploy.exe" `
-            -verb:sync `
-            -source:contentPath="$(pwd)/.net-app" `
-            -dest:contentPath=${{ secrets.IIS_SITE_NAME }},computerName=https://${{ secrets.IIS_SERVER }}:8172/msdeploy.axd?site=${{ secrets.IIS_SITE_NAME }},userName=${{ secrets.IIS_USERNAME }},password=${{ secrets.IIS_PASSWORD }},authType=Basic `
-            -allowUntrusted
+          Remove-Item -Recurse -Force "C:\inetpub\wwwroot\LibraryOnlineRentalSystem\*" -ErrorAction SilentlyContinue
+          Copy-Item -Recurse -Force ./publish\* "C:\inetpub\wwwroot\LibraryOnlineRentalSystem\"
         shell: pwsh
-
