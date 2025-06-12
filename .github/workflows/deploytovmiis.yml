@@ -1,9 +1,10 @@
-name: "Build and Deploy - Self Hosted"
+name: Build and deploy to IIS
 
 on:
   workflow_dispatch:
+  push:
     branches:
-      - main  
+      - main
 
 env:
   WORKING_DIRECTORY: 'LibraryOnlineRentalSystem'
