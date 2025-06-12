@@ -10,7 +10,7 @@ jobs:
   sast-scan:
     name: SAST Snyk Code and Dependency
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && success()
+  #  if: github.event_name == 'pull_request' && success()
     permissions:
       contents: read
       security-events: write
