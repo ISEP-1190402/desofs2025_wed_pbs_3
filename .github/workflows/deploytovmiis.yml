@@ -12,42 +12,52 @@ env:
 
 jobs:
   build:
-    runs-on: self-hosted
+    runs-on: windows-latest
+    permissions:
+      contents: read #This is required for actions/checkout
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup .NET Core
+      - name: Set up .NET Core
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-version: '8.x'
 
-      - name: Restore dependencies
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-        run: dotnet restore
+      - name: Build with dotnet
+        run: |
+             cd LibraryOnlineRentalSystem
+             dotnet build --configuration Release
 
-      - name: Build
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-        run: dotnet build --configuration Release --no-restore
+      - name: dotnet publish
+        run: dotnet publish LibraryOnlineRentalSystem/LibraryOnlineRentalSystem.csproj -c Release -o "${{env.DOTNET_ROOT}}/myapp"
 
-      - name: Publish
-        working-directory: ${{ env.WORKING_DIRECTORY }}
-        run: dotnet publish --configuration Release --output 'published'
-
-      - name: Upload a Build Artifact
+      - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
-          name: application
-          path: '${{ env.WORKING_DIRECTORY }}/published'
+          name: .net-app
+          path: ${{env.DOTNET_ROOT}}/myapp
+
 
   deploy:
     needs: build
-    runs-on: self-hosted
+    runs-on: self-hosted  # <- O runner da SUA VM Windows IIS
+    permissions:
+      contents: read
 
     steps:
-      - name: Download new binaries over the top of the app
+      - name: Download artifact from build job
         uses: actions/download-artifact@v4
         with:
-          name: application
-          path: "c:/inetpub/wwwroot/LibraryOnlineRentalSystem"
-          
+          name: dotnet-app
+          path: ./publish-temp
+
+      - name: List files for debug (opcional)
+        run: Get-ChildItem -Recurse ./publish-temp
+        shell: pwsh
+
+      - name: Deploy to IIS folder
+        run: |
+          Remove-Item -Recurse -Force "C:/inetpub/wwwroot/LibraryOnlineRentalSystem/*" -ErrorAction SilentlyContinue
+          Copy-Item -Recurse -Force ./publish-temp/* "C:/inetpub/wwwroot/LibraryOnlineRentalSystem/"
+        shell: pwsh
