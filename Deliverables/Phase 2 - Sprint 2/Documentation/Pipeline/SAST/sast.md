@@ -11,9 +11,8 @@ Identficar e corrigir vulnerabilidades de segurança no codigo-fonte da app, ain
 **Abordagem**
 - Aceasar o Codigo-Fonte
 - análise com Snyk ( Snyk Code e Dependency Scan)
-- Gerar relatorios da vulnerabilidade e dependecias
+- Gerar relatorios( json e sarif)
 - Upload dos resultados
-
 
 **Ferramentas  SAST:**
 * GitHub Actions
@@ -23,6 +22,21 @@ Identficar e corrigir vulnerabilidades de segurança no codigo-fonte da app, ain
 * upload-artifact
 
 Descrevemos quais tipos de ferramentas, que utilizamos para correr estes os processos na pipeline.
+
+**Integração GiThub vs Snyk:**
+
+Utilizamos o recurso de integração com a ferramenta snky para analise de vulnerabilides e depedencias, atraves do token.
+
+Abaixo temos o token que foi gerado pelo snky e integrado junto ao Github.
+Todas as vezes que fazemos um pull request, é gerado uma analise com o auxilio desta ferramenta. Por ser algo gratuito existe um limite de analises mensais.
+
+![alt text](image-4.png)
+![alt text](image-3.png)
+
+Projeto importado do Git para o snky.
+![alt text](image-6.png)
+
+
 
 ## **Estrutura SAST**
 
@@ -193,18 +207,18 @@ jobs:
       if: always()
 ```
 
-Abaixo descreveremos os resultados desta pipeline a corre, com as informações dos alertas e vulnerabilidades.
+Abaixo descreveremos os resultados desta pipeline a corre, com as informações dos alertas e dependencias.
 
 ## **Reports** 
-Apos analise da pipeline a mesma vai gerar dois tipos de relatorios, com base na varredura do ZAP são eles: 
-* Passivo
-* Profundidade
+Apos analise da pipeline a mesma vai gerar dois tipos de relatorios, com base na varredura do Snyk são eles: 
+* snyk-code
+* snyk-deps
 
-
-## **ZAP Passivo**
+## **Snyk-deps**
 Abaixo disponibilizamos os resultados consolidados de cada relatório, contendo:
 
-Total de alertas identificados: [5]
+
+Total de alertas identificados: [3]
 
 Nível de criticidade:
 
@@ -212,7 +226,7 @@ Nível de criticidade:
 
 🟡 Médio: [2]
 
-🔵 Baixo: [2]
+🔵 Baixo: [0]
 
 Descrição do relatório:
 
@@ -226,24 +240,23 @@ Descrição do relatório:
 
 ✅ Recomendações de correção
 
- ![alt text](image.png)
- ![alt text](image-1.png)
- ![alt text](image-2.png)
- ![alt text](image-3.png)
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
 
 
- ## **ZAP Profundidade**
+ ## **Snyk-code**
 Abaixo disponibilizamos os resultados consolidados de cada relatório, contendo:
 
-Total de alertas identificados: [7]
+Total de alertas identificados: [0]
 
 Nível de criticidade:
 
-🟠 Alto: [1]
+🟠 Alto: [0]
 
-🟡 Médio: [2]
+🟡 Médio: [0]
 
-🔵 Baixo: [4]
+🔵 Baixo: [0]
 
 Descrição do relatório:
 
@@ -257,29 +270,74 @@ Descrição do relatório:
 
 ✅ Recomendações de correção
 
- ![alt text](image-8.png)
- ![alt text](image-9.png)
- ![alt text](image-10.png)
- ![alt text](image-11.png)
-
+```
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SnykCode",
+          "semanticVersion": "1.0.0",
+          "version": "1.0.0",
+          "rules": []
+        }
+      },
+      "results": [],
+      "properties": {
+        "coverage": [
+          {
+            "isSupported": true,
+            "lang": "C#",
+            "files": 86,
+            "type": "SUPPORTED"
+          },
+          {
+            "isSupported": true,
+            "lang": "XML",
+            "files": 16,
+            "type": "SUPPORTED"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
 
  ## **Report Completo:**
 
- 🔗 [Reports](./Deliverables/Phase%202%20-%20Sprint%202/Documentation/Pipeline/DAST/report_md.md)
+ 🔗 [Reports-Code](./Deliverables/Phase%202%20-%20Sprint%202/Documentation/Pipeline/SAST/snyk-code.json)
+
+
+  🔗 [Reports-Deps](./Deliverables/Phase%202%20-%20Sprint%202/Documentation/Pipeline/SAST/snyk-deps.json)
 
  
+### **Resultados das Análises**
 
- 
+🔍 Snyk Code (SAST)
 
-| Métrica          | Passivo | Ativo |
-|:-----------------|--------:|:-----:|
-| Total de Alertas |       5 |   7   |
-| Crítico          |       0 |   0   |
-| Alto (CVE-2024-XXXX) |       1 |   1   |
-| Médio            |       2 |   2   |
+✅ Nenhuma vulnerabilidade encontrada
+
+Cobertura:
+
+Linguagens: C# (100%), XML (100%)
+
+Arquivos: 86 (C#) + 16 (XML)
+
+📦 Snyk Dependency Scan (SAST)
+
+⚠️ 3 vulnerabilidades identificadas
+```
+Severidade	Quantidade	 Exemplo (CVE)	  CVSS
+ Alto	       1	    [CVE-2018-1285]    8.1
+ Médio	       2	    [CVE-2024-21319]   5.4
+```
+
 
 ## **Resumo da Análise SAST**  
 - **Aplicação Testada:** API .NET 8 (Porta 5000)  
 - **Vulnerabilidade Crítica:** 0  
-- **Alerta Mais Grave:** [CVE-2024-47875] XSS em DOMPurify (CVSS 8.1)  
+- **Alerta Mais Grave:** CVE-2018-1285 (XSS em DOMPurify - CVSS 8.1)  
 - **Recomendação Imediata:** Atualizar bibliotecas JavaScript  
