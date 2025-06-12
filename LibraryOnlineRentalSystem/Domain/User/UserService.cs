@@ -1,6 +1,7 @@
 using LibraryOnlineRentalSystem.Domain.User;
 using LibraryOnlineRentalSystem.Domain.Common;
 using System.Text;
+using Serilog;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using System.Text.Json.Serialization;
@@ -16,6 +17,7 @@ public class UserService
     private readonly PasswordService _passwordService;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
+    private readonly ILogger<UserService> _logger; 
     private const string DEFAULT_USER_ROLE_NAME = "User";
 
     public UserService(
@@ -132,19 +134,24 @@ public class UserService
     {
         var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
         var keycloakUrl = authority.Replace("/realms/library", "");
+
+        _logger.LogInformation("Requesting admin token from: {TokenUrl}", $"{keycloakUrl}/realms/master/protocol/openid-connect/token");
+        _logger.LogInformation("Using client_id: admin-cli and username: desofs-kc");
+
         var content = new FormUrlEncodedContent(new[]
         {
             new KeyValuePair<string, string>("grant_type", "password"),
             new KeyValuePair<string, string>("client_id", "admin-cli"),
             new KeyValuePair<string, string>("username", "desofs-kc"),
-            new KeyValuePair<string, string>("password", "xc.uUrqxbz6tDYyQryhK")
+            new KeyValuePair<string, string>("password", "xc.uUrqxbz6tDYyQryhK") // ⚠ don't log this
         });
 
-        var response =
-            await _httpClient.PostAsync($"{keycloakUrl}/realms/master/protocol/openid-connect/token", content);
+        var response = await _httpClient.PostAsync($"{keycloakUrl}/realms/master/protocol/openid-connect/token", content);
+
         if (!response.IsSuccessStatusCode)
         {
             var error = await response.Content.ReadAsStringAsync();
+            _logger.LogError("Failed to get admin token. Status code: {StatusCode}, Response: {Response}", response.StatusCode, error);
             throw new BusinessRulesException($"Failed to get admin token: {error}");
         }
 
@@ -153,6 +160,8 @@ public class UserService
             responseContent,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
         );
+
+        _logger.LogInformation("Admin token received successfully.");
         return tokenResponse.AccessToken;
     }
 
