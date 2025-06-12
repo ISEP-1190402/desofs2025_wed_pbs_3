@@ -52,12 +52,13 @@ jobs:
           name: dotnet-app
           path: ${{env.DOTNET_ROOT}}/myapp
 
-      - name: List files for debug (opcional)
+      - name: List files for debug
         run: Get-ChildItem -Recurse ${{env.DOTNET_ROOT}}/myapp
-        shell: pwsh
+        shell: powershell
 
       - name: Deploy to IIS folder
         run: |
           Remove-Item -Recurse -Force "C:/inetpub/wwwroot/LibraryOnlineRentalSystem/*" -ErrorAction SilentlyContinue
-          Copy-Item -Recurse -Force ./publish-temp/* "C:/inetpub/wwwroot/LibraryOnlineRentalSystem/"
-        shell: pwsh
+          Copy-Item -Recurse -Force C:/myapp/* "C:/inetpub/wwwroot/LibraryOnlineRentalSystem/"
+        shell: powershell
+
