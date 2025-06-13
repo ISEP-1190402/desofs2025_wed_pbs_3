@@ -1,6 +1,6 @@
 
 ### **Metodologia IAST- Teste Interativo de Segurança de Aplicações**
-
+É uma tecnica de segurança que testa aplicações enquanto estão em execução, analisar o comportamento da aplicação em tempo real para identificar vulnerabilidades.
 
 
 **Objetivos**

@@ -57,7 +57,7 @@ jobs:
     - name: Upload Snyk SARIF
       uses: actions/upload-artifact@v4
       with:
-        name: snyk-sarif-results-iast
+        name: snyk-sarif-results_iast
         path: |
           ./LibraryOnlineRentalSystem/snyk_results/snyk-deps.sarif
           ./LibraryOnlineRentalSystem/snyk_results/snyk-code.sarif
