@@ -14,15 +14,15 @@ env:
 jobs:
   iast-security:
     runs-on: ubuntu-latest
-  #  if: github.event_name == 'pull_request' && success()
+ #  if: github.event_name == 'pull_request' && success()
     timeout-minutes: 25
 
     steps:
     # 0. Aprovar Pull_request 
-    - name: iAuto-approve if security passed
-      uses: hmarr/auto-approve-action@v3
-      with:
-        github-token: ${{ secrets.GITHUB_TOKEN }}
+   # - name: iAuto-approve if security passed
+   #   uses: hmarr/auto-approve-action@v3
+   #   with:
+   #     github-token: ${{ secrets.GITHUB_TOKEN }}
 
     # 1. Checkout código
     - name: Checkout repository
