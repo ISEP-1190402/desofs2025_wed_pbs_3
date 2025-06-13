@@ -15,11 +15,8 @@ Identficar e corrigir vulnerabilidades de segurança no codigo-fonte da app, ain
 - Upload dos resultados
 
 **Ferramentas  SAST:**
-* GitHub Actions
-* Snyk CLI
-* Node.js
-* upload-sarif
-* upload-artifact
+
+![alt text](image-7.png)
 
 Descrevemos quais tipos de ferramentas, que utilizamos para correr estes os processos na pipeline.
 
@@ -328,12 +325,13 @@ Arquivos: 86 (C#) + 16 (XML)
 
 📦 Snyk Dependency Scan (SAST)
 
-⚠️ 3 vulnerabilidades identificadas
-```
-Severidade	Quantidade	 Exemplo (CVE)	  CVSS
- Alto	       1	    [CVE-2018-1285]    8.1
- Médio	       2	    [CVE-2024-21319]   5.4
-```
+## **Vulnerabilidades Identificadas**
+
+| Vulnerabilidade                    | Severidade | CVSS | Impacto                                                               | Recomendação Técnica                               |
+| ---------------------------------- | ---------- | ---- | --------------------------------------------------------------------- | -------------------------------------------------- |
+| **Missing Anti-clickjacking**      | Médio      | 5.4  | Permite redirecionamento de cliques maliciosos (ex: roubo de sessão). | Adicionar o header `X-Frame-Options: DENY`.        |
+| **CSP Header Missing**             | Médio      | 6.1  | Expõe à riscos de Cross-Site Scripting (XSS) e injeções de conteúdo.  | Implementar política de `Content-Security-Policy`. |
+| **X-Content-Type-Options Missing** | Baixo      | N/A  | Pode permitir que navegadores interpretem conteúdo incorretamente.    | Adicionar `X-Content-Type-Options: nosniff`.       |
 
 
 ## **Resumo da Análise SAST**  
