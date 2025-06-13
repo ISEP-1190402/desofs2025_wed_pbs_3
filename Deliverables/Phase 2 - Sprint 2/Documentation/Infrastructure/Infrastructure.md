@@ -255,17 +255,6 @@ performance, and usage patterns of the system, enabling proactive monitoring and
 ### Integration Details
 
 - Application Insights is enabled in the application via the Azure SDK for ASP.NET Core.
-- The configuration is set using the **Application Insights Connection String**, stored in an environment variable:
-
----
-
-```json
-{
-  "ApplicationInsights": {
-    "ConnectionString": "InstrumentationKey=7cf64314-a013-42a7-9871-7ff3c401d98b;IngestionEndpoint=https://westeurope-5.in.applicationinsights.azure.com/;LiveEndpoint=https://westeurope.livediagnostics.monitor.azure.com/;ApplicationId=d37599ab-0a53-4de7-9452-8fd271a3dc6d"
-  }
-}
-```
 
 ---
 
