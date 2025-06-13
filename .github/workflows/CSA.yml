@@ -21,7 +21,7 @@ jobs:
   csa:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    if: github.event_name == 'pull_request' && success()
+   # if: github.event_name == 'pull_request' && success()
     permissions:
       contents: read
       security-events: write
