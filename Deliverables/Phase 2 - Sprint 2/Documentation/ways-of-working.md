@@ -491,14 +491,49 @@ public class UpdateUserRequest
 ### 3.11 Deployment
 
 #### 3.11.1 Environments
-- **Development** - Local and CI testing
-- **Staging** - Pre-production testing
-- **Production** - Live environment
+- **Development** - Local development environment - Windows Server 2022 Virtual Machine
+  - Local database and Keycloak instance
+- **Production** - Azure VM with IIS
+  - MySQL Server 8.0+
+  - Keycloak 26.2.5
+  - Accessible at `http://localhost:8080`
 
 #### 3.11.2 CI/CD Pipeline
-- **GitHub Actions** for automation
-- **Automated testing** on every push
-- **Docker** containerization
-- **Rollback** strategy in place
-- **Environment-specific** configurations
+- **GitHub Actions** workflow for automation
 
+[//]: # (- **Automated build and test** on every push to `main`&#41;)
+- **IIS Deployment** to Azure VM
+- **Self-hosted runner** for deployment stage
+- **Zero-downtime** deployment strategy
+
+There is explicit documentation for the deployment process and for pipelines IAST DAST and SAST.
+
+#### 3.11.3 Deployment Process
+1. **Build Stage** (GitHub-hosted runner):
+   - .NET 8.x SDK setup
+   - Solution build in Release configuration
+   - Application publish to `${{env.DOTNET_ROOT}}/myapp`
+   - Artifact upload
+
+2. **Deploy Stage** (Self-hosted runner):
+   - Artifact download
+   - Clean target directory (`C:/inetpub/wwwroot/LibraryOnlineRentalSystem/`)
+   - File copy to IIS directory
+   - Application pool recycle
+
+#### 3.11.4 Access Points
+- **Production API**: http://51.105.240.143/
+- **Swagger UI**: http://51.105.240.143/index.html
+- **Keycloak Admin**: http://[KEYCLOAK_IP]:8080/admin/
+
+#### 3.11.5 Rollback Procedure
+1. Revert the last commit in `main` branch
+2. Push changes to trigger a new deployment
+3. Or manually deploy a previous version from GitHub Actions artifacts
+
+#### 3.11.6 Database Migrations
+- Run migrations manually after deployment if needed:
+  ```bash
+  dotnet ef database update --project LibraryOnlineRentalSystem
+  ```
+- Ensure database user has proper permissions on both `librarydb` and `keycloak` databases
