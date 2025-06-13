@@ -42,9 +42,9 @@
 
 ![vm_backups.png](Pictures/vm_backups.png)
 
-Como é visível na imagem acima, foram ativados os backups para a vm.
+As you can see in the image above, backups have been activated for the vm.
 
-A política de backup é a seguinte:
+The backup policy is as follows:
 
 ![backup-policy.png](Pictures/backup-policy.png)
 
