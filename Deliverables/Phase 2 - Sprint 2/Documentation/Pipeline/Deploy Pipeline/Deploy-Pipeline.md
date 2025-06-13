@@ -1,0 +1,1 @@
+![github-runner-for-deploy.png](github-runner-for-deploy.png)
