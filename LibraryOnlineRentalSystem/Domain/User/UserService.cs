@@ -79,7 +79,7 @@ public class UserService
                 Encoding.UTF8,
                 "application/json");
 
-            var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
+            var authority = _configuration["Keycloak__Authority"].TrimEnd('/');
             var keycloakUrl = authority.Replace("/realms/library", "");
 
             _httpClient.DefaultRequestHeaders.Authorization =
@@ -130,14 +130,15 @@ public class UserService
 
     private async Task<string> GetAdminTokenAsync()
     {
-        var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
+        var authority = Environment.GetEnvironmentVariable("Keycloak__Authority").TrimEnd('/');
         var keycloakUrl = authority.Replace("/realms/library", "");
         var content = new FormUrlEncodedContent(new[]
         {
             new KeyValuePair<string, string>("grant_type", "password"),
             new KeyValuePair<string, string>("client_id", "admin-cli"),
-            new KeyValuePair<string, string>("username", "desofs-kc"),
-            new KeyValuePair<string, string>("password", "xc.uUrqxbz6tDYyQryhK")
+            new KeyValuePair<string, string>("username", Environment.GetEnvironmentVariable("Keycloak__Username")),
+            new KeyValuePair<string, string>("password", Environment.GetEnvironmentVariable("Keycloak__Password")),
+
         });
 
         var response =

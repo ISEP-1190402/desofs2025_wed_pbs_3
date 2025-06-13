@@ -29,11 +29,7 @@ namespace LibraryOnlineRentalSystem
 
         public void ConfigureServices(IServiceCollection services)
         {
-
-            services.AddLogging(loggingBuilder =>
-           {
-               loggingBuilder.AddConsole();
-           });
+            services.AddLogging(loggingBuilder => { loggingBuilder.AddConsole(); });
 
             /*services.AddApplicationInsightsTelemetry(options =>
             {
@@ -73,6 +69,8 @@ namespace LibraryOnlineRentalSystem
                     };
                 });
 
+            Console.WriteLine(Environment.GetEnvironmentVariable("Keycloak__Username"));
+            Console.WriteLine("there");
             services.AddHttpClient();
             services.AddControllers().AddNewtonsoftJson();
             services.AddSwaggerGen();
