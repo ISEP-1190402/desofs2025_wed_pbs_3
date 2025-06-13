@@ -37,6 +37,29 @@
 
 ![azure-networking.png](Pictures/azure-networking.png)
 
+### Monitoring
+
+#### Rules and Alerts
+
+Rules for VM:
+![vm-alert-rules.png](Pictures/vm-alert-rules.png)
+
+Rules for Backup:
+
+![vault - alerts.png](Pictures/vault%20-%20alerts.png)
+
+Alerts:
+
+![azure-alarmística.png](Pictures/azure-alarm%C3%ADstica.png)
+
+Alerts are received by the whole team via email.
+
+#### Dashboard
+
+![insights1.png](Pictures/insights1.png)
+
+![insights2.png](Pictures/insights2.png)
+
 
 ### Backups
 
