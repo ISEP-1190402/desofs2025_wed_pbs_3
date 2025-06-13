@@ -13,11 +13,8 @@ Executar o SAST com Snyk(codigo e deps), contudo contruir e executar API em Dock
 
  
 **Ferramentas comuns de IAST:**
-* Snyk
-* OWASP ZAP
-* Contrast IAST
-* Seeker (Synopsys)
-* HCL AppScan IAST
+
+![alt text](image-4.png)
 
 
 Destas ferramentas acima citadas, iremos utilizar Snyk e Owasp Zap, para combinar um tecnologias onde irá aproximar-se do resultado do IAST, haja vista que as ferramentas direcionadas ao IAST, são elas pagas.
@@ -381,6 +378,14 @@ Descrição do relatório:
 | Alto (CVE-2024-47875)     |       0 |     1  |
 | Médio (CWE-693)    |       0 |     2  |
 | Baixo (CWE-10219)      |       0 |     4  |
+
+## **Vulnerabilidades Identificadas**
+
+| Vulnerabilidade                    | Severidade | CVSS | Impacto                                                               | Recomendação Técnica                               |
+| ---------------------------------- | ---------- | ---- | --------------------------------------------------------------------- | -------------------------------------------------- |
+| **Missing Anti-clickjacking**      | Médio      | 5.4  | Permite redirecionamento de cliques maliciosos (ex: roubo de sessão). | Adicionar o header `X-Frame-Options: DENY`.        |
+| **CSP Header Missing**             | Médio      | 6.1  | Expõe à riscos de Cross-Site Scripting (XSS) e injeções de conteúdo.  | Implementar política de `Content-Security-Policy`. |
+| **X-Content-Type-Options Missing** | Baixo      | N/A  | Pode permitir que navegadores interpretem conteúdo incorretamente.    | Adicionar `X-Content-Type-Options: nosniff`.       |
 
 ## **Resumo da Análise IAST**  
 - **Aplicação Testada:** API .NET 8 (Porta 8081)  
