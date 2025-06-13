@@ -41,6 +41,12 @@ public class UserService
 
         if (await _userRepository.GetByUsernameAsync(req.UserName) != null)
             throw new BusinessRulesException("Username already in use");
+            
+        if (await _userRepository.GetByNifAsync(req.Nif) != null)
+            throw new BusinessRulesException("NIF is already registered");
+            
+        if (await _userRepository.GetByPhoneNumberAsync(req.PhoneNumber) != null)
+            throw new BusinessRulesException("Phone number is already in use");
 
         try
         {
@@ -230,13 +236,32 @@ public class UserService
             user.ChangeBiography(request.Biography);
 
         if (request.PhoneNumber != null)
+        {
+            var existingUserWithPhone = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber);
+            if (existingUserWithPhone != null && existingUserWithPhone.Id.AsString() != user.Id.AsString())
+                throw new BusinessRulesException("Phone number is already in use by another user");
+                
             user.ChangePhoneNumber(request.PhoneNumber);
+        }
+
+        if (request.Nif != null)
+        {
+            var existingUserWithNif = await _userRepository.GetByNifAsync(request.Nif);
+            if (existingUserWithNif != null && existingUserWithNif.Id.AsString() != user.Id.AsString())
+                throw new BusinessRulesException("NIF is already registered by another user");
+        }
 
         if (request.Name != null)
             user.ChangeName(request.Name);
-
+            
         if (request.Email != null)
+        {
+            var existingUserWithEmail = await _userRepository.GetByEmailAsync(request.Email);
+            if (existingUserWithEmail != null && existingUserWithEmail.Id.AsString() != user.Id.AsString())
+                throw new BusinessRulesException("Email is already in use by another user");
+                
             user.ChangeEmail(request.Email);
+        }
 
         await _workUnit.CommitAsync();
         await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
