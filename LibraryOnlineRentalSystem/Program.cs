@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 namespace LibraryOnlineRentalSystem
 {
     public class Program
-    // test pipeline
+        // test pipeline
     {
         public static void Main(string[] args)
         {
