@@ -130,26 +130,37 @@ public class UserService
 
     private async Task<string> GetAdminTokenAsync()
     {
-        var authority = Environment.GetEnvironmentVariable("Keycloak__Authority").TrimEnd('/');
+        var authority = Environment.GetEnvironmentVariable("Keycloak__Authority")?.TrimEnd('/');
         var keycloakUrl = authority.Replace("/realms/library", "");
+
+        var username = Environment.GetEnvironmentVariable("Keycloak__Username")?.Trim();
+        var password = Environment.GetEnvironmentVariable("Keycloak__Password")?.Trim();
+
+        Console.WriteLine($"[DEBUG] Keycloak__Authority: {authority}");
+        Console.WriteLine($"[DEBUG] Keycloak URL: {keycloakUrl}");
+        Console.WriteLine($"[DEBUG] Username: {username}");
+        Console.WriteLine($"[DEBUG] Password: {(string.IsNullOrEmpty(password) ? "<null or empty>" : "<provided>")}");
+
         var content = new FormUrlEncodedContent(new[]
         {
             new KeyValuePair<string, string>("grant_type", "password"),
             new KeyValuePair<string, string>("client_id", "admin-cli"),
-            new KeyValuePair<string, string>("username", Environment.GetEnvironmentVariable("Keycloak__Username")),
-            new KeyValuePair<string, string>("password", Environment.GetEnvironmentVariable("Keycloak__Password")),
-
+            new KeyValuePair<string, string>("username", username),
+            new KeyValuePair<string, string>("password", password),
         });
 
         var response =
             await _httpClient.PostAsync($"{keycloakUrl}/realms/master/protocol/openid-connect/token", content);
-        if (!response.IsSuccessStatusCode)
-        {
-            var error = await response.Content.ReadAsStringAsync();
-            throw new BusinessRulesException($"Failed to get admin token: {error}");
-        }
 
         var responseContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"[DEBUG] Token response status: {response.StatusCode}");
+        Console.WriteLine($"[DEBUG] Token response body: {responseContent}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new BusinessRulesException($"Failed to get admin token: {responseContent}");
+        }
+
         var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(
             responseContent,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
