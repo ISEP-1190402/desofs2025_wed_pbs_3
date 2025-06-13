@@ -273,20 +273,21 @@ jobs:
 Abaixo descreveremos os resultados desta pipeline a correr, com as informações dos alertas e vulnerabilidades.
 
 ## **Reports** 
+* Snyk-sarif-result-iast
+* Zap-reports-iast
 
-
-
+## **Snyk-Iast**
 Abaixo disponibilizamos os resultados consolidados de cada relatório, contendo:
 
-Total de alertas identificados: [5]
+Total de alertas identificados: [0]
 
 Nível de criticidade:
 
-🟠 Alto: [1]
+🟠 Alto: [0]
 
-🟡 Médio: [2]
+🟡 Médio: [0]
 
-🔵 Baixo: [2]
+🔵 Baixo: [0]
 
 Descrição do relatório:
 
@@ -300,30 +301,106 @@ Descrição do relatório:
 
 ✅ Recomendações de correção
 
- ![alt text](image.png)
- ![alt text](image-1.png)
- ![alt text](image-2.png)
- ![alt text](image-3.png)
+```
+ {
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "SnykCode",
+          "semanticVersion": "1.0.0",
+          "version": "1.0.0",
+          "rules": []
+        }
+      },
+      "results": [],
+      "properties": {
+        "coverage": [
+          {
+            "isSupported": true,
+            "lang": "C#",
+            "files": 71,
+            "type": "SUPPORTED"
+          }
+        ]
+      }
+    }
+  ]
+}
+```
+⚠️ Observação:
+
+O código em C# (71 arquivos) não contém vulnerabilidades identificáveis pelas regras do SnykCode.
 
 
- 
+
+## **Zap-Iast**
+Abaixo disponibilizamos os resultados consolidados de cada relatório, contendo:
+
+Total de alertas identificados: [7]
+
+Nível de criticidade:
+
+🟠 Alto: [1]
+
+🟡 Médio: [2]
+
+🔵 Baixo: [4]
+
+Descrição do relatório:
+
+✅ Descrição completa dos alertas
+
+✅ Classificação de risco (CVSS)
+
+✅ CVEs associados (com links para bases oficiais)
+
+✅ Evidências técnicas (trechos de código/requisições)
+
+✅ Recomendações de correção
+
+![alt text](image.png)
+![alt text](image-1.png)
+![alt text](image-2.png)
+![alt text](image-3.png)
+
+
+
  ## **Report Completo:**
 
- 🔗 [Reports Passivo](./Deliverables/Phase%202%20-%20Sprint%202/Documentation/Pipeline/DAST/report_md.md)
+ 🔗 [Reports Snyk-Iast](./Deliverables/Phase%202%20-%20Sprint%202/Documentation/Pipeline/IAST/snyk-code.sarif)
 
- 🔗 [Reports Profundidade](./Deliverables/Phase%202%20-%20Sprint%202/Documentation/Pipeline/DAST/report__baseline.md)
+ 🔗 [Reports  Zap-Iast](./Deliverables/Phase%202%20-%20Sprint%202/Documentation/Pipeline/IAST/Zap-iast.md)
 
- 
 
-| Métrica          | Passivo | Ativo |
-|:-----------------|--------:|:-----:|
-| Total de Alertas |       5 |   7   |
-| Crítico          |       0 |   0   |
-| Alto (CVE-2024-XXXX) |       1 |   1   |
-| Médio            |       2 |   2   |
+ | Métrica                 | Snyk | Zap  |
+|-------------------------|--------:|:------:|
+| Total de Alertas        |       0 |     7  |
+| Alto (CVE-2024-47875)     |       0 |     1  |
+| Médio (CWE-693)    |       0 |     2  |
+| Baixo (CWE-10219)      |       0 |     4  |
 
 ## **Resumo da Análise IAST**  
-- **Aplicação Testada:** API .NET 8 (Porta 5000)  
+- **Aplicação Testada:** API .NET 8 (Porta 8081)  
+- **Cobertura:**  
+  - SAST: 71 arquivos C# analisados  
+  - DAST: 12 endpoints testados  
 - **Vulnerabilidade Crítica:** 0  
-- **Alerta Mais Grave:** [CVE-2024-47875] XSS em DOMPurify (CVSS 8.1)  
-- **Recomendação Imediata:** Atualizar bibliotecas JavaScript  
+- **Alertas Graves:**  
+  - [CVE-2024-47875] XSS em DOMPurify v2.3.10 (CVSS 8.1)  
+  - [CWE-693] Falta de CSP Header (2 instâncias)  
+- **Exposição de Dados:**  
+  - 34 timestamps UNIX vazados  
+  - 10 recursos cacheáveis sem controle  
+
+
+
+
+
+
+
+
+
+
