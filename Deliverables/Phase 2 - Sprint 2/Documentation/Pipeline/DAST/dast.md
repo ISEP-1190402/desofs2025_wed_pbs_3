@@ -15,13 +15,7 @@ Identificar vulnerabilidades em runtime simulando ataques reais (XSS, SQLi, CSP 
 
 **Ferramentas comuns de DAST:**
 
-* OWASP ZAP
-
-* Burp Suite (modo scanner)
-
-* Acunetix
-
-* Netsparker
+![alt text](image-12.png)
 
 Destas ferramentas acima citadas, iremos utilizar Owasp Zap.
 
@@ -445,6 +439,16 @@ Descrição do relatório:
 | Crítico          |       0 |   0   |
 | Alto (CVE-2024-XXXX) |       1 |   1   |
 | Médio            |       2 |   2   |
+
+## **Vulnerabilidades Identificadas**
+
+| Vulnerabilidade                    | Severidade | CVSS | Impacto                                                               | Recomendação Técnica                               |
+| ---------------------------------- | ---------- | ---- | --------------------------------------------------------------------- | -------------------------------------------------- |
+| **Missing Anti-clickjacking**      | Médio      | 5.4  | Permite redirecionamento de cliques maliciosos (ex: roubo de sessão). | Adicionar o header `X-Frame-Options: DENY`.        |
+| **CSP Header Missing**             | Médio      | 6.1  | Expõe à riscos de Cross-Site Scripting (XSS) e injeções de conteúdo.  | Implementar política de `Content-Security-Policy`. |
+| **X-Content-Type-Options Missing** | Baixo      | N/A  | Pode permitir que navegadores interpretem conteúdo incorretamente.    | Adicionar `X-Content-Type-Options: nosniff`.       |
+
+
 
 ## **Resumo da Análise DAST**  
 - **Aplicação Testada:** API .NET 8 (Porta 5000)  
