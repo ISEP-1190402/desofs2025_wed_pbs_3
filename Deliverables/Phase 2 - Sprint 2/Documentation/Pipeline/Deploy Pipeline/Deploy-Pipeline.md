@@ -19,9 +19,8 @@ Manual Trigger: Allows manual execution via workflow_dispatch.
 Push Trigger: Runs automatically on pushes to the main branch.
 
 Environment Variables
-WORKING_DIRECTORY: Specifies the solution folder.
-
-DOTNET_VERSION: Ensures the correct .NET SDK version is used.
+* WORKING_DIRECTORY: Specifies the solution folder.
+* DOTNET_VERSION: Ensures the correct .NET SDK version is used.
 
 Jobs Overview
 1. Build Job
