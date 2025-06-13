@@ -119,6 +119,16 @@ Use the latest valid backup from the Azure Recovery Services Vault.
 * Re-enable monitoring via Application Insights by restoring the connection string.
 * Test all system components to confirm full functionality.
 
+### Patching
+
+Configurations:
+
+![azure updates - configuration.png](Pictures/azure%20updates%20-%20configuration.png)
+
+Collected Data:
+
+![updates.png](Pictures/updates.png)
+
 
 ## Components
 
