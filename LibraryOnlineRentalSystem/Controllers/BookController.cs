@@ -22,7 +22,6 @@ public class BookController : ControllerBase
 
     // GET: api/Book
     [HttpGet]
-    [Authorize(Roles = "Admin,LibraryManager")]
     public async Task<ActionResult<List<BookDTO>>> GetAllBooks()
     {
         _logger.LogInformation("Fetching all books at {Time}", DateTime.UtcNow);
@@ -40,7 +39,6 @@ public class BookController : ControllerBase
 
     // GET: api/Book/{id}
     [HttpGet("{id}")]
-    [Authorize(Roles = "Admin,LibraryManager")]
     public async Task<ActionResult<BookDTO>> GetByIdAsync(string id)
     {
         _logger.LogInformation("Fetching book with ID {Id} at {Time}", id, DateTime.UtcNow);

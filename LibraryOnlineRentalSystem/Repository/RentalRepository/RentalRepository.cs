@@ -1,4 +1,6 @@
 using LibraryOnlineRentalSystem.Domain.Rentals;
+using LibraryOnlineRentalSystem.Domain.Book;
+using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Repository.Common;
 using Microsoft.EntityFrameworkCore;
 
@@ -12,6 +14,14 @@ public class RentalRepository : GeneralRepository<Rental, RentalID>,
     public RentalRepository(LibraryDbContext context) : base(context.Rentals)
     {
         _context = context;
+    }
+
+    public async Task<Rental> GetByIdAsync(RentalID id)
+    {
+        if (id == null) return null;
+        
+        // Use the base repository method which handles the ID comparison correctly
+        return await base.GetByIdAsync(id);
     }
 
     public async Task<List<Rental>> GetAllActiveRentalsAssync()
@@ -119,6 +129,32 @@ public class RentalRepository : GeneralRepository<Rental, RentalID>,
                         && r.EndDate.EndDateTime <= rentalEndDate.EndDateTime)
             .ToListAsync();
         return completedRentals.Result.Count();
-       
+    }
+    
+    public async Task<List<Rental>> GetOverlappingRentalsAsync(BookID bookId, DateTime startDate, DateTime endDate)
+    {
+        // Get all rentals for the specified book that overlap with the given date range
+        // An overlap occurs if:
+        // 1. Rental starts before or on the end date AND ends on or after the start date
+        // 2. Or rental starts within the date range
+        // 3. Or rental ends within the date range
+        // 4. Or rental completely contains the date range
+        var overlappingRentals = await _context.Rentals
+            .Where(r => r.RentedBookIdentifier.BookId == bookId.Value &&
+                      !(r.StatusOfRental.RentStatus == Status.Cancelled || 
+                        r.StatusOfRental.RentStatus == Status.Completed) &&
+                      ((r.StartDate.StartDateTime <= endDate && r.EndDate.EndDateTime >= startDate)))
+            .ToListAsync();
+
+        return overlappingRentals;
+    }
+    
+    /// <summary>
+    /// Updates an existing rental
+    /// </summary>
+    /// <param name="rental">The rental to update</param>
+    public void Update(Rental rental)
+    {
+        _context.Entry(rental).State = EntityState.Modified;
     }
 }
