@@ -39,7 +39,44 @@ Detected secrets will be listed in the GitHub Actions logs. Example output:
 - The binary is extracted locally to `gitleaks-bin/` and excluded from future scans.
 - This setup is **non-blocking** (does not fail the build).
 
+---
 
+## Manually Importing Gitleaks Scan Results into DefectDojo
+
+We manually uploaded the SARIF report to  [DefectDojo](https://github.com/DefectDojo/django-DefectDojo) to manage our security findings and also for tracking and triaging.
+
+### Steps:
+
+1. **Log into your DefectDojo instance**  
+   e.g. `https://demo.defectdojo.org` (username: `admin`, password: `1Defectdojo@demo#appsec`)
+
+2. **Create a Product**
+   - Go to **Products** → **Add Product**
+   - Set a product name like `MyProject`
+   - Choose or create a product type
+   - Submit
+
+3. **Create an Engagement**
+   - Go to **Engagements** → **Add Engagement**
+   - Link it to your product
+   - Set a name like `Gitleaks - June Scan`
+   - Set type: `CI/CD` or `Interactive`
+   - Set start and end dates
+   - Submit
+
+4. **Import the Gitleaks SARIF Report**
+   - Open the engagement you just created
+   - Click **“Import Scan Results”**
+   - Choose **Scan Type**: `SARIF`
+   - Upload `gitleaks-report.sarif`
+   - Click **Submit**
+
+5. **Review Findings**
+   - Go to **Findings** tab under the engagement
+   - You can assign, triage, or comment on findings
+
+![Defectdojo - ef.png](Pictures/defectdojo_output.PNG)
+---
 
 
 
