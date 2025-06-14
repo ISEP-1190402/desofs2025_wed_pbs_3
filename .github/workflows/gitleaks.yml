@@ -1,4 +1,4 @@
-name: Gitleaks Scan (Manual Cmd)
+name: Gitleaks Scan (Manual Cmd)2
 
 on:
   push:
