@@ -17,4 +17,4 @@ jobs:
         run: |
           curl -L https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o gitleaks
           chmod +x gitleaks
-          gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif
+          ./gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif
