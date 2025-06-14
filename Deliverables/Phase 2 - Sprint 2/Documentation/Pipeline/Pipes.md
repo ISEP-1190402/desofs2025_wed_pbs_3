@@ -61,4 +61,5 @@ Os objetivos específicos incluem:
 | **Vulnerabilidades detectadas** | Injeção, XSS, má prática de código  | Injeção, XSS, problemas de autenticação | Mescla vulnerabilidades estáticas e dinâmicas | Exposição de dados, má config. de rede, etc. |
 
 Utilizamos neste projeto as pipelines DAST,SAST,IAST e CSA. 
+
 Iremos apresentar como cada uma funciona, e seus devidos resultados ao correr na aplicação.
