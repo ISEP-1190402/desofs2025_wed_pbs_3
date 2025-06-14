@@ -13,12 +13,8 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Install Gitleaks
+      - name: Download and Run Gitleaks
         run: |
           curl -L https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o gitleaks
           chmod +x gitleaks
-          
-
-      - name: Run Gitleaks
-        run: |
           gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif
