@@ -188,60 +188,52 @@ jobs:
           # Create ZAP automation configuration
 
           API_IP=${{ steps.api_ip.outputs.api_ip }}
+
           cat > zap-work/automation.yaml << EOF
+
           env:
             contexts:
-              - name: "Library API"
-                urls: ["http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"]
+              - name: "Default"
+                urls: ["http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}"]
                 includePaths:
-                  - "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}/.*"
-                excludePaths:
-                  - '.*\.js$'
-                  - '.*\.css$'
-                  - '.*\.png$'
-                  - '.*\.jpg$'
+                  - "http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}/.*"
+                excludePaths: []
             parameters:
-              failOnError: false
+              failOnError: true
               failOnWarning: false
               progressToStdout: true
 
           jobs:
             - type: spider
               parameters:
-                context: "Library API"
-                url: "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"
-                maxDuration: 3
-                maxDepth: 3
+                context: "Default"
+                url: "http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}"
+                maxDuration: 5
+                maxDepth: 5
+                numberOfThreads: 5
+                delayInMs: 0
                 acceptCookies: true
                 handleParameters: "USE_ALL"
 
             - type: activeScan
               parameters:
-                context: "Library API"
+                context: "Default"
                 policy: "Default Policy"
+                maxDuration: 10
+                inScopeOnly: true
                 threadPerHost: 2
-                delayInMs: 200
 
             - type: report
               parameters:
                 template: "traditional-json"
                 reportDir: "/zap/wrk"
-                reportFile: "zap-report.json"
+                reportFile: "report_json.json"
               risks:
                 - high
                 - medium
                 - low
                 - info
-
-            - type: report
-              parameters:
-                template: "traditional-html"
-                reportDir: "/zap/wrk"
-                reportFile: "zap-report.html"
-              risks:
-                - high
-                - medium
-                - low
+                
           EOF
 
           # Run ZAP scan
