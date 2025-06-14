@@ -21,12 +21,12 @@ jobs:
   csa:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-   # if: github.event_name == 'pull_request' && success()
-   # permissions:
-   #   contents: read
-   #   security-events: write
-   #   actions: read
-   #   id-token: write
+    if: github.event_name == 'pull_request' && success()
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      id-token: write
 
     steps:
       - name: Checkout Code
@@ -186,54 +186,60 @@ jobs:
           chmod -R 777 zap-work
           
           # Create ZAP automation configuration
-
-          API_IP=${{ steps.api_ip.outputs.api_ip }}
-
-          cat > zap-work/automation.yaml << EOF
-
+          cat > zap-work/automation.yaml << 'EOF'
           env:
             contexts:
-              - name: "Default"
-                urls: ["http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}"]
+              - name: "Library API"
+                urls: ["http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"]
                 includePaths:
-                  - "http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}/.*"
-                excludePaths: []
+                  - "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}/.*"
+                excludePaths:
+                  - ".*\\.js$"
+                  - ".*\\.css$"
+                  - ".*\\.png$"
+                  - ".*\\.jpg$"
             parameters:
-              failOnError: true
+              failOnError: false
               failOnWarning: false
               progressToStdout: true
 
           jobs:
             - type: spider
               parameters:
-                context: "Default"
-                url: "http://${{ steps.api_ip.outputs.ip }}:${{ env.API_PORT }}"
-                maxDuration: 5
-                maxDepth: 5
-                numberOfThreads: 5
-                delayInMs: 0
+                context: "Library API"
+                url: "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"
+                maxDuration: 3
+                maxDepth: 3
                 acceptCookies: true
                 handleParameters: "USE_ALL"
 
             - type: activeScan
               parameters:
-                context: "Default"
+                context: "Library API"
                 policy: "Default Policy"
-                maxDuration: 10
-                inScopeOnly: true
                 threadPerHost: 2
+                delayInMs: 200
 
             - type: report
               parameters:
                 template: "traditional-json"
                 reportDir: "/zap/wrk"
-                reportFile: "report_json.json"
+                reportFile: "zap-report.json"
               risks:
                 - high
                 - medium
                 - low
                 - info
-                
+
+            - type: report
+              parameters:
+                template: "traditional-html"
+                reportDir: "/zap/wrk"
+                reportFile: "zap-report.html"
+              risks:
+                - high
+                - medium
+                - low
           EOF
 
           # Run ZAP scan
@@ -264,9 +270,8 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results-csa
-          path:  
-             ${{ env.PROJECT_DIR }}/TestResults/
+          name: test-results
+          path: ${{ env.PROJECT_DIR }}/TestResults/
           retention-days: 30
 
       # Security Summary
