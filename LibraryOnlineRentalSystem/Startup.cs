@@ -40,9 +40,9 @@ namespace LibraryOnlineRentalSystem
 
             services.AddDbContext<LibraryDbContext>(opt =>
             {
-                var serverVersion = ServerVersion.AutoDetect(Configuration["LibraryDatabase"]);
+                var serverVersion = ServerVersion.AutoDetect(Environment.GetEnvironmentVariable("LibraryDatabase"));
                 opt.UseMySql(
-                    Configuration["LibraryDatabase"],
+                    Environment.GetEnvironmentVariable("LibraryDatabase"),
                     serverVersion);
                 
                 opt.ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>();
@@ -59,8 +59,8 @@ namespace LibraryOnlineRentalSystem
                 })
                 .AddJwtBearer(options =>
                 {
-                    options.Authority = Configuration["Keycloak__Authority"];
-                    options.Audience = Configuration["Keycloak__Audience"];
+                    options.Authority = Environment.GetEnvironmentVariable("Keycloak__Authority");
+                    options.Audience = Environment.GetEnvironmentVariable("Keycloak__Audience");
                     options.RequireHttpsMetadata = false; // Set to true in production
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
