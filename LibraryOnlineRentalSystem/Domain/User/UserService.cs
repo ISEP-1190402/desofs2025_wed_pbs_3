@@ -210,6 +210,21 @@ public class UserService
         );
     }
 
+    public async Task<UserProfileDTO?> GetUserByUsernameAsync(string username)
+    {
+        var user = await _userRepository.GetByUsernameAsync(username);
+        if (user == null) return null;
+
+        return new UserProfileDTO(
+            user.Name.FullName,
+            user.Email.EmailAddress,
+            user.Nif.TaxID,
+            user.UserName.Tag,
+            user.Biography.Description,
+            user.PhoneNumber.Number
+        );
+    }
+
     public async Task<List<UserDTO>> GetAllUsersAsync()
     {
         var users = await _userRepository.GetAllAsync();
@@ -230,7 +245,7 @@ public class UserService
         if (user == null)
             throw new BusinessRulesException("User not found");
 
-        await UpdateUserInternal(user, request);
+        await UpdateUserInternal(user, request, isAdminUpdate: true);
     }
 
     public async Task UpdateUserByUsernameAsync(string username, UpdateUserRequest request)
@@ -239,10 +254,23 @@ public class UserService
         if (user == null)
             throw new BusinessRulesException("User not found");
 
+        // Prevent username changes through this endpoint
+        if (!string.IsNullOrEmpty(request.UserName) && request.UserName != username)
+            throw new BusinessRulesException("You are not allowed to change your username");
+
+        await UpdateUserInternal(user, request, isAdminUpdate: false);
+    }
+
+    public async Task UpdateUserByEmailAsync(string email, UpdateUserRequest request)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null)
+            throw new BusinessRulesException("User not found");
+
         await UpdateUserInternal(user, request);
     }
 
-    private async Task UpdateUserInternal(User user, UpdateUserRequest request)
+    protected virtual async Task UpdateUserInternal(User user, UpdateUserRequest request, bool isAdminUpdate = false)
     {
         if (request.Biography != null)
             user.ChangeBiography(request.Biography);
@@ -277,6 +305,12 @@ public class UserService
             user.ChangeNif(request.Nif);
         }
 
+        // Username changes are not allowed
+        if (!string.IsNullOrEmpty(request.UserName) && request.UserName != user.UserName.Tag)
+        {
+            throw new BusinessRulesException("Username cannot be changed");
+        }
+        
         await _workUnit.CommitAsync();
         await _auditLogger.LogAsync($"User {user.Id.AsString()} updated profile.", "ProfileUpdate");
     }

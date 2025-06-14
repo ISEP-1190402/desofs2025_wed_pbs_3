@@ -21,6 +21,7 @@ public class BookController : ControllerBase
     }
 
     // GET: api/Book
+    // Access: Public
     [HttpGet]
     public async Task<ActionResult<List<BookDTO>>> GetAllBooks()
     {
@@ -38,6 +39,7 @@ public class BookController : ControllerBase
 
 
     // GET: api/Book/{id}
+    // Access: Public
     [HttpGet("{id}")]
     public async Task<ActionResult<BookDTO>> GetByIdAsync(string id)
     {
@@ -53,6 +55,7 @@ public class BookController : ControllerBase
     }
 
     // POST: api/Book
+    // Access: LibraryManager
     [HttpPost]
     [Authorize(Roles = "LibraryManager")]
     public async Task<ActionResult> CreateBook(NewBookDTO BookToAddDto)
@@ -70,9 +73,10 @@ public class BookController : ControllerBase
         }
     }
 
-    // PUT: api/Book
+    // PUT: api/Book/updatestock/{id}
+    // Access: LibraryManager
     [HttpPut("updatestock/{id}")]
-    [Authorize(Roles = "LibraryManager")]
+    //[Authorize(Roles = "LibraryManager")]
     public async Task<ActionResult<BookDTO>> UpdateStock(string id, BookStockDTO bookSotckUpdateDTO)
     {
         try

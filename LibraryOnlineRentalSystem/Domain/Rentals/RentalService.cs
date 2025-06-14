@@ -318,6 +318,36 @@ public class RentalService
         return rentals.ConvertAll(rental => rental.toDTO());
     }
 
+    // Get all rentals by username
+    public async Task<List<RentalDTO>> GetAllRentalsByUsernameAsync(string username)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            _logger.LogWarning("Attempted to get rentals with null or empty username");
+            throw new ArgumentException("Username is required", nameof(username));
+        }
+
+        _logger.LogDebug("Looking up user with username: {Username}", username);
+        var user = await _userRepository.GetByUsernameAsync(username);
+        if (user == null)
+        {
+            _logger.LogWarning("User with username {Username} not found", username);
+            throw new BusinessRulesException($"User with username {username} not found");
+        }
+
+        _logger.LogDebug("Fetching rentals for user: {Email}", user.Email.EmailAddress);
+        var rentals = await _rentalRepository.GetAllAsyncOfUser(user.Email.EmailAddress);
+        
+        if (rentals == null || !rentals.Any())
+        {
+            _logger.LogInformation("No rentals found for user: {Email}", user.Email.EmailAddress);
+            return new List<RentalDTO>();
+        }
+
+        _logger.LogInformation("Found {Count} rentals for user: {Email}", rentals.Count, user.Email.EmailAddress);
+        return rentals.ConvertAll(rental => rental.toDTO());
+    }
+
     // Library Manager - GET ALL Rentals
     public async Task<List<RentalDTO>> GetAllRentalsAsync()
     {
