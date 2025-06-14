@@ -117,7 +117,7 @@ jobs:
       - name: Snyk Code Scan
         run: 
             snyk config set disableSuggestions=true
-            snyk code test --severity-threshold=medium
+            snyk code test --severity-threshold=medium --json > snyk-code-report.json
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
@@ -270,10 +270,9 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: test-results
-          path: |
-            ${{ env.PROJECT_DIR }}/TestResults/
-            ${{ env.PROJECT_DIR }}/TestResults/test-results.json
+          name: test-results-csa
+          path:  
+             ${{ env.PROJECT_DIR }}/TestResults/
           retention-days: 30
 
       # Security Summary
