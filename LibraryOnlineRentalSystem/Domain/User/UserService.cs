@@ -83,8 +83,8 @@ public class UserService
                 Encoding.UTF8,
                 "application/json");
 
-            var authority = _configuration["Keycloak__Authority"].TrimEnd('/');
-            var keycloakUrl = authority.Replace("/realms/library", "");
+            var authority = Environment.GetEnvironmentVariable("Keycloak__Authority")?.TrimEnd('/');
+            var keycloakUrl = authority?.Replace("/realms/library", "");
 
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
