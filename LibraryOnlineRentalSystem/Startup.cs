@@ -67,10 +67,12 @@ namespace LibraryOnlineRentalSystem
                         ValidateIssuer = true,
                         ValidateAudience = true,
                         ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true
+                        ValidateIssuerSigningKey = true,
+                        RoleClaimType = "realm_access.roles"
                     };
                 });
-
+            //services.UseAuthentication(); 
+            services.AddAuthorization();
             Console.WriteLine(Environment.GetEnvironmentVariable("Keycloak__Username"));
             Console.WriteLine("there");
             services.AddHttpClient();

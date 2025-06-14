@@ -461,32 +461,82 @@ public class UpdateUserRequest
 
 ### 3.10 Security Guidelines
 
-#### 3.10.1 Authentication
+#### 3.10.1 Input Validation
+- **Regex-based validation** for all user inputs
+- **Character whitelisting** for specific fields
+- **Length validation** with minimum/maximum constraints
+- **Format validation** for specialized fields (email, phone, NIF)
+- **Pattern matching** for complex validation rules
+- **No whitespace** allowed in usernames
+- **Strict character sets** for each field type
+
+#### 3.10.2 Data Sanitization
+- **HTML encoding** for all string outputs
+- **SQL parameterization** for database queries
+- **XSS protection** through content encoding
+- **CSRF protection** enabled by default
+- **Rate limiting** for API endpoints
+- **Input encoding** for special characters
+- **Output encoding** context-aware
+
+#### 3.10.3 Authentication & Authorization
 - **JWT with Keycloak** integration
 - **Secure token** storage in HTTP-only cookies
 - **Token refresh** mechanism
 - **Password hashing** with BCrypt
-
-#### 3.10.2 Authorization
 - **Role-based access control (RBAC)**
 - **Policy-based** authorization
 - **Resource-based** checks
-<!-- - **Claims-based** authorization -->
 - **Secure token** validation
+- **Session management** best practices
 
-#### 3.10.3 Data Protection
-- **Encryption** of sensitive data at REST endpoints
+#### 3.10.4 Data Protection
+- **Encryption** of sensitive data
 - **HTTPS** enforced
 - **CSRF protection**
 - **CORS** policy configuration
+- **Content Security Policy (CSP)**
+- **X-Content-Type-Options**
+- **X-Frame-Options**
+- **Strict-Transport-Security**
+- **X-XSS-Protection**
+- **Referrer-Policy**
+- **Permissions-Policy**
+- **Cache-Control**
 
-#### 3.10.4 Dependencies and Security
+#### 3.10.5 Security Headers
+- **Content Security Policy (CSP)**: Strict policy to prevent XSS
+- **X-Content-Type-Options**: Prevent MIME type sniffing
+- **X-Frame-Options**: Prevent clickjacking
+- **Strict-Transport-Security**: Enforce HTTPS
+- **X-XSS-Protection**: Enable browser XSS protection
+- **Referrer-Policy**: Control referrer information
+- **Permissions-Policy**: Restrict browser features
+- **Cache-Control**: Prevent caching of sensitive data
+
+#### 3.10.6 Dependencies & Security
 - **Dependabot** for automated security updates
 - **Regular security audits**
 - **License compliance** checks
 - **Vulnerability monitoring**
 - **Automated dependency scanning**
 - **Security headers** implementation
+- **Regular dependency updates**
+- **Security patches** applied promptly
+- **Security scanning** tools integration
+
+#### 3.10.7 Security Best Practices
+- **Never trust user input**
+- **Validate all inputs**
+- **Sanitize all outputs**
+- **Use parameterized queries**
+- **Implement proper error handling**
+- **Log security events**
+- **Regular security testing**
+- **Keep dependencies updated**
+- **Follow principle of least privilege**
+- **Implement proper session management**
+- **Regular security code reviews**
 
 ### 3.11 Deployment
 
