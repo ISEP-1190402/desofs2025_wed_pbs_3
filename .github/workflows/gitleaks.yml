@@ -15,6 +15,6 @@ jobs:
 
       - name: Download and Run Gitleaks
         run: |
-          curl -L https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks-linux-amd64 -o gitleaks
+          curl -L -o gitleaks https://github.com/gitleaks/gitleaks/releases/download/v8.18.2/gitleaks_8.18.2_linux_x64
           chmod +x gitleaks
           ./gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif
