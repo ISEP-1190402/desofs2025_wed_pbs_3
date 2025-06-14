@@ -56,7 +56,7 @@ public class BookController : ControllerBase
 
     // POST: api/Book
     [HttpPost]
-    //[Authorize(Roles = "LibraryManager")]
+    [Authorize(Roles = "LibraryManager")]
     public async Task<ActionResult> CreateBook(NewBookDTO BookToAddDto)
     {
         try
