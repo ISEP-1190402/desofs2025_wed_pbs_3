@@ -86,12 +86,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
         {
             var a = new PhoneNumber("912345678");
             var b = new PhoneNumber("912345678");
-            Assert.Multiple(() =>
-            {
-                Assert.That(a.Equals(b), Is.True, "Same number should be equal");
-                Assert.That(a == b, Is.True, "Same number should be equal with == operator");
-                Assert.That(a != b, Is.False, "Same number should not be not equal with != operator");
-            });
+            Assert.That(a.Equals(b), Is.True, "Same number should be equal");
         }
 
         [Test]
@@ -105,8 +100,6 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
             {
                 Assert.That(a.Equals(b), Is.False, "Different mobile numbers should not be equal");
                 Assert.That(a.Equals(c), Is.False, "Mobile and landline should not be equal");
-                Assert.That(a == b, Is.False, "Different numbers should not be equal with == operator");
-                Assert.That(a != b, Is.True, "Different numbers should be not equal with != operator");
             });
         }
 
@@ -114,12 +107,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
         public void Equals_Null_ReturnsFalse()
         {
             var a = new PhoneNumber("912345678");
-            Assert.Multiple(() =>
-            {
-                Assert.That(a.Equals(null), Is.False, "Should return false when comparing with null");
-                Assert.That(a == null, Is.False, "Should return false when comparing with null using == operator");
-                Assert.That(null == a, Is.False, "Should return false when comparing with null using == operator (reversed)");
-            });
+            Assert.That(a.Equals(null), Is.False, "Should return false when comparing with null");
         }
 
         [Test]

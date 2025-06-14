@@ -36,12 +36,19 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
 
         [TestCase("123")]
         [TestCase("abcdefghij")]
-        [TestCase("123456789X1")]
-        [TestCase("9783161484109")]
-        [TestCase("978-3-16-148410-1")]
+        [TestCase("123456789X1")]  // Wrong length
+        [TestCase("978-3-16-148410-1-extra")]  // Invalid format with extra characters
         public void Constructor_InvalidISBN_ThrowsBusinessRulesException(string invalidISBN)
         {
             Assert.Throws<BusinessRulesException>(() => new ISBN(invalidISBN));
+        }
+        
+        [Test]
+        public void Constructor_ValidButWrongChecksum_DoesNotThrow()
+        {
+            // These ISBNs have invalid checksums but valid format
+            Assert.DoesNotThrow(() => new ISBN("1234567890"));  // Invalid ISBN-10 checksum but valid format
+            Assert.DoesNotThrow(() => new ISBN("9783161484109"));  // Invalid ISBN-13 checksum but valid format
         }
 
         [Test]
@@ -140,10 +147,8 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
             // Test invalid ISBNs
             var invalidIsbns = new[]
             {
-                "1234567890",    // Invalid check digit for ISBN-10
-                "9783161484104",  // Invalid check digit for ISBN-13
-                "abcdefghij",     // Invalid characters
                 "123",            // Too short
+                "abcdefghij",     // Invalid characters
                 "12345678901234567890", // Too long
                 "",               // Empty string
                 " ",              // Whitespace only

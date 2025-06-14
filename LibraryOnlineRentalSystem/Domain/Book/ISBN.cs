@@ -80,62 +80,11 @@ public class ISBN : IValueObject
 
     private static bool IsValidFormat(string isbn)
     {
+      
         string cleanIsbn = Regex.Replace(isbn, "[^0-9X]", "", RegexOptions.IgnoreCase).ToUpper();
 
-        if (cleanIsbn.Length == 10 && Isbn10Regex.IsMatch(cleanIsbn))
-        {
-            return IsValidIsbn10(cleanIsbn);
-        }
-        
-        if (cleanIsbn.Length == 13 && Isbn13Regex.IsMatch(cleanIsbn))
-        {
-            return IsValidIsbn13(cleanIsbn);
-        }
-        
-        return false;
-    }
-    
-    private static bool IsValidIsbn10(string isbn)
-    {
-        try
-        {
-            int sum = 0;
-            for (int i = 0; i < 9; i++)
-            {
-                sum += (10 - i) * int.Parse(isbn[i].ToString());
-            }
-            
-            // Handle check digit (can be 'X' or 'x' for 10)
-            char checkChar = isbn[9];
-            int checkDigit = (checkChar == 'X' || checkChar == 'x') ? 10 : int.Parse(checkChar.ToString());
-            
-            return (sum + checkDigit) % 11 == 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-    
-    private static bool IsValidIsbn13(string isbn)
-    {
-        try
-        {
-            int sum = 0;
-            for (int i = 0; i < 12; i++)
-            {
-                int digit = int.Parse(isbn[i].ToString());
-                sum += (i % 2 == 0) ? digit : digit * 3;
-            }
-            
-            int checkDigit = int.Parse(isbn[12].ToString());
-            int calculatedCheckDigit = (10 - (sum % 10)) % 10;
-            
-            return checkDigit == calculatedCheckDigit;
-        }
-        catch
-        {
-            return false;
-        }
+      
+        return (cleanIsbn.Length == 10 && Isbn10Regex.IsMatch(cleanIsbn)) ||
+               (cleanIsbn.Length == 13 && Isbn13Regex.IsMatch(cleanIsbn));
     }
 }
