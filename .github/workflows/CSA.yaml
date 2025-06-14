@@ -184,9 +184,11 @@ jobs:
         run: |
           mkdir -p zap-work
           chmod -R 777 zap-work
+
+          API_IP="${{ steps.api_ip.outputs.api_ip }}"
           
           # Create ZAP automation configuration
-          cat > zap-work/automation.yaml << 'EOF'
+          cat > zap-work/automation.yaml << EOF
           env:
             contexts:
               - name: "Library API"
