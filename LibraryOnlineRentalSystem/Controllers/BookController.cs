@@ -1,5 +1,6 @@
 using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Common;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -21,6 +22,7 @@ public class BookController : ControllerBase
 
     // GET: api/Book
     [HttpGet]
+    [Authorize(Roles = "Admin,LibraryManager")]
     public async Task<ActionResult<List<BookDTO>>> GetAllBooks()
     {
         _logger.LogInformation("Fetching all books at {Time}", DateTime.UtcNow);
@@ -38,7 +40,7 @@ public class BookController : ControllerBase
 
     // GET: api/Book/{id}
     [HttpGet("{id}")]
-
+    [Authorize(Roles = "Admin,LibraryManager")]
     public async Task<ActionResult<BookDTO>> GetByIdAsync(string id)
     {
         _logger.LogInformation("Fetching book with ID {Id} at {Time}", id, DateTime.UtcNow);
@@ -54,26 +56,25 @@ public class BookController : ControllerBase
 
     // POST: api/Book
     [HttpPost]
-    public async Task<ActionResult<BookDTO>> CreateBook(NewBookDTO BookToAddDto)
+    //[Authorize(Roles = "LibraryManager")]
+    public async Task<ActionResult> CreateBook(NewBookDTO BookToAddDto)
     {
         try
         {
-            var bookToAdd = await _bookService.AddBook(BookToAddDto);
-            _logger.LogInformation("New book created: {Author} at {Time}", BookToAddDto.Author, DateTime.UtcNow);
-
-            return bookToAdd;
+            await _bookService.AddBook(BookToAddDto);
+            _logger.LogInformation("New book created: {Title} by {Author} at {Time}", BookToAddDto.Name, BookToAddDto.Author, DateTime.UtcNow);
+            return Ok("Book created successfully.");
         }
         catch (BusinessRulesException ex)
         {
-            _logger.LogWarning("Failed to create book at {Time}: {Message}", DateTime.UtcNow, ex.Message);
-
-            return BadRequest(new { ex.Message });
+            _logger.LogWarning("Business rule violation: {Message}", ex.Message);
+            return BadRequest(ex.Message);
         }
     }
 
     // PUT: api/Book
     [HttpPut("updatestock/{id}")]
-
+    [Authorize(Roles = "LibraryManager")]
     public async Task<ActionResult<BookDTO>> UpdateStock(string id, BookStockDTO bookSotckUpdateDTO)
     {
         try

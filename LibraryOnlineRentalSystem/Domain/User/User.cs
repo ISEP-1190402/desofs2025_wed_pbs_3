@@ -1,19 +1,18 @@
-﻿using LibraryOnlineRentalSystem.Domain.Common;
+using LibraryOnlineRentalSystem.Domain.Common;
+
 
 namespace LibraryOnlineRentalSystem.Domain.User;
 
 public class User : Entity<UserID>, IAggregateRoot
 {
     protected User() { }
-    public User(string id, string name, string email, string userName, string phoneNumber, string nif, string biography, string hashedPassword)
+    public User(string id, string name, string email, string userName, string phoneNumber, string nif, string biography = "", string hashedPassword = null)
     {
         if (string.IsNullOrEmpty(name)) throw new ArgumentException("Name is required", nameof(name));
         if (string.IsNullOrEmpty(email)) throw new ArgumentException("Email is required", nameof(email));
         if (string.IsNullOrEmpty(userName)) throw new ArgumentException("UserName is required", nameof(userName));
         if (string.IsNullOrEmpty(phoneNumber)) throw new ArgumentException("PhoneNumber is required", nameof(phoneNumber));
         if (string.IsNullOrEmpty(nif)) throw new ArgumentException("Nif is required", nameof(nif));
-        if (string.IsNullOrEmpty(biography)) throw new ArgumentException("Biography is required", nameof(biography));
-        if (string.IsNullOrEmpty(hashedPassword)) throw new ArgumentException("HashedPassword is required", nameof(hashedPassword));
 
         Id = new UserID(id);
         Name = new Name(name);
@@ -21,8 +20,8 @@ public class User : Entity<UserID>, IAggregateRoot
         UserName = new UserName(userName);
         PhoneNumber = new PhoneNumber(phoneNumber);
         Nif = new NIF(nif);
-        Biography = new Biography(biography);
-        HashedPassword = hashedPassword;
+        Biography = string.IsNullOrEmpty(biography) ? new Biography() : new Biography(biography);
+        HashedPassword = hashedPassword; // This is kept for backward compatibility but won't be used
     }
     
 
@@ -53,5 +52,12 @@ public class User : Entity<UserID>, IAggregateRoot
     public void ChangeName(string name)
     {
         Name = new Name(name);
+    }
+
+    public bool Active { get; private set; } = true;
+
+    public void Deactivate()
+    {
+        Active = false;
     }
 }

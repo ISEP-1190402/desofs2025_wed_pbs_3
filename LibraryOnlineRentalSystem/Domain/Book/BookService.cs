@@ -33,14 +33,22 @@ public class BookService
 
     public async Task<BookDTO> AddBook(NewBookDTO bookToAddDto)
     {
-        var id=_bookRepository.GetAllAsync().Result.Count + 1+"";
+        // ISBN validation is now handled by the ISBN class constructor
+        // which will throw a BusinessRulesException if the ISBN is invalid or already exists
+        
+        var id = (await _bookRepository.GetAllAsync()).Count + 1 + "";
 
-        var addedBook= new Book(id,bookToAddDto.AmountOfCopies,bookToAddDto.Author,bookToAddDto.Category,
-            bookToAddDto.Description,bookToAddDto.Isbn,bookToAddDto.Publisher);
-
+        var addedBook = new Book(
+            id: id,
+            name: bookToAddDto.Name,
+            amountOfCopies: bookToAddDto.AmountOfCopies,
+            author: bookToAddDto.Author,
+            category: bookToAddDto.Category,
+            description: bookToAddDto.Description,
+            isbn: bookToAddDto.Isbn,
+            publisher: bookToAddDto.Publisher);
             
         await _bookRepository.AddAsync(addedBook);
-
         await _workUnity.CommitAsync();
 
         return addedBook.toDTO();

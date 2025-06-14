@@ -45,6 +45,13 @@ public class ConfigUserEntityType : IEntityTypeConfiguration<User>
             .Property(b => b.Description)
             .HasColumnName("Biography");
 
+        builder.Property(u => u.Active)
+            .IsRequired()
+            .HasDefaultValue(true);
+            
+        // Ignore HashedPassword as it's now managed by Keycloak
+        builder.Ignore(u => u.HashedPassword);
+            
         builder.ToTable("Users");
     }
 }

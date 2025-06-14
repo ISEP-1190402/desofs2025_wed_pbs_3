@@ -1,35 +1,60 @@
-using LibraryOnlineRentalSystem.Domain.Common;
 using System.Text.RegularExpressions;
+using LibraryOnlineRentalSystem.Domain.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.Book;
 
 public class ISBN : IValueObject
 {
+    private static readonly Regex Isbn10Regex = new Regex(@"^\d{9}[\dXx]$", RegexOptions.Compiled);
+    private static readonly Regex Isbn13Regex = new Regex(@"^\d{13}$", RegexOptions.Compiled);
+    private static readonly Regex IsbnFormatRegex = new Regex(@"^(?:ISBN(?:-1[03])?:? )?(?=[0-9X]{10}$|(?=(?:[0-9]+[- ]){3})[- 0-9X]{13}$|97[89][0-9]{10}$|(?=(?:[0-9]+[- ]){4})[- 0-9]{17}$)(?:97[89][- ]?)?[0-9]{1,5}[- ]?[0-9]+[- ]?[0-9]+[- ]?[0-9X]$", RegexOptions.Compiled);
+
     public ISBN()
     {
-    } 
+        BookISBN = string.Empty;
+    }
+    
+    private static Action<string> _validateIsbnUniqueness;
+    
+    // This method should be called during application startup
+    public static void Configure(Action<string> validateIsbnUniqueness)
+    {
+        _validateIsbnUniqueness = validateIsbnUniqueness ?? throw new ArgumentNullException(nameof(validateIsbnUniqueness));
+    }
+
     public ISBN(string isbn)
     {
-        if (string.IsNullOrEmpty(isbn)) throw new BusinessRulesException("ISBN cannot be null or empty");
+        if (string.IsNullOrWhiteSpace(isbn))
+            throw new BusinessRulesException("ISBN cannot be null or empty");
 
-        if (!IsISBNValid(isbn)) throw new BusinessRulesException("Invalid ISBN");
+        isbn = isbn.Trim();
+        string cleanIsbn = isbn.Replace("-", "").Replace(" ", "").ToUpper();
 
-        BookISBN = isbn.Trim();
+        if (!IsValidFormat(cleanIsbn))
+            throw new BusinessRulesException("Invalid ISBN format. Please use a valid ISBN-10 or ISBN-13 format.");
+
+        // Validate ISBN uniqueness using the injected validation action
+        try
+        {
+            _validateIsbnUniqueness?.Invoke(cleanIsbn);
+        }
+        catch (BusinessRulesException ex)
+        {
+            throw new BusinessRulesException(ex.Message);
+        }
+
+        BookISBN = cleanIsbn; 
     }
+    
+
+
 
     public string BookISBN { get; }
-
-    public override int GetHashCode()
-    {
-        return BookISBN.GetHashCode();
-    }
-
 
     public string GetISBN()
     {
         return BookISBN;
     }
-
 
     public ISBN ValueOf(string isbn)
     {
@@ -39,55 +64,27 @@ public class ISBN : IValueObject
     public override bool Equals(object? obj)
     {
         if (this == obj) return true;
-
-        if (obj == null || obj.GetType() != GetType()) return false;
-
-        var that = (ISBN)obj;
-
-        return BookISBN.ToUpper().Equals(that.BookISBN.ToUpper());
+        if (obj is not ISBN other) return false;
+        return string.Equals(BookISBN, other.BookISBN, StringComparison.Ordinal);
     }
 
     public override string ToString()
     {
-        return $"{BookISBN}";
+        return BookISBN;
     }
 
-    public static bool IsISBNValid(string isbnToTest)
+    public override int GetHashCode()
     {
-        if (isbnToTest == null)
-            return false;
-        isbnToTest = isbnToTest.Replace("-", "").Replace(" ", "").ToUpper();
+        return StringComparer.Ordinal.GetHashCode(BookISBN);
+    }
 
-        var regex10 = new Regex(@"^\d{9}[\dX]$");
-        var regex13 = new Regex(@"^\d{13}$");
+    private static bool IsValidFormat(string isbn)
+    {
+      
+        string cleanIsbn = Regex.Replace(isbn, "[^0-9X]", "", RegexOptions.IgnoreCase).ToUpper();
 
-        if (regex10.IsMatch(isbnToTest))
-        {
-            int sum = 0;
-            for (int i = 0; i < 9; i++)
-            {
-                sum += (isbnToTest[i] - '0') * (10 - i);
-            }
-
-            int lastCharValue = (isbnToTest[9] == 'X') ? 10 : (isbnToTest[9] - '0');
-            sum += lastCharValue;
-
-            return sum % 11 == 0;
-        }
-        else if (regex13.IsMatch(isbnToTest))
-        {
-            int sum = 0;
-            for (int i = 0; i < 12; i++)
-            {
-                sum += (isbnToTest[i] - '0') * ((i % 2 == 0) ? 1 : 3);
-            }
-
-            int checkDigit = (isbnToTest[12] - '0');
-            int calculatedCheckDigit = (10 - (sum % 10)) % 10;
-
-            return checkDigit == calculatedCheckDigit;
-        }
-
-        return false;
+      
+        return (cleanIsbn.Length == 10 && Isbn10Regex.IsMatch(cleanIsbn)) ||
+               (cleanIsbn.Length == 13 && Isbn13Regex.IsMatch(cleanIsbn));
     }
 }
