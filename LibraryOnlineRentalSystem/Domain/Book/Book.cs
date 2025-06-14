@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.Design;
+using System.ComponentModel.Design;
 using System.Text.Json.Serialization;
 using LibraryOnlineRentalSystem.Domain.Common;
 
@@ -11,10 +11,11 @@ public class Book : Entity<BookID>, IAggregateRoot
     }
 
     [JsonConstructor]
-    public Book(string id, int amountOfCopies, string author, string category, string description,
+    public Book(string id, string name, int amountOfCopies, string author, string category, string description,
         string isbn, string publisher)
     {
         Id = new BookID(id);
+        Name = new BookName(name);
         AmountOfCopies = new AmountOfCopies(amountOfCopies);
         Author = new Author(author);
         Category = new Category(category);
@@ -25,6 +26,7 @@ public class Book : Entity<BookID>, IAggregateRoot
     }
 
     public BookID Id { get; private set; }
+    public BookName Name { get; private set; }
     public AmountOfCopies AmountOfCopies { get; private set; }
     public Author Author { get; private set; }
     public Category Category { get; private set; }
@@ -45,7 +47,7 @@ public class Book : Entity<BookID>, IAggregateRoot
 
     public BookDTO toDTO()
     {
-        return new BookDTO(Id.Value, AmountOfCopies.GetBookAmountOfCopies(), Author.GetBookAuthor(),
+        return new BookDTO(Id.Value, Name.GetValue(), AmountOfCopies.GetBookAmountOfCopies(), Author.GetBookAuthor(),
             Category.GetBookCategoryName(), Description.GetBookDescription(), Isbn.GetISBN(),
             Publisher.GetBookPublisher());
     }

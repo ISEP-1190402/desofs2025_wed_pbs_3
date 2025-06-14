@@ -13,7 +13,6 @@ public class UserService
     private readonly IUserRepository _userRepository;
     private readonly IWorkUnity _workUnit;
     private readonly IAuditLogger _auditLogger;
-    private readonly PasswordService _passwordService;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private const string DEFAULT_USER_ROLE_NAME = "User";
@@ -22,14 +21,12 @@ public class UserService
         IUserRepository userRepository,
         IWorkUnity workUnit,
         IAuditLogger auditLogger,
-        PasswordService passwordService,
         HttpClient httpClient,
         IConfiguration configuration)
     {
         _userRepository = userRepository;
         _workUnit = workUnit;
         _auditLogger = auditLogger;
-        _passwordService = passwordService;
         _httpClient = httpClient;
         _configuration = configuration;
     }
@@ -50,18 +47,7 @@ public class UserService
 
         try
         {
-            // Validate user data before creating in Keycloak
-            var user = new User(
-                Guid.NewGuid().ToString(),
-                req.Name,
-                req.Email,
-                req.UserName,
-                req.PhoneNumber,
-                req.Nif,
-                req.Biography,
-                _passwordService.HashPassword(req.Password)
-            );
-
+            // First create user in Keycloak
             var adminToken = await GetAdminTokenAsync();
             var keycloakUser = new
             {
@@ -79,6 +65,18 @@ public class UserService
                 },
                 requiredActions = new string[] { }
             };
+            
+            // Create local user without password (handled by Keycloak)
+            var user = new User(
+                Guid.NewGuid().ToString(),
+                req.Name,
+                req.Email,
+                req.UserName,
+                req.PhoneNumber,
+                req.Nif,
+                req.Biography,
+                hashedPassword: null // No need to store password locally
+            );
 
             var content = new StringContent(
                 JsonSerializer.Serialize(keycloakUser),

@@ -39,12 +39,14 @@ namespace LibraryOnlineRentalSystem
             services.AddControllersWithViews();
 
             services.AddDbContext<LibraryDbContext>(opt =>
+            {
+                var serverVersion = ServerVersion.AutoDetect(Configuration["LibraryDatabase"]);
                 opt.UseMySql(
-                        Configuration["LibraryDatabase"],
-                        ServerVersion.AutoDetect(Configuration["LibraryDatabase"])
-                    )
-                    .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
-            );
+                    Configuration["LibraryDatabase"],
+                    serverVersion);
+                
+                opt.ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>();
+            });
 
             ConfigureMyServices(services);
             ConfigureCors(services);
@@ -101,6 +103,7 @@ namespace LibraryOnlineRentalSystem
 
         public void ConfigureMyServices(IServiceCollection services)
         {
+            // Register services
             services.AddTransient<IWorkUnity, WorkUnity>();
             services.AddTransient<BookService>();
             services.AddTransient<IBookRepository, BookRepository>();
@@ -109,9 +112,35 @@ namespace LibraryOnlineRentalSystem
             services.AddTransient<UserService>();
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<IAuditLogger, AuditLogger>();
-            services.AddTransient<PasswordService>();
             services.AddTransient<AuthService>();
             services.AddHttpClient<AuthService>();
+            
+            // Configure ISBN validation with repository
+            services.AddTransient(provider => 
+            {
+                var repository = provider.GetRequiredService<IBookRepository>();
+                return new Action<string>(isbn => 
+                {
+                    var existingBook = repository.GetBookByIsbnAsync(isbn).Result;
+                    if (existingBook != null)
+                    {
+                        throw new BusinessRulesException($"A book with ISBN {isbn} already exists.");
+                    }
+                });
+            });
+            
+            // Configure ISBN validation
+            services.AddTransient(provider => 
+            {
+                var validateAction = provider.GetRequiredService<Action<string>>();
+                return new Action<IServiceProvider>(sp => 
+                {
+                    ISBN.Configure(validateAction);
+                });
+            });
+            
+            // Initialize ISBN validation
+            services.BuildServiceProvider().GetService<Action<IServiceProvider>>()?.Invoke(services.BuildServiceProvider());
         }
 
         public void ConfigureCors(IServiceCollection services)

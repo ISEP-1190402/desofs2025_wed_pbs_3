@@ -1,51 +1,113 @@
+using System;
+using System.Linq;
+using System.Text.RegularExpressions;
 using LibraryOnlineRentalSystem.Domain.Common;
 
-namespace LibraryOnlineRentalSystem.Domain.User;
-
-public class Biography : ICloneable, IValueObject
+namespace LibraryOnlineRentalSystem.Domain.User
 {
-    public Biography() { } 
-    public Biography(string biography)
+    public class Biography : ICloneable, IValueObject
     {
-        if (string.IsNullOrWhiteSpace(biography))
-        {
-            this.Description = string.Empty;
-            return;
+        // Allowed special characters - minimal safe set
+        private static readonly HashSet<char> AllowedSpecialChars = new() 
+        { 
+            ' ', '.', ',', '!', '?', '\'', '(', ')', '-', ':', ';', '\n', '\r' 
+        };
+
+        public Biography() 
+        { 
+            Description = string.Empty;
         }
 
-        biography = biography.Trim();
+        public Biography(string biography)
+        {
+            if (string.IsNullOrWhiteSpace(biography))
+            {
+                Description = string.Empty;
+                return;
+            }
 
-        if (biography.Length > 150)
-            throw new BusinessRulesException("Description cannot exceed 150 characters.");
+       
+            string sanitized = Regex.Replace(biography.Trim(), @"\s+", " ");
+            
+      
+            sanitized = Regex.Replace(sanitized, @"<[^>]+>", string.Empty);
+            
+       
+            sanitized = Regex.Replace(sanitized, "[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "");
 
-        if (!biography.All(c => char.IsLetterOrDigit(c) || char.IsWhiteSpace(c)))
-            throw new BusinessRulesException("Biography cannot contain emojis or special characters.");
+            
+            if (sanitized.Length > 150)
+                throw new BusinessRulesException("Description cannot exceed 150 characters.");
 
-        Description = biography;
-    }
+            
+            if (!IsValidBiography(sanitized))
+                throw new BusinessRulesException("Biography contains invalid characters. Only letters, numbers, and basic punctuation are allowed.");
+            
+            if (ContainsXssPatterns(sanitized))
+                throw new BusinessRulesException("Invalid input detected.");
 
-    public string Description { get; }
+            Description = sanitized;
+        }
 
-    public object Clone()
-    {
-        return new Biography(this.Description);
-    }
+        public string Description { get; }
 
-    public override string ToString()
-    {
-        return Description;
-    }
+        private static bool IsValidBiography(string input)
+        {
+            return input.All(c => 
+                char.IsLetterOrDigit(c) || 
+                char.IsWhiteSpace(c) || 
+                AllowedSpecialChars.Contains(c));
+        }
 
-    public override bool Equals(object? obj)
-    {
-        if (this == obj) return true;
-        if (obj is not Biography other) return false;
+        private static bool ContainsXssPatterns(string input)
+        {
+          
+            string lowerInput = input.ToLowerInvariant();
+            
+      
+            var xssPatterns = new[]
+            {
+                "<script", 
+                "javascript:", 
+                "onload=", 
+                "onerror=", 
+                "onclick=",
+                "onmouseover=",
+                "document.cookie",
+                "eval(",
+                "alert(",
+                "fromcharcode(",
+                "document.domain",
+                "window.location",
+                "document.write",
+                "innerhtml",
+                "settimeout(",
+                "setinterval("
+            };
 
-        return Description.Equals(other.Description, StringComparison.InvariantCultureIgnoreCase);
-    }
+            return xssPatterns.Any(pattern => lowerInput.Contains(pattern));
+        }
 
-    public override int GetHashCode()
-    {
-        return Description.ToLowerInvariant().GetHashCode();
+        public object Clone()
+        {
+            return new Biography(Description);
+        }
+
+        public override string ToString()
+        {
+            return Description;
+        }
+
+        public override bool Equals(object? obj)
+        {
+            if (this == obj) return true;
+            if (obj is not Biography other) return false;
+            return string.Equals(Description, other.Description, StringComparison.OrdinalIgnoreCase);
+        }
+
+        public override int GetHashCode()
+        {
+            return StringComparer.OrdinalIgnoreCase.GetHashCode(Description ?? string.Empty);
+        }
     }
 }
