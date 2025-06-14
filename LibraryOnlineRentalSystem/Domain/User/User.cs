@@ -54,6 +54,11 @@ public class User : Entity<UserID>, IAggregateRoot
         Name = new Name(name);
     }
 
+    public void ChangeNif(string nif)
+    {
+        Nif = new NIF(nif);
+    }
+
     public bool Active { get; private set; } = true;
 
     public void Deactivate()

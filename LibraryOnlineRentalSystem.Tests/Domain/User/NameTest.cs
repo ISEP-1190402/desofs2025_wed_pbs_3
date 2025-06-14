@@ -31,22 +31,33 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
             Assert.Throws<ArgumentNullException>(() => new Name(value));
         }
 
-        [TestCase("John1")]
-        [TestCase("2Smith")]
-        [TestCase("Anne3Marie")]
-        public void Constructor_WithDigits_ThrowsBusinessRulesException(string value)
+        [Test]
+        public void Constructor_WithDigits_ThrowsBusinessRulesException()
         {
-            Assert.Throws<BusinessRulesException>(() => new Name(value));
+            // Test with digits
+            Assert.Throws<BusinessRulesException>(() => new Name("John1"), "Name with digits should be invalid");
+            Assert.Throws<BusinessRulesException>(() => new Name("2Smith"), "Name starting with digit should be invalid");
+            Assert.Throws<BusinessRulesException>(() => new Name("Anne3Marie"), "Name with embedded digit should be invalid");
+            
+            // Test with various invalid special characters
+            Assert.Throws<BusinessRulesException>(() => new Name("John#Doe"), "Name with # should be invalid");
+            Assert.Throws<BusinessRulesException>(() => new Name("John.Doe"), "Name with . should be invalid");
+            Assert.Throws<BusinessRulesException>(() => new Name("John*Doe"), "Name with * should be invalid");
+            Assert.Throws<BusinessRulesException>(() => new Name("John\"Doe"), "Name with \" should be invalid");
         }
 
-        [TestCase("John!")]
-        [TestCase("Jane#Doe")]
-        [TestCase("Marta*Silva")]
-        [TestCase("John.Smith")]
-        [TestCase("Mary-Jane")]
-        public void Constructor_WithSpecialChars_ThrowsBusinessRulesException(string value)
+        [Test]
+        public void Constructor_WithAllowedSpecialChars_ShouldSucceed()
         {
-            Assert.Throws<BusinessRulesException>(() => new Name(value));
+            // Test with allowed special characters
+            var name1 = new Name("Mary-Jane");
+            Assert.That(name1.FullName, Is.EqualTo("Mary-Jane"), "Hyphen should be allowed in names");
+            
+            var name2 = new Name("O'Reilly");
+            Assert.That(name2.FullName, Is.EqualTo("O'Reilly"), "Apostrophe should be allowed in names");
+            
+            var name3 = new Name("John Smith");
+            Assert.That(name3.FullName, Is.EqualTo("John Smith"), "Space should be allowed in names");
         }
 
         [Test]

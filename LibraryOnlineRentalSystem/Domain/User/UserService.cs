@@ -230,6 +230,20 @@ public class UserService
         if (user == null)
             throw new BusinessRulesException("User not found");
 
+        await UpdateUserInternal(user, request);
+    }
+
+    public async Task UpdateUserByUsernameAsync(string username, UpdateUserRequest request)
+    {
+        var user = await _userRepository.GetByUsernameAsync(username);
+        if (user == null)
+            throw new BusinessRulesException("User not found");
+
+        await UpdateUserInternal(user, request);
+    }
+
+    private async Task UpdateUserInternal(User user, UpdateUserRequest request)
+    {
         if (request.Biography != null)
             user.ChangeBiography(request.Biography);
 
@@ -237,16 +251,9 @@ public class UserService
         {
             var existingUserWithPhone = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber);
             if (existingUserWithPhone != null && existingUserWithPhone.Id.AsString() != user.Id.AsString())
-                throw new BusinessRulesException("Phone number is already in use by another user");
-                
-            user.ChangePhoneNumber(request.PhoneNumber);
-        }
+                throw new BusinessRulesException("Phone number is already in use");
 
-        if (request.Nif != null)
-        {
-            var existingUserWithNif = await _userRepository.GetByNifAsync(request.Nif);
-            if (existingUserWithNif != null && existingUserWithNif.Id.AsString() != user.Id.AsString())
-                throw new BusinessRulesException("NIF is already registered by another user");
+            user.ChangePhoneNumber(request.PhoneNumber);
         }
 
         if (request.Name != null)
@@ -261,8 +268,17 @@ public class UserService
             user.ChangeEmail(request.Email);
         }
 
+        if (request.Nif != null)
+        {
+            var existingUserWithNif = await _userRepository.GetByNifAsync(request.Nif);
+            if (existingUserWithNif != null && existingUserWithNif.Id.AsString() != user.Id.AsString())
+                throw new BusinessRulesException("NIF is already registered to another user");
+
+            user.ChangeNif(request.Nif);
+        }
+
         await _workUnit.CommitAsync();
-        await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
+        await _auditLogger.LogAsync($"User {user.Id.AsString()} updated profile.", "ProfileUpdate");
     }
 
     public bool UserExists(string userEmail)

@@ -11,7 +11,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         public void Constructor_SetsAllPropertiesCorrectly()
         {
             var book = new Book(
-                "book1", 3, "Author Name", "Category A", "Description X", "9783161484100", "Publisher Y");
+                "book1", "Title", 3, "Author Name", "Category A", "Description X", "9783161484100", "Publisher Y");
 
             Assert.That(book.Id.AsString(), Is.EqualTo("book1"));
             Assert.That(book.AmountOfCopies.BookAmountOfCopies, Is.EqualTo(3));
@@ -27,7 +27,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         public void IsBookDeleted_ActiveBook_ReturnsFalse()
         {
             var book = new Book(
-                "book2", 2, "A", "B", "C", "9780306406157", "E");
+                "book2", "Title", 2, "Author Name", "Category B", "Description C", "9780306406157", "Publisher E");
             Assert.That(book.isBookDeleted(), Is.False);
         }
 
@@ -35,7 +35,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         public void DeleteBook_SetsActiveToFalse()
         {
             var book = new Book(
-                "book3", 1, "A", "B", "C", "9781861972712", "E");
+                "book3", "Title", 1, "Author Name", "Category B", "Description C", "9781861972712", "Publisher E");
             book.deleteBook();
             Assert.That(book.Active, Is.False);
         }
@@ -44,7 +44,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         public void IsBookDeleted_AfterDeleteBook_ReturnsTrue()
         {
             var book = new Book(
-                "book4", 5, "A", "B", "C", "9780140449136", "E");
+                "book4", "Title", 5, "Author Name", "Category B", "Description C", "9780140449136", "Publisher E");
             book.deleteBook();
             Assert.That(book.isBookDeleted(), Is.True);
         }
@@ -53,7 +53,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         public void ToDTO_ReturnsCorrectDTO()
         {
             var book = new Book(
-                "book5", 10, "AuthorZ", "Fiction", "Great Book", "9780307476463", "PubHouse");
+                "book5", "Title", 10, "AuthorZ", "Fiction", "Great Book", "9780307476463", "PubHouse");
             var dto = book.toDTO();
 
             Assert.That(dto.Id, Is.EqualTo("book5"));
@@ -69,7 +69,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         public void UpdateStock_UpdatesAmountOfCopies()
         {
             var book = new Book(
-                "book6", 2, "A", "B", "C", "9780553382563", "E");
+                "book6", "Title", 2, "Author Name", "Category B", "Description C", "9780553382563", "Publisher E");
             book.UpdateStock(8);
             Assert.That(book.AmountOfCopies.BookAmountOfCopies, Is.EqualTo(8));
         }
