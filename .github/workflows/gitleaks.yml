@@ -22,4 +22,9 @@ jobs:
 
       - name: Run Gitleaks Scan
         run: |
-          ./gitleaks-bin/gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif
+          ./gitleaks-bin/gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif --exclude-path gitleaks-bin/
+
+      - name: Upload SARIF report to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: gitleaks-report.sarif
