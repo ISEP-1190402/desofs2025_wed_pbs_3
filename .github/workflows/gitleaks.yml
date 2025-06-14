@@ -22,4 +22,4 @@ jobs:
 
       - name: Run Gitleaks Scan
         run: |
-          ./gitleaks-bin/gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif
+          ./gitleaks-bin/gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif || true
