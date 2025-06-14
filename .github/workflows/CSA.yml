@@ -100,7 +100,7 @@ jobs:
           dotnet test --configuration Release --no-build --no-restore \
             --collect:"XPlat Code Coverage" \
             --results-directory ./TestResults/ \
-            --logger "trx;LogFileName=test-results.trx" \
+            --logger trx \
             --logger "json;LogFileName=test-results.json" \
             --verbosity normal \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
