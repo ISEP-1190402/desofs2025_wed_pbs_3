@@ -196,10 +196,10 @@ jobs:
                 includePaths:
                   - "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}/.*"
                 excludePaths:
-                  - ".*\\.js$"
-                  - ".*\\.css$"
-                  - ".*\\.png$"
-                  - ".*\\.jpg$"
+                  - '.*\.js$'
+                  - '.*\.css$'
+                  - '.*\.png$'
+                  - '.*\.jpg$'
             parameters:
               failOnError: false
               failOnWarning: false
