@@ -2,8 +2,14 @@ name: Gitleaks Scan (Manual Cmd)
 
 on:
   push:
+    branches: ["**"]
   pull_request:
     branches: [main, development]
+
+permissions:
+  actions: read
+  contents: read
+  security-events: write
 
 jobs:
   gitleaks-scan:
@@ -18,7 +24,11 @@ jobs:
           mkdir gitleaks-bin
           tar -xzf gitleaks.tar.gz -C gitleaks-bin
           chmod +x gitleaks-bin/gitleaks
-      
       - name: Run Gitleaks Scan
         run: |
           ./gitleaks-bin/gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif || true
+      - name: Upload SARIF report as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gitleaks-sarif-report
+          path: gitleaks-report.sarif
