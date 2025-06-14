@@ -186,6 +186,8 @@ jobs:
           chmod -R 777 zap-work
           
           # Create ZAP automation configuration
+          
+          API_IP=${{ steps.api_ip.outputs.api_ip }}
           cat > zap-work/automation.yaml << 'EOF'
           env:
             contexts:
