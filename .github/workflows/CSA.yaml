@@ -21,12 +21,12 @@ jobs:
   csa:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-    if: github.event_name == 'pull_request' && success()
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-      id-token: write
+   # if: github.event_name == 'pull_request' && success()
+   # permissions:
+   #   contents: read
+   #   security-events: write
+   #   actions: read
+   #   id-token: write
 
     steps:
       - name: Checkout Code
