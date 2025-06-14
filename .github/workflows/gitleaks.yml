@@ -1,10 +1,10 @@
-name: Gitleaks Scan (Manual Cmd)2
+name: Gitleaks Scan (Manual Cmd)
 
 on:
   push:
-    branches: [main]
+    branches: [NF-98-gitleaks]
   pull_request:
-    branches: [main]
+    branches: [NF-98-gitleaks]
 
 jobs:
   gitleaks-scan:
