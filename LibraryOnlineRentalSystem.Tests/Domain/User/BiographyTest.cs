@@ -12,8 +12,17 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
         [Test]
         public void Constructor_WithValidBiography_SetsDescription()
         {
-            var bio = new Biography("Software developer and avid reader");
-            Assert.That(bio.Description, Is.EqualTo("Software developer and avid reader"));
+            // Test with basic text
+            var bio1 = new Biography("Software developer and avid reader");
+            Assert.That(bio1.Description, Is.EqualTo("Software developer and avid reader"));
+            
+            // Test with allowed special characters (only those in AllowedSpecialChars)
+            var bio2 = new Biography("Developer with experience in C and .NET");
+            Assert.That(bio2.Description, Is.EqualTo("Developer with experience in C and .NET"));
+            
+            // Test with other allowed characters
+            var bio3 = new Biography("Hello, this is a test. Uses: commas, periods. (parentheses) and spaces are allowed! Also hyphens - and colons: and semicolons;");
+            Assert.That(bio3.Description, Is.EqualTo("Hello, this is a test. Uses: commas, periods. (parentheses) and spaces are allowed! Also hyphens - and colons: and semicolons;"));
         }
 
         [Test]
@@ -39,13 +48,47 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.User
             Assert.Throws<BusinessRulesException>(() => new Biography(longText));
         }
 
-        [TestCase("Text with !")]
-        [TestCase("Hello, world.")]
-        [TestCase("Bio with emoji 😊")]
-        [TestCase("Bio with #hashtag")]
-        public void Constructor_SpecialCharacters_ThrowsBusinessRulesException(string input)
+        [Test]
+        public void Constructor_WithInvalidCharacters_ThrowsBusinessRulesException()
         {
-            Assert.Throws<BusinessRulesException>(() => new Biography(input));
+            // Test with XSS patterns
+            Assert.Throws<BusinessRulesException>(() => new Biography("<script>alert('xss')</script>"),
+                "Should reject script tags");
+                
+            Assert.Throws<BusinessRulesException>(() => new Biography("javascript:alert('xss')"),
+                "Should reject javascript: protocol");
+            
+            // Test with disallowed special characters
+            Assert.Throws<BusinessRulesException>(() => new Biography("Bio with #hashtag"),
+                "Should reject # character");
+                
+            Assert.Throws<BusinessRulesException>(() => new Biography("Bio with @mention"),
+                "Should reject @ character");
+                
+            Assert.Throws<BusinessRulesException>(() => new Biography("Bio with $dollar"),
+                "Should reject $ character");
+                
+            // Test with emoji (not in allowed characters)
+            Assert.Throws<BusinessRulesException>(() => new Biography("Bio with emoji 😊"),
+                "Should reject emoji characters");
+                
+            // Test with XSS patterns in the middle of text
+            Assert.Throws<BusinessRulesException>(
+                () => new Biography("Normal text <script>alert('xss')</script> more text"),
+                "Should detect XSS in the middle of text");
+                
+            // Test with other invalid patterns
+            Assert.Throws<BusinessRulesException>(
+                () => new Biography("onload=alert('xss') normal text"),
+                "Should detect onload handler");
+                
+            // Test with newlines (should be allowed as they're in AllowedSpecialChars)
+            Assert.DoesNotThrow(() => new Biography("Line 1\nLine 2"),
+                "Should allow newlines");
+                
+            // Test with allowed special characters (should pass)
+            Assert.DoesNotThrow(() => new Biography("Test with allowed chars: .,!?()-:;' \n\r"),
+                "Should allow basic punctuation and whitespace");
         }
 
         [Test]

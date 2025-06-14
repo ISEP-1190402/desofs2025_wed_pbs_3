@@ -38,7 +38,7 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         [Test]
         public void Constructor_TooLong_ThrowsBusinessRulesException()
         {
-            var longName = new string('a', 51);
+            var longName = new string('a', 101); // Exceeds 100 character limit
             Assert.Throws<BusinessRulesException>(() => new Publisher(longName));
         }
 

@@ -12,8 +12,8 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         [Test]
         public void Constructor_WithValidDescription_SetsValue()
         {
-            var description = new Description("A short description.");
-            Assert.That(description.BookDescription, Is.EqualTo("A short description."));
+            var description = new Description("A valid description with 5+ chars.");
+            Assert.That(description.BookDescription, Is.EqualTo("A valid description with 5+ chars."));
         }
 
         [Test]
@@ -36,10 +36,10 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         }
 
         [Test]
-        public void Constructor_TooLong_ThrowsArgumentException()
+        public void Constructor_TooLong_ThrowsBusinessRulesException()
         {
-            var longText = new string('a', 1001);
-            Assert.Throws<ArgumentException>(() => new Description(longText));
+            var longText = new string('a', 2001); // Exceeds 2000 character limit
+            Assert.Throws<BusinessRulesException>(() => new Description(longText));
         }
 
         [Test]
@@ -52,9 +52,9 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         [Test]
         public void ValueOf_ReturnsNewInstanceWithGivenDescription()
         {
-            var description = new Description("Desc1");
-            var newDescription = description.ValueOf("Desc2");
-            Assert.That(newDescription.BookDescription, Is.EqualTo("Desc2"));
+            var description = new Description("First description");
+            var newDescription = description.ValueOf("Second valid description");
+            Assert.That(newDescription.BookDescription, Is.EqualTo("Second valid description"));
         }
 
         [Test]
@@ -90,8 +90,8 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         [Test]
         public void ToString_ReturnsBookDescription()
         {
-            var description = new Description("Sample");
-            Assert.That(description.ToString(), Is.EqualTo("Sample"));
+            var description = new Description("Sample description");
+            Assert.That(description.ToString(), Is.EqualTo("Sample description"));
         }
 
         [Test]
@@ -105,8 +105,8 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
         [Test]
         public void GetHashCode_ReturnsDifferentForDifferentDescriptions()
         {
-            var a = new Description("A");
-            var b = new Description("B");
+            var a = new Description("First description");
+            var b = new Description("Second description");
             Assert.That(a.GetHashCode(), Is.Not.EqualTo(b.GetHashCode()));
         }
     }

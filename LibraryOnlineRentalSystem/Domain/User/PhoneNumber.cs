@@ -46,4 +46,18 @@ public class PhoneNumber : ICloneable, IValueObject
     {
         return Number?.GetHashCode() ?? 0;
     }
+
+    public static bool operator ==(PhoneNumber left, PhoneNumber right)
+    {
+        if (ReferenceEquals(left, null) && ReferenceEquals(right, null))
+            return true;
+        if (ReferenceEquals(left, null) || ReferenceEquals(right, null))
+            return false;
+        return left.Equals(right);
+    }
+
+    public static bool operator !=(PhoneNumber left, PhoneNumber right)
+    {
+        return !(left == right);
+    }
 }

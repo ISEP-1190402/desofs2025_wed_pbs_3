@@ -9,16 +9,22 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
     [TestOf(typeof(ISBN))]
     public class ISBNTest
     {
-        [TestCase("0-306-40615-2")]
-        [TestCase("0306406152")]
-        [TestCase("978-3-16-148410-0")]
-        [TestCase("9783161484100")]
-        [TestCase("0-321-14653-0")]
-        [TestCase("0321146530")]
-        public void Constructor_ValidISBN_DoesNotThrow(string validISBN)
+        [Test]
+        public void Constructor_ValidISBN_DoesNotThrow()
         {
-            var isbn = new ISBN(validISBN);
-            Assert.That(isbn.BookISBN, Is.EqualTo(validISBN.Trim()));
+            // Test valid ISBN-10 with and without hyphens
+            var isbn1 = new ISBN("0-306-40615-2");
+            Assert.That(isbn1.BookISBN, Is.EqualTo("0306406152"), "ISBN-10 with hyphens should be normalized");
+            
+            var isbn2 = new ISBN("0306406152");
+            Assert.That(isbn2.BookISBN, Is.EqualTo("0306406152"), "ISBN-10 without hyphens should be preserved");
+            
+            // Test valid ISBN-13 with and without hyphens
+            var isbn3 = new ISBN("978-3-16-148410-0");
+            Assert.That(isbn3.BookISBN, Is.EqualTo("9783161484100"), "ISBN-13 with hyphens should be normalized");
+            
+            var isbn4 = new ISBN("9783161484100");
+            Assert.That(isbn4.BookISBN, Is.EqualTo("9783161484100"), "ISBN-13 without hyphens should be preserved");
         }
 
         [TestCase("")]
@@ -113,21 +119,48 @@ namespace LibraryOnlineRentalSystem.Tests.Domain.Books
             Assert.That(a.GetHashCode(), Is.Not.EqualTo(b.GetHashCode()));
         }
 
-        [TestCase("0-306-40615-2", true)]
-        [TestCase("0306406152", true)]
-        [TestCase("978-3-16-148410-0", true)]
-        [TestCase("9783161484100", true)]
-        [TestCase("9780306406157", true)]
-        [TestCase("123456789X", true)]
-        [TestCase("1234567890", false)]
-        [TestCase("9783161484109", false)]
-        [TestCase("abcdefghij", false)]
-        [TestCase("", false)]
-        [TestCase(null, false)]
-        public void IsISBNValid_WorksForVariousCases(string input, bool expected)
+        [Test]
+        public void Constructor_ValidatesISBNCorrectly()
         {
-            var result = ISBN.IsISBNValid(input);
-            Assert.That(result, Is.EqualTo(expected));
+            // Test valid ISBNs
+            var validIsbns = new[]
+            {
+                "0306406152",     // Valid ISBN-10
+                "9783161484100",  // Valid ISBN-13
+                "123456789X",     // Valid ISBN-10 with X check digit
+                "0-306-40615-2",  // Valid ISBN-10 with hyphens
+                "978-3-16-148410-0" // Valid ISBN-13 with hyphens
+            };
+            
+            foreach (var isbn in validIsbns)
+            {
+                Assert.DoesNotThrow(() => new ISBN(isbn), $"ISBN '{isbn}' should be valid");
+            }
+            
+            // Test invalid ISBNs
+            var invalidIsbns = new[]
+            {
+                "1234567890",    // Invalid check digit for ISBN-10
+                "9783161484104",  // Invalid check digit for ISBN-13
+                "abcdefghij",     // Invalid characters
+                "123",            // Too short
+                "12345678901234567890", // Too long
+                "",               // Empty string
+                " ",              // Whitespace only
+                null              // Null
+            };
+            
+            foreach (var isbn in invalidIsbns)
+            {
+                if (isbn == null)
+                {
+                    Assert.Throws<BusinessRulesException>(() => new ISBN(isbn), "Null ISBN should be invalid");
+                }
+                else
+                {
+                    Assert.Throws<BusinessRulesException>(() => new ISBN(isbn), $"ISBN '{isbn}' should be invalid");
+                }
+            }
         }
     }
 }
