@@ -3,6 +3,7 @@
 
 
 **Objetivos**
+
 Integrar práticas de segurança da informação ao longo do ciclo de vida de desenvolvimento de software (SDLC), por meio da automatização de testes e avaliações de segurança em pipelines CI/CD. 
 
 Os objetivos específicos incluem:
@@ -19,10 +20,31 @@ Os objetivos específicos incluem:
 
 
 
-
 **Abordagem**
 
 - Implementação de um pipeline CI/CD que execute testes de segurança a cada mudança no código.
+
+- Realizados nas fases iniciais do desenvolvimento.
+
+- Análise do código-fonte em busca de falhas como SQL Injection, XSS, hardcoded secrets etc.
+
+- Ferramentas: SonarQube, Semgrep, Checkmarx.
+
+- Aplicados após a aplicação estar em execução.
+
+- Testam a aplicação como um "usuário malicioso" testaria, via HTTP.
+
+- Ferramentas: OWASP ZAP, Burp Suite, Acunetix.
+
+- Avaliação contínua de configurações de segurança na infraestrutura em nuvem.
+
+- As falhas são registradas automaticamente em sistemas de gestão como Jira, GitHub Issues ou alertas via Slack.
+
+- As correções são priorizadas com base na gravidade e no risco.
+
+- Desenvolvedores recebem alertas explicativos e materiais de apoio conforme os erros detectados.
+
+- O pipeline evolui conforme novas ameaças são identificadas.
 
 
 ## **Tabela Demonstrativa das Principais Pipelines**
@@ -38,4 +60,5 @@ Os objetivos específicos incluem:
 | **Integração em pipeline**      | Fácil (antes de build)              | Moderada (requer app rodando)           | Moderada (requer instrumentação)              | Moderada (via APIs ou scans contínuos)       |
 | **Vulnerabilidades detectadas** | Injeção, XSS, má prática de código  | Injeção, XSS, problemas de autenticação | Mescla vulnerabilidades estáticas e dinâmicas | Exposição de dados, má config. de rede, etc. |
 
-
+Utilizamos neste projeto as pipelines DAST,SAST,IAST e CSA. 
+Iremos apresentar como cada uma funciona, e seus devidos resultados ao correr na aplicação.

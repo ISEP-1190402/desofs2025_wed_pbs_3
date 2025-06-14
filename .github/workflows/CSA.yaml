@@ -11,7 +11,7 @@ env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 5000
   PROJECT_DIR: ./LibraryOnlineRentalSystem
-  # Replace these with your actual SonarCloud valu
+  # Replace these with your actual SonarCloud values
   SONAR_PROJECT_KEY: jorgealmeidadeveloper_LibraryOnlineRentalSystem
   SONAR_ORG: jorgealmeidadeveloper
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}           # Set this in GitHub repository secrets
@@ -21,12 +21,12 @@ jobs:
   csa:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-   # if: github.event_name == 'pull_request' && success()
-   # permissions:
-   #   contents: read
-   #   security-events: write
-   #   actions: read
-   #   id-token: write
+    if: github.event_name == 'pull_request' && success()
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
+      id-token: write
 
     steps:
       - name: Checkout Code
@@ -184,22 +184,20 @@ jobs:
         run: |
           mkdir -p zap-work
           chmod -R 777 zap-work
-
-          API_IP=${{ steps.api_ip.outputs.api_ip }}
-
+          
           # Create ZAP automation configuration
-          cat > zap-work/automation.yaml << EOF
+          cat > zap-work/automation.yaml << 'EOF'
           env:
             contexts:
               - name: "Library API"
-                urls: ["http://$API_IP:${{ env.API_PORT }}"]
+                urls: ["http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"]
                 includePaths:
-                  -  "http://$API_IP:${{ env.API_PORT }}/.*"
+                  - "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}/.*"
                 excludePaths:
-                  - '.*\.js$'
-                  - '.*\.css$'
-                  - '.*\.png$'
-                  - '.*\.jpg$'
+                  - ".*\\.js$"
+                  - ".*\\.css$"
+                  - ".*\\.png$"
+                  - ".*\\.jpg$"
             parameters:
               failOnError: false
               failOnWarning: false
@@ -209,7 +207,7 @@ jobs:
             - type: spider
               parameters:
                 context: "Library API"
-                url: "http://$API_IP:${{ env.API_PORT }}"
+                url: "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"
                 maxDuration: 3
                 maxDepth: 3
                 acceptCookies: true
