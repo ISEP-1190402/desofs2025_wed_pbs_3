@@ -266,6 +266,13 @@ jobs:
           path: zap-work/
           retention-days: 30
 
+      - name: Upload Snyk Code Report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: snyk-code-report
+          path: snyk-code-report.json
+          retention-days: 30
       - name: Upload Test Results
         uses: actions/upload-artifact@v4
         if: always()
