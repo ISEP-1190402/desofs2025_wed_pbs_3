@@ -6,6 +6,11 @@ on:
   pull_request:
     branches: [NF-98-gitleaks]
 
+permissions:
+  actions: read
+  contents: read
+  security-events: write
+
 jobs:
   gitleaks-scan:
     runs-on: ubuntu-latest
