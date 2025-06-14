@@ -29,7 +29,8 @@ jobs:
         run: |
           ./gitleaks-bin/gitleaks detect --no-git --verbose --report-format sarif --report-path gitleaks-report.sarif || true
 
-      - name: Upload SARIF report to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
+      - name: Upload SARIF report as artifact
+        uses: actions/upload-artifact@v3
         with:
-          sarif_file: gitleaks-report.sarif
+          name: gitleaks-sarif-report
+          path: gitleaks-report.sarif
