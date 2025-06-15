@@ -40,17 +40,35 @@ public class UserService
 
     public async Task CreateUserAsync(NewUserDTO req)
     {
+        _logger.LogInformation("Attempting to create user {UserName} with email {Email}", req.UserName, req.Email);
+
         if (await _userRepository.GetByEmailAsync(req.Email) != null)
+        {
+            _logger.LogWarning("Email {Email} already in use", req.Email);
+
             throw new BusinessRulesException("Email already in use");
+        }
 
         if (await _userRepository.GetByUsernameAsync(req.UserName) != null)
+        {
+            _logger.LogWarning("Username {Username} already in use", req.UserName);
+
             throw new BusinessRulesException("Username already in use");
+        }
 
         if (await _userRepository.GetByNifAsync(req.Nif) != null)
+        {
+            _logger.LogWarning("Nif {Nif} already registered", req.Nif);
+
             throw new BusinessRulesException("NIF is already registered");
+        }
 
         if (await _userRepository.GetByPhoneNumberAsync(req.PhoneNumber) != null)
+        {
+            _logger.LogWarning("Phone number {Phone} already in use", req.PhoneNumber);
+
             throw new BusinessRulesException("Phone number is already in use");
+        }
 
         try
         {
@@ -93,6 +111,8 @@ public class UserService
             var authority = Environment.GetEnvironmentVariable("Keycloak__Authority")?.TrimEnd('/');
             var keycloakUrl = authority.Replace("/realms/library", "");
 
+            _logger.LogInformation("Sending user creation request to Keycloak...");
+
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
 
@@ -127,11 +147,15 @@ public class UserService
                 throw new BusinessRulesException("Failed to find user in Keycloak after creation.");
             }
 
+            _logger.LogInformation("User {UserName} created successfully in Keycloak with ID {UserId}", req.UserName, userId);
+
             _httpClient.DefaultRequestHeaders.Authorization = null;
 
             await _userRepository.AddAsync(user);
             await _workUnit.CommitAsync();
             await _auditLogger.LogAsync($"User {req.UserName} created successfully", "UserCreation");
+            _logger.LogInformation("User {UserName} persisted in local database", req.UserName);
+
         }
         catch (Exception ex)
         {
@@ -141,6 +165,8 @@ public class UserService
 
     private async Task<string> GetAdminTokenAsync()
     {
+        _logger.LogInformation("Requesting Keycloak admin token...");
+
         var authority = Environment.GetEnvironmentVariable("Keycloak__Authority")?.TrimEnd('/');
         var keycloakUrl = authority?.Replace("/realms/library", "");
 
@@ -169,6 +195,8 @@ public class UserService
 
         if (!response.IsSuccessStatusCode)
         {
+            _logger.LogError("Failed to get admin token. Response: {Response}", responseContent);
+
             throw new BusinessRulesException($"Failed to get admin token: {responseContent}");
         }
 

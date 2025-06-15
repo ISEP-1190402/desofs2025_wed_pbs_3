@@ -20,6 +20,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.ApplicationInsights.AspNetCore.Extensions;
 
 namespace LibraryOnlineRentalSystem
 {
@@ -48,10 +49,10 @@ namespace LibraryOnlineRentalSystem
         {
             services.AddLogging(loggingBuilder => { loggingBuilder.AddConsole(); });
 
-            /*services.AddApplicationInsightsTelemetry(options =>
+            services.AddApplicationInsightsTelemetry(options =>
             {
-                options.ConnectionString = Configuration["Telemetry_InstrumentionKey"];
-            });*/
+                options.ConnectionString = Environment.GetEnvironmentVariable("Telemetry_InstrumentationKey");
+            });
 
             services.AddControllersWithViews();
 

@@ -55,6 +55,7 @@ public class RentalService
             }
 
             // Create the rental with validation
+            Rental.ConfigureLogger(_logger);
             var rental = Rental.Create(
                 id,
                 startDate,
@@ -80,7 +81,7 @@ public class RentalService
 
             // Set status to Active
             rental.MarkAsActive();
-        
+
             // Save changes
             await _rentalRepository.AddAsync(rental);
             await _workUnity.CommitAsync();
@@ -124,7 +125,7 @@ public class RentalService
     {
         return await UpdateRentalStatusAsync(rentalID, "cancelled");
     }
-    
+
     public async Task<RentalDTO> UpdateRentalStatusAsync(string rentalId, string newStatus)
     {
         if (string.IsNullOrWhiteSpace(rentalId))
@@ -205,7 +206,7 @@ public class RentalService
             _logger.LogDebug("Attempting to retrieve rental with ID: {RentalId}", id);
             var rentalId = new RentalID(id);
             var rental = await _rentalRepository.GetByIdAsync(rentalId);
-            
+
             if (rental == null)
             {
                 _logger.LogWarning("Rental with ID {RentalId} not found", id);
@@ -241,7 +242,7 @@ public class RentalService
 
         _logger.LogDebug("Fetching rentals for user: {UserEmail}", userEmail);
         var rentals = await _rentalRepository.GetAllAsyncOfUser(userEmail);
-        
+
         if (rentals == null || !rentals.Any())
         {
             _logger.LogInformation("No rentals found for user: {UserEmail}", userEmail);
@@ -287,7 +288,7 @@ public class RentalService
         var rentals = await _rentalRepository.GetAllCompleteRentalsOfUserAssync(userEmail);
         return HandleRentalsResult(rentals, userEmail, "completed");
     }
-    
+
     private async Task ValidateUserEmailAsync(string userEmail)
     {
         if (string.IsNullOrWhiteSpace(userEmail))
@@ -304,7 +305,7 @@ public class RentalService
             throw new BusinessRulesException($"User with email {userEmail} not found");
         }
     }
-    
+
     private List<RentalDTO> HandleRentalsResult(List<Rental> rentals, string userEmail, string rentalType)
     {
         if (rentals == null || !rentals.Any())
@@ -313,7 +314,7 @@ public class RentalService
             return new List<RentalDTO>();
         }
 
-        _logger.LogInformation("Found {Count} {RentalType} rentals for user: {UserEmail}", 
+        _logger.LogInformation("Found {Count} {RentalType} rentals for user: {UserEmail}",
             rentals.Count, rentalType, userEmail);
         return rentals.ConvertAll(rental => rental.toDTO());
     }
@@ -337,7 +338,7 @@ public class RentalService
 
         _logger.LogDebug("Fetching rentals for user: {Email}", user.Email.EmailAddress);
         var rentals = await _rentalRepository.GetAllAsyncOfUser(user.Email.EmailAddress);
-        
+
         if (rentals == null || !rentals.Any())
         {
             _logger.LogInformation("No rentals found for user: {Email}", user.Email.EmailAddress);
