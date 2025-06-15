@@ -11,16 +11,16 @@ env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 5000
   PROJECT_DIR: ./LibraryOnlineRentalSystem
-  JAVA_HOME: "${{ secrets.JAVA_HOME }}"
-  Keycloak_Audience: "${{ secrets.KEYCLOAK_AUDIENCE }}"
-  Keycloak_Authority: "${{ secrets.KEYCLOAK_AUTHORITY }}"
-  Keycloak_ClientId: "${{ secrets.KEYCLOAK_CLIENTID }}"
-  Keycloak_Password: "${{ secrets.KEYCLOAK_PASSWORD }}"
-  Keycloak_URL: "${{ secrets.KEYCLOAK_URL }}"
-  Keycloak_Username: "${{ secrets.KEYCLOAK_USERNAME }}"
-  KEYCLOAK_ADMIN: "${{ secrets.KEYCLOAK_ADMIN }}"
-  KEYCLOAK_ADMIN_PASSWORD: "${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}"
-  LibraryDatabase: "${{ secrets.LIBRARYDATABASE }}"
+  JAVA_HOME: ${{ secrets.JAVA_HOME }}
+  Keycloak_Audience: ${{ secrets.KEYCLOAK_AUDIENCE }}
+  Keycloak_Authority: ${{ secrets.KEYCLOAK_AUTHORITY }}
+  Keycloak_ClientId: ${{ secrets.KEYCLOAK_CLIENTID }}
+  Keycloak_Password: ${{ secrets.KEYCLOAK_PASSWORD }}
+  Keycloak_URL: ${{ secrets.KEYCLOAK_URL }}
+  Keycloak_Username: ${{ secrets.KEYCLOAK_USERNAME }}
+  KEYCLOAK_ADMIN: ${{ secrets.KEYCLOAK_ADMIN }}
+  KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
+  LibraryDatabase: ${{ secrets.LIBRARYDATABASE }}
 
 jobs:
   dast-zap:
@@ -53,16 +53,16 @@ jobs:
             -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
             -e ASPNETCORE_URLS=http://+:${{ env.API_PORT }} \
             -e ASPNETCORE_ENVIRONMENT=Development \
-            -e JAVA_HOME="${{ env.JAVA_HOME }}" \
-            -e Keycloak_Audience="${{ env.Keycloak_Audience }}" \
-            -e Keycloak_Authority="${{ env.Keycloak_Authority }}" \
-            -e Keycloak_ClientId="${{ env.Keycloak_ClientId }}" \
-            -e Keycloak_Password="${{ env.Keycloak_Password }}" \
-            -e Keycloak_URL="${{ env.Keycloak_URL }}" \
-            -e Keycloak_Username="${{ env.Keycloak_Username }}" \
-            -e KEYCLOAK_ADMIN="${{ env.KEYCLOAK_ADMIN }}" \
-            -e KEYCLOAK_ADMIN_PASSWORD="${{ env.KEYCLOAK_ADMIN_PASSWORD }}" \
-            -e LibraryDatabase="${{ env.LibraryDatabase }}" \
+            -e JAVA_HOME="${JAVA_HOME}" \
+            -e Keycloak_Audience="${Keycloak_Audience:-dev}" \
+            -e Keycloak_Authority="${Keycloak_Authority:-dev}" \
+            -e Keycloak_ClientId="${Keycloak_ClientId:-dev}" \
+            -e Keycloak_Password="${Keycloak_Password:-dev}" \
+            -e Keycloak_URL="${Keycloak_URL:-dev}" \
+            -e Keycloak_Username="${Keycloak_Username:-dev}" \
+            -e KEYCLOAK_ADMIN="${KEYCLOAK_ADMIN:-admin}" \
+            -e KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-admin}" \
+            -e LibraryDatabase="${LibraryDatabase:-dev}" \
             ${{ env.DOCKER_IMAGE_NAME }}
 
       - name: Wait for API to be ready and get network info
@@ -73,6 +73,7 @@ jobs:
           echo "API Container IP: $API_IP"
           docker ps | grep api
           docker logs api --tail 20
+          echo "Testing network connectivity..."
           docker run --rm --network zap-net alpine:latest ping -c 3 $API_IP || echo "Ping failed"
 
       - name: Test API connectivity with retries
@@ -85,14 +86,16 @@ jobs:
               curl -v --connect-timeout 10 --max-time 30 \
               http://$API_IP:${{ env.API_PORT }}$endpoint || echo "Failed to connect to $endpoint"
           done
+          echo "Final connectivity test..."
+          docker run --rm --network zap-net curlimages/curl:latest \
+            curl -I --connect-timeout 10 --max-time 30 \
+            http://$API_IP:${{ env.API_PORT }} && echo "API is accessible!" || echo "API is not accessible"
 
-      - name: Run OWASP ZAP Scan with enhanced configuration
+      - name: Run OWASP ZAP Scan
         run: |
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
           echo "Starting ZAP scan against API at: http://$API_IP:${{ env.API_PORT }}"
-          mkdir -p zap-work
-          chmod -R 777 zap-work
-
+          mkdir -p zap-work && chmod -R 777 zap-work
           cat > zap-work/automation.yaml << 'EOF'
           env:
             contexts:
@@ -100,7 +103,6 @@ jobs:
                 urls: ["http://TARGET_URL:TARGET_PORT"]
                 includePaths: 
                   - "http://TARGET_URL:TARGET_PORT/.*"
-                excludePaths: []
             parameters:
               failOnError: false
               failOnWarning: false
@@ -111,35 +113,30 @@ jobs:
                 context: "Default"
                 url: "http://TARGET_URL:TARGET_PORT"
                 maxDuration: 5
-                maxDepth: 5
             - type: activeScan  
               parameters:
                 context: "Default"
                 policy: "Default Policy"
                 maxDuration: 10
+                inScopeOnly: true
             - type: report
               parameters:
                 template: "traditional-json"
                 reportDir: "/zap/wrk"
                 reportFile: "report_json.json"
-              risks: [high, medium, low, info]
             - type: report
               parameters:
                 template: "traditional-html"
                 reportDir: "/zap/wrk"
                 reportFile: "report_html.html"
-              risks: [high, medium, low, info]
             - type: report
               parameters:
                 template: "traditional-md"
                 reportDir: "/zap/wrk"
                 reportFile: "report_md.md"
-              risks: [high, medium, low, info]
           EOF
-
           sed -i "s/TARGET_URL/$API_IP/g" zap-work/automation.yaml
           sed -i "s/TARGET_PORT/${{ env.API_PORT }}/g" zap-work/automation.yaml
-
           docker run --rm \
             --network zap-net \
             -v ${{ github.workspace }}/zap-work:/zap/wrk/:rw \
