@@ -17,6 +17,8 @@ public class AuthController : ControllerBase
         _logger = logger;
     }
 
+    // POST: api/auth/login
+    // Access: Public
     [HttpPost("login")]
     public async Task<ActionResult<AuthResponseDTO>> Auth([FromBody] AuthRequestDTO request)
     {
@@ -37,6 +39,8 @@ public class AuthController : ControllerBase
         }
     }
 
+    // POST: api/auth/refresh
+    // Access: Public
     [HttpPost("refresh")]
     public async Task<ActionResult<AuthResponseDTO>> RefreshToken([FromBody] RefreshTokenRequestDTO request)
     {

@@ -4,17 +4,18 @@
 
 ![azure-rg.png](Pictures/azure-rg.png)
 
-* For this project, a virtual machine was created in Azure to serve as a production environment for the system.
-* All the system components mentioned in the following section have been implemented on the machine.
-* Only the API and DB are accessible externally and the keycloak is restricted to the internal network.
+## libraryrentalsystem - Azure Web App
 
+[Open on Azure](https://login.microsoftonline.com/myisepipp.onmicrosoft.com/oauth2/v2.0/authorize?redirect_uri=https%3A%2F%2Fportal.azure.com%2Fsignin%2Findex%2F&response_type=code%20id_token&scope=https%3A%2F%2Fmanagement.core.windows.net%2F%2Fuser_impersonation%20openid%20email%20profile&state=OpenIdConnect.AuthenticationProperties%3Db3x3JwaJnU6DtG2VEWFizwlKcOpqiS8uas3pkzYW080MBqJiohsV_654b-xU9BObQdTrDlG78sK_0NRBPTAkh3QyTvxfR2StVa6f8a_HLU9CWjXiTjEIaqCoO0LhoI4gYYC2baLkwNHgfhM3MW16k_B26SwzG37euMhafOy44683EXkK0wUBuApac7uuZP1IqrBfq3SZhzVdajx8InsedS1xTxbLzY8SMGx2BNUlJQRKMnZdnl2xhKP-vOzbN1_r1xlEJmZvzJpr-3HVLewGaqyqsDG1Lz1eURXQSD_DsChaZFSaMs3VLrwRzqM2PNqignHediBbjagKvXPQ0EHL1nNcbX7euQmPb1bquTnF96flmEGixo3fxZkotm0BoV054HL7oHNhxbIlSxhTlxJgGYXcTXePzsiXChzVsWf72IeXaIpJ6ojJb3yo8iFjR0G3algd7-Fg8QxHdARaYoBLBrddeUjFVMDJs5bA_7qeFjbAYRDgQgaKw8YyMX4pWzh_vIPnH-Rveu770gOE1GU-KMBf9Y3GgWefAhDTJXLcxNrsRLNpUq_95brEVzGFd6GfIAfOOfEdJcWwK9ky2ON29jGolJprbhDbYxcn3GHncuo&response_mode=form_post&nonce=638852215996869749.MDhkN2EyMGMtYzEyMC00NDJmLWFiYzgtMjQ3YTAyNDcxZGYxZmVkN2M0YjYtZTAxMS00NTUwLWE0NzEtNDk1ZWI4NjRjYTE3&client_id=c44b4083-3bb0-49c1-b47d-974e53cbdf3c&site_id=501430&client-request-id=42748f09-8ac3-49f2-869b-8888a4021670&x-client-SKU=ID_NET472&x-client-ver=8.3.0.0)
 
-### Azure Virtual Machine - General Overview - vm-desofs2025-wed-pbs-3
+This resource is used to host our API and is powered by automatic deployment via github actions.
+
+![API - pagina inicial.png](Pictures/API%20-%20pagina%20inicial.png)
 
 ![vm-overview.png](Pictures/vm-overview.png)
 
 | **Property**          | **Value**                                             |
-|-----------------------|-------------------------------------------------------|
+| --------------------- | ----------------------------------------------------- |
 | **VM Name**           | vm-desofs2025-wed-pbs-3                               |
 | **Location**          | West Europe (Zone 1)                                  |
 | **Operating System**  | Windows Server 2022 Datacenter Azure Edition          |
@@ -29,9 +30,9 @@
 
 ### Networking
 
-* Public IP address: 51.105.240.143
-* Virtual network/subnet:keycloakvm-vnet/default
-* DNS name:vm-desofs2025-wed-pbs-3.westeurope.cloudapp.azure.com
+- Public IP address: 51.105.240.143
+- Virtual network/subnet:keycloakvm-vnet/default
+- DNS name:vm-desofs2025-wed-pbs-3.westeurope.cloudapp.azure.com
 
 **Rules**:
 
@@ -60,8 +61,7 @@ Alerts are received by the whole team via email.
 
 ![insights2.png](Pictures/insights2.png)
 
-
-### Backups
+## libraryorsdb-desofs - Azure Database for MySQL flexible server
 
 ![vm_backups.png](Pictures/vm_backups.png)
 
@@ -76,26 +76,24 @@ The backup policy is as follows:
 **Policy Name**: EnhancedPolicy-mb853f
 
 **Backup Frequency and Schedule**:
-* Backups are taken every 4 hours, starting at 08:00 UTC.
-* Each backup job runs for a duration of 12 hours.
 
+- Backups are taken every 4 hours, starting at 08:00 UTC.
+- Each backup job runs for a duration of 12 hours.
 
-**Retention Range**:
+## keycloakvm - Azure Virtual Machine
 
-* Daily Backups: Retained for 30 days.
-* Weekly Backups: Retained for 12 weeks, with backups taken every Sunday.
-* Monthly Backups: Retained for 60 months, with backups taken on the first Sunday of each month.
-* Yearly Backups: Retained for 10 years, with backups taken on the first Sunday of January each year.
+- Daily Backups: Retained for 30 days.
+- Weekly Backups: Retained for 12 weeks, with backups taken every Sunday.
+- Monthly Backups: Retained for 60 months, with backups taken on the first Sunday of each month.
+- Yearly Backups: Retained for 10 years, with backups taken on the first Sunday of January each year.
 
 **Tiering Option**
 
 Tiering is enabled.
 
-* Recovery points are automatically moved to the vault-archive tier based on recommended recovery points, ensuring cost effectiveness by leveraging lower-cost storage for long-term retention.
+- Recovery points are automatically moved to the vault-archive tier based on recommended recovery points, ensuring cost effectiveness by leveraging lower-cost storage for long-term retention.
 
-`
-This configuration leverages Azure Backup’s tiering capabilities to optimise storage costs while maintaining a robust retention strategy for daily, weekly, monthly, and yearly backups
-`
+`This configuration leverages Azure Backup’s tiering capabilities to optimise storage costs while maintaining a robust retention strategy for daily, weekly, monthly, and yearly backups`
 
 ### Disaster Recovery
 
@@ -104,20 +102,20 @@ Use the latest valid backup from the Azure Recovery Services Vault.
 
 **Restore Process**:
 
-* In the Azure portal, navigate to the Recovery Services Vault.
-* Select the backup item for the affected VM.
-* Choose the desired recovery point.
-* Select the option to "Restore to a new VM."
-* Configure the new VM (name, resource group, network, etc.) as needed.
-* Initiate the restore operation; Azure will provision a new VM with the restored disks and configuration.
+- In the Azure portal, navigate to the Recovery Services Vault.
+- Select the backup item for the affected VM.
+- Choose the desired recovery point.
+- Select the option to "Restore to a new VM."
+- Configure the new VM (name, resource group, network, etc.) as needed.
+- Initiate the restore operation; Azure will provision a new VM with the restored disks and configuration.
 
 **Post-Restore Steps**:
 
-* Reapply any custom configurations, environment variables, and secrets.
-* Validate connectivity for API and DB endpoints.
-* Restrict Keycloak access to the internal network as previously configured.
-* Re-enable monitoring via Application Insights by restoring the connection string.
-* Test all system components to confirm full functionality.
+- Reapply any custom configurations, environment variables, and secrets.
+- Validate connectivity for API and DB endpoints.
+- Restrict Keycloak access to the internal network as previously configured.
+- Re-enable monitoring via Application Insights by restoring the connection string.
+- Test all system components to confirm full functionality.
 
 ### Patching
 
@@ -129,119 +127,9 @@ Collected Data:
 
 ![updates.png](Pictures/updates.png)
 
-
-## Components
+To do this, docker was configured with 2 containers, one for keycloak itself and 1 for its database:
 
 Environment variables have been created for all components to allow applications and services to run without exposing passwords in the code:
-
-![env.png](Pictures/env.png)
-
-
----
-
-### DATABASE
-
-The following components were installed to run the Database:
-
-* MYSQL
-
-
-#### Configuration
-
-MySQL has been installed and 2 databases have been configured:
-
-* librarydb - for the API
-* keycloak - for the keycloak
-
-![db demonstration.png](Pictures/db%20demonstration.png)
-
-For the librarydb, on the application we run the following commands to create the database tables:
-
-Removing old schemas:
-
-``` bash
-dotnet ef migrations remove 
-```
-Creating new schemas:
-
-``` bash
-dotnet ef migrations add LibraryOnlineRentalSystem
-```
-
-Updating the database:
-``` bash
-dotnet ef database update
-```
-
----
-
-### API
-
-The following components were installed to run the API:
-
-* IIS
-* dotnet host bundle
-* Github Runner (responsible for deploying the code in IIS)
-
-
-#### Configuration
-
-We started by creating a new site in IIS, as shown in the following printout:
-
-![iis-overview.png](Pictures/iis-overview.png)
-
-A runner was created on github:
-
-![github-runner-for-deploy.png](../Pipeline/Deploy%20Pipeline/github-runner-for-deploy.png).
-
-The runner is responsible for downloading the artefact and installing it in the virtual machine's IIS, specifically in the following directory:
-
-`C:\inetpub\wwwroot\LibraryOnlineRentalSystem`
-
-![iis-deploy-folder.png](Pictures/iis-deploy-folder.png)
-
-![runner-service.png](Pictures/runner-service.png)
-
-This made it possible to deploy the API on the server:
-![api-working-on-server.png](Pictures/api-working-on-server.png)
-
----
-
-### KEYCLOAK
-
-In order to run KEYCLOAK, the following components were installed:
-
-* Java 17
-* Keycloak [keycloak-26.2.5](https://github.com/keycloak/keycloak/releases/download/26.2.5/keycloak-26.2.5.zip)
-
-#### Configuration
-
-The ZIP was downloaded and the application was placed in the following folder:
-
-`C:\Program Files\keycloak-26.2.5`.
-
-Next, the configuration file was changed with the information needed to connect the application to the database:
-
-![keycloak-conf.png](Pictures/keycloak-conf.png)
-
-Config file copy:
-
-[keycloak.conf](Pictures/keycloak.conf)
-
-
-Keycloak website running:
-
-![keycloak_web.png](Pictures/keycloak_web.png)
-
-To make it easier to run the service, the following script was created:
-
-```bash
-@echo off
-cd /d "C:\Program Files\keycloak-26.2.5\bin"
-start "" /min kc.bat start-dev`
-```
-
----
 
 ## AI-libraryrentalsystem - Application Insights
 
