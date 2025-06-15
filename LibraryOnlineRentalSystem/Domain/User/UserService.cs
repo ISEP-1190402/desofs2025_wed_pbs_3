@@ -3,7 +3,9 @@ using LibraryOnlineRentalSystem.Domain.Common;
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using System.Text.Json.Serialization;
+using LibraryOnlineRentalSystem.Domain.Common.Interfaces;
 using static LibraryOnlineRentalSystem.Controllers.UserController;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
@@ -15,35 +17,58 @@ public class UserService
     private readonly IAuditLogger _auditLogger;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
+    private readonly IEmailService _emailService;
+    private readonly ILogger<UserService> _logger;
     private const string DEFAULT_USER_ROLE_NAME = "User";
 
-    public UserService(
-        IUserRepository userRepository,
+    public UserService(IUserRepository userRepository,
         IWorkUnity workUnit,
         IAuditLogger auditLogger,
         HttpClient httpClient,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IEmailService emailService,
+        ILogger<UserService> logger)
     {
         _userRepository = userRepository;
         _workUnit = workUnit;
         _auditLogger = auditLogger;
         _httpClient = httpClient;
         _configuration = configuration;
+        _emailService = emailService;
+        _logger = logger;
     }
 
     public async Task CreateUserAsync(NewUserDTO req)
     {
+        _logger.LogInformation("Attempting to create user {UserName} with email {Email}", req.UserName, req.Email);
+
         if (await _userRepository.GetByEmailAsync(req.Email) != null)
+        {
+            _logger.LogWarning("Email {Email} already in use", req.Email);
+
             throw new BusinessRulesException("Email already in use");
+        }
 
         if (await _userRepository.GetByUsernameAsync(req.UserName) != null)
+        {
+            _logger.LogWarning("Username {Username} already in use", req.UserName);
+
             throw new BusinessRulesException("Username already in use");
-            
+        }
+
         if (await _userRepository.GetByNifAsync(req.Nif) != null)
+        {
+            _logger.LogWarning("Nif {Nif} already registered", req.Nif);
+
             throw new BusinessRulesException("NIF is already registered");
-            
+        }
+
         if (await _userRepository.GetByPhoneNumberAsync(req.PhoneNumber) != null)
+        {
+            _logger.LogWarning("Phone number {Phone} already in use", req.PhoneNumber);
+
             throw new BusinessRulesException("Phone number is already in use");
+        }
 
         try
         {
@@ -65,7 +90,7 @@ public class UserService
                 },
                 requiredActions = new string[] { }
             };
-            
+
             // Create local user without password (handled by Keycloak)
             var user = new User(
                 Guid.NewGuid().ToString(),
@@ -85,6 +110,8 @@ public class UserService
 
             var authority = Environment.GetEnvironmentVariable("Keycloak__Authority")?.TrimEnd('/');
             var keycloakUrl = authority.Replace("/realms/library", "");
+
+            _logger.LogInformation("Sending user creation request to Keycloak...");
 
             _httpClient.DefaultRequestHeaders.Authorization =
                 new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", adminToken);
@@ -120,11 +147,15 @@ public class UserService
                 throw new BusinessRulesException("Failed to find user in Keycloak after creation.");
             }
 
+            _logger.LogInformation("User {UserName} created successfully in Keycloak with ID {UserId}", req.UserName, userId);
+
             _httpClient.DefaultRequestHeaders.Authorization = null;
 
             await _userRepository.AddAsync(user);
             await _workUnit.CommitAsync();
             await _auditLogger.LogAsync($"User {req.UserName} created successfully", "UserCreation");
+            _logger.LogInformation("User {UserName} persisted in local database", req.UserName);
+
         }
         catch (Exception ex)
         {
@@ -134,6 +165,8 @@ public class UserService
 
     private async Task<string> GetAdminTokenAsync()
     {
+        _logger.LogInformation("Requesting Keycloak admin token...");
+
         var authority = Environment.GetEnvironmentVariable("Keycloak__Authority")?.TrimEnd('/');
         var keycloakUrl = authority?.Replace("/realms/library", "");
 
@@ -162,6 +195,8 @@ public class UserService
 
         if (!response.IsSuccessStatusCode)
         {
+            _logger.LogError("Failed to get admin token. Response: {Response}", responseContent);
+
             throw new BusinessRulesException($"Failed to get admin token: {responseContent}");
         }
 
@@ -210,6 +245,21 @@ public class UserService
         );
     }
 
+    public async Task<UserProfileDTO?> GetUserByUsernameAsync(string username)
+    {
+        var user = await _userRepository.GetByUsernameAsync(username);
+        if (user == null) return null;
+
+        return new UserProfileDTO(
+            user.Name.FullName,
+            user.Email.EmailAddress,
+            user.Nif.TaxID,
+            user.UserName.Tag,
+            user.Biography.Description,
+            user.PhoneNumber.Number
+        );
+    }
+
     public async Task<List<UserDTO>> GetAllUsersAsync()
     {
         var users = await _userRepository.GetAllAsync();
@@ -230,7 +280,7 @@ public class UserService
         if (user == null)
             throw new BusinessRulesException("User not found");
 
-        await UpdateUserInternal(user, request);
+        await UpdateUserInternal(user, request, isAdminUpdate: true);
     }
 
     public async Task UpdateUserByUsernameAsync(string username, UpdateUserRequest request)
@@ -239,46 +289,107 @@ public class UserService
         if (user == null)
             throw new BusinessRulesException("User not found");
 
+        // Prevent username changes through this endpoint
+        if (!string.IsNullOrEmpty(request.UserName) && request.UserName != username)
+            throw new BusinessRulesException("You are not allowed to change your username");
+
+        await UpdateUserInternal(user, request, isAdminUpdate: false);
+    }
+
+    public async Task UpdateUserByEmailAsync(string email, UpdateUserRequest request)
+    {
+        var user = await _userRepository.GetByEmailAsync(email);
+        if (user == null)
+            throw new BusinessRulesException("User not found");
+
         await UpdateUserInternal(user, request);
     }
 
-    private async Task UpdateUserInternal(User user, UpdateUserRequest request)
+    protected virtual async Task UpdateUserInternal(User user, UpdateUserRequest request, bool isAdminUpdate = false)
     {
-        if (request.Biography != null)
-            user.ChangeBiography(request.Biography);
+        var changes = new List<string>();
+        string oldEmail = user.Email.EmailAddress;
+        bool emailChanged = false;
 
-        if (request.PhoneNumber != null)
+        if (request.Biography != null && request.Biography != user.Biography.Description)
+        {
+            changes.Add($"<li>Biography updated</li>");
+            user.ChangeBiography(request.Biography);
+        }
+
+        if (request.PhoneNumber != null && request.PhoneNumber != user.PhoneNumber.Number)
         {
             var existingUserWithPhone = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber);
             if (existingUserWithPhone != null && existingUserWithPhone.Id.AsString() != user.Id.AsString())
                 throw new BusinessRulesException("Phone number is already in use");
 
+            changes.Add($"<li>Phone number changed from {user.PhoneNumber.Number} to {request.PhoneNumber}</li>");
             user.ChangePhoneNumber(request.PhoneNumber);
         }
 
-        if (request.Name != null)
+        if (request.Name != null && request.Name != user.Name.FullName)
+        {
+            changes.Add($"<li>Name changed from {user.Name.FullName} to {request.Name}</li>");
             user.ChangeName(request.Name);
-            
-        if (request.Email != null)
+        }
+
+        if (request.Email != null && request.Email != user.Email.EmailAddress)
         {
             var existingUserWithEmail = await _userRepository.GetByEmailAsync(request.Email);
             if (existingUserWithEmail != null && existingUserWithEmail.Id.AsString() != user.Id.AsString())
-                throw new BusinessRulesException("Email is already in use by another user");
-                
+                throw new BusinessRulesException("Email is already in use");
+
+            changes.Add($"<li>Email changed from {user.Email.EmailAddress} to {request.Email}</li>");
             user.ChangeEmail(request.Email);
+            emailChanged = true;
         }
 
-        if (request.Nif != null)
+        if (request.Nif != null && request.Nif != user.Nif.TaxID)
         {
             var existingUserWithNif = await _userRepository.GetByNifAsync(request.Nif);
             if (existingUserWithNif != null && existingUserWithNif.Id.AsString() != user.Id.AsString())
-                throw new BusinessRulesException("NIF is already registered to another user");
+                throw new BusinessRulesException("NIF is already in use");
 
+            changes.Add($"<li>NIF changed from {user.Nif.TaxID} to {request.Nif}</li>");
             user.ChangeNif(request.Nif);
         }
 
-        await _workUnit.CommitAsync();
-        await _auditLogger.LogAsync($"User {user.Id.AsString()} updated profile.", "ProfileUpdate");
+        // Username changes are not allowed
+        if (!string.IsNullOrEmpty(request.UserName) && request.UserName != user.UserName.Tag)
+        {
+            throw new BusinessRulesException("Username cannot be changed");
+        }
+
+        if (changes.Any())
+        {
+            await _workUnit.CommitAsync();
+            await _auditLogger.LogAsync($"User {user.Id.AsString()} updated profile with changes: {string.Join(", ", changes)}", "ProfileUpdate");
+
+            // Send email notifications
+            try
+            {
+                if (emailChanged)
+                {
+                    await _emailService.SendEmailUpdateNotificationAsync(
+                        oldEmail,
+                        user.Email.EmailAddress,
+                        user.UserName.Tag);
+                }
+
+                if (changes.Count > 0)
+                {
+                    await _emailService.SendProfileUpdateNotificationAsync(
+                        user.Email.EmailAddress,
+                        user.UserName.Tag,
+                        string.Join("\n", changes));
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"Error sending email notifications for user {user.Id.AsString()}");
+                // Don't fail the request if email sending fails
+            }
+        }
     }
 
     public bool UserExists(string userEmail)
