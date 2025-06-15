@@ -161,8 +161,6 @@ usando var ssh = new MySsh.Client("host", porta);
 
 ```
 
-
-
 **Qual é o Risco?**
 
 Protocolos de texto simples, como ftp, telnet, ou httpnão criptografam os dados transportados, bem como não possuem a capacidade de construir uma conexão autenticada. Isso significa que um invasor capaz de rastrear o tráfego da rede pode ler, modificar ou corromper o conteúdo transportado. Esses protocolos não são seguros, pois expõem os aplicativos a uma ampla gama de riscos:
@@ -189,5 +187,69 @@ CVE-2019-6169
 CVE-2019-12327
 CVE-2019-11065
 
-
 ## Dependecias ##
+
+**Dependencia com falha Log4net:**
+
+![alt text](depen-1.png)
+
+**Solução compatível**
+
+Upgrade log4net to version 2.0.10 or higher.
+
+**Onde esta o Risco?**
+
+Log4net
+
+**Nivel do Risco**
+
+- Alto
+
+**Qual é o Risco?**
+
+njeção XXE é um tipo de ataque contra um aplicativo que analisa entradas XML. XML é uma linguagem de marcação que define um conjunto de regras para codificar documentos em um formato legível tanto para humanos quanto para máquinas. Por padrão, muitos processadores XML permitem a especificação de uma entidade externa, um URI, que é desreferenciado e avaliado durante o processamento XML. Quando um documento XML está sendo analisado, o analisador pode fazer uma solicitação e incluir o conteúdo do URI especificado dentro do documento XML.
+
+Os ataques podem incluir a divulgação de arquivos locais, que podem conter dados confidenciais, como senhas ou dados privados do usuário, usando esquemas de arquivo ou caminhos relativos no identificador do sistema.
+
+Por exemplo, abaixo está um documento XML de exemplo, contendo um elemento XML: nome de usuário.
+```
+<xml>
+<?xml version="1.0" encoding="ISO-8859-1"?>
+   <username>John</username>
+</xml>
+```
+Uma entidade XML externa - xxe, é definida usando um identificador de sistema e está presente em um cabeçalho DOCTYPE. Essas entidades podem acessar conteúdo local ou remoto. Por exemplo, o código abaixo contém uma entidade XML externa que buscaria o conteúdo de /etc/passwde o exibiria ao usuário renderizado por username.
+```
+<xml>
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!DOCTYPE foo [
+   <!ENTITY xxe SYSTEM "file:///etc/passwd" >]>
+   <username>&xxe;</username>
+</xml>
+```
+
+CVE-2018-1285
+
+**Dependencia com falha JWE:**
+
+**Dependencia com a falha de segurança:**
+
+![alt text](depe-2.png)
+![alt text](depe-3.png)
+
+**Onde esta o Risco?**
+
+Upgrade Microsoft.IdentityModel.JsonWebTokens to version 5.7.0, 6.34.0, 7.1.2 or higher.
+
+**Nivel do Risco**
+
+- Medio
+
+**Qual é o Risco?**
+
+As versões afetadas deste pacote são vulneráveis ​​à Exaustão de Recursos ao processar tokens JSON Web Encryption (JWE) com alta taxa de compressão. Um invasor pode causar alocação excessiva de memória e tempo de processamento durante a descompressão, levando a uma condição de negação de serviço. Isso só é explorável se o invasor tiver acesso à chave de criptografia pública registrada no IDP (Entra ID).
+
+CVE-2024-21319
+
+Obs: Esses foram as vulnerabilidades encontradas no back-end, identificada pelo sonar e snky. Haja vista que contem parte de codigo-fonte e dependencias. Nas pipelines iremos ver tambem que foram identificadas algumas que pertence ao front-end. Contudo nos não estamos a utilizar neste projeto o front.
+
