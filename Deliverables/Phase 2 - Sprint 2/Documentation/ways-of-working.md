@@ -30,7 +30,7 @@
 - **camelCase** for:
   - Method parameters (e.g., `userId`, `bookTitle`)
   - Private fields (e.g., `_userRepository`)
-  - Local variables
+  - Local variables (e.g., `response` in `BookController.GetAllBooks`, `currentUserId` in `UserController`, `guid` in `UserIdTest`)
 
 - **UPPER_CASE** for constants (e.g., `MAX_RETRY_ATTEMPTS`)
 
@@ -61,17 +61,90 @@
   {}
   ```
 
-- **Value Objects**: Immutable objects with validation
+- **Value Objects**: Immutable objects with validation (e.g., `Email`, `PhoneNumber`, `UserName`)
   ```csharp
-  public class Email : IValueObject
-  {}
+
+  public class Email : IValueObject, ICloneable
+  {
+      public string EmailAddress { get; }
+      
+  }
+  
+  public class PhoneNumber : IValueObject, ICloneable
+  {
+      public string Number { get; }
+      
+  }
   ```
 
-- **Aggregates**: Transactional boundaries
-- **Repositories**: Persistence abstraction
+- **Aggregates**: Transactional boundaries that ensure consistency and enforce business rules
   ```csharp
-  public interface IUserRepository
-  {}
+  // Rental aggregate root with transactional boundaries
+  public class Rental : Entity<RentalID>, IAggregateRoot
+  {
+      public RentalID Id { get; private set; }
+      public RentalStartDate StartDate { get; private set; }
+      public RentalEndDate EndDate { get; private set; }
+      public RentedBookID RentedBookIdentifier { get; private set; }
+      public RentalStatus StatusOfRental { get; private set; }
+      public UserEmail EmailUser { get; private set; }
+
+  }
+  ```
+  
+  **Key Points**:
+  - The aggregate root (Rental) controls all modifications to its state
+  - Business rules are enforced within the aggregate
+  - External access to the aggregate's state is read-only (private setters)
+  - All operations that modify state are explicit methods with validation
+
+- **Repositories**: Persistence abstraction for aggregates
+  ```csharp
+  public interface IRentalRepository
+  {
+      Task<Rental> GetByIdAsync(string id);
+      Task<List<Rental>> GetAllAsync();
+      Task AddAsync(Rental rental);
+      Task UpdateAsync(Rental rental);
+      Task<int> GetBusyAmmountOfBooks(RentedBookID bookId, RentalStartDate startDate, RentalEndDate endDate);
+  }
+  ```
+  
+  **Usage in Application Service**:
+  ```csharp
+  public class RentalService
+  {
+      private readonly IRentalRepository _rentalRepository;
+      private readonly IWorkUnity _workUnity;
+
+      public async Task<RentalDTO> CreateRentalAsync(CreatedRentalDTO rentalDto)
+      {
+          // Transaction boundary starts
+          using (var transaction = await _workUnity.BeginTransactionAsync())
+          {
+              try
+              {
+                  var rental = new Rental(
+                      Guid.NewGuid().ToString(),
+                      rentalDto.StartDate,
+                      rentalDto.EndDate,
+                      rentalDto.ReservedBookId,
+                      rentalDto.UserEmail
+                  );
+
+                  await _rentalRepository.AddAsync(rental);
+                  await _workUnity.CommitAsync();
+                  
+                  return rental.ToDTO();
+              }
+              catch (Exception)
+              {
+                  await _workUnity.RollbackAsync();
+                  throw;
+              }
+          }
+      }
+  }
   ```
 
 - **Domain Services**: Cross-aggregate operations
@@ -461,82 +534,108 @@ public class UpdateUserRequest
 
 ### 3.10 Security Guidelines
 
-#### 3.10.1 Input Validation
-- **Regex-based validation** for all user inputs
-- **Character whitelisting** for specific fields
-- **Length validation** with minimum/maximum constraints
-- **Format validation** for specialized fields (email, phone, NIF)
-- **Pattern matching** for complex validation rules
-- **No whitespace** allowed in usernames
-- **Strict character sets** for each field type
+#### 3.10.1 Authentication & Authorization
+- **Keycloak Integration**:
+  - Centralized authentication using Keycloak
+  - OAuth 2.0 and OpenID Connect protocols
+  - Role-based access control (RBAC)
+  - JWT token validation for all API endpoints
+  - Token refresh mechanism implementation
+  - Secure token storage
+  - Short-lived access tokens with secure refresh tokens
+  - Token revocation on logout
+  - Multi-factor authentication (MFA) support
+  - Account lockout after failed attempts
 
-#### 3.10.2 Data Sanitization
-- **HTML encoding** for all string outputs
-- **SQL parameterization** for database queries
-- **XSS protection** through content encoding
-- **CSRF protection** enabled by default
-- **Rate limiting** for API endpoints
-- **Input encoding** for special characters
-- **Output encoding** context-aware
+#### 3.10.2 Input Validation
+- **Multi-layer Validation**:
+  - Client-side validation for UX
+  - Server-side validation in controllers using Data Annotations
+  - Domain-level validation in value objects
+  - Database constraints as final safety net
+- **Validation Rules**:
+  - Regex-based validation for all inputs
+  - Character whitelisting for specific fields
+  - Length validation with min/max constraints
+  - Format validation for emails, phones, NIFs
+  - NoSQL injection prevention
+  - File upload validation (type, size, content)
+  - Input sanitization before processing
 
-#### 3.10.3 Authentication & Authorization
-- **JWT with Keycloak** integration
-- **Secure token** storage in HTTP-only cookies
-- **Token refresh** mechanism
-- **Password hashing** with BCrypt
-- **Role-based access control (RBAC)**
-- **Policy-based** authorization
-- **Resource-based** checks
-- **Secure token** validation
-- **Session management** best practices
+#### 3.10.3 Data Protection
+- **Encryption**:
+  - Data at rest encryption
+  - TLS 1.2+ for data in transit
+  - Secure key management
+  - Certificate management
+- **Database Security**:
+  - Principle of least privilege for DB users
+  - Encrypted database connections
+  - Sensitive data encryption
+  - Regular security patches
 
-#### 3.10.4 Data Protection
-- **Encryption** of sensitive data
-- **HTTPS** enforced
-- **CSRF protection**
-- **CORS** policy configuration
-- **Content Security Policy (CSP)**
-- **X-Content-Type-Options**
-- **X-Frame-Options**
-- **Strict-Transport-Security**
-- **X-XSS-Protection**
-- **Referrer-Policy**
-- **Permissions-Policy**
-- **Cache-Control**
+#### 3.10.4 API Security
+- **HTTPS**: Enforced in all environments
+- **CORS**: Strict origin validation
+- **Headers**: Security headers (HSTS, CSP, XSS-Protection)
+- **Rate Limiting**: Protection against brute force attacks
+- **Request Validation**: All input sanitized and validated
+- **API Versioning**: Clear versioning strategy
+- **Request/Response Logging**: Sensitive data redaction
+- **API Gateway**: WAF integration
 
 #### 3.10.5 Security Headers
-- **Content Security Policy (CSP)**: Strict policy to prevent XSS
-- **X-Content-Type-Options**: Prevent MIME type sniffing
-- **X-Frame-Options**: Prevent clickjacking
-- **Strict-Transport-Security**: Enforce HTTPS
-- **X-XSS-Protection**: Enable browser XSS protection
-- **Referrer-Policy**: Control referrer information
-- **Permissions-Policy**: Restrict browser features
-- **Cache-Control**: Prevent caching of sensitive data
+- **Content-Security-Policy**: `default-src 'self'`
+- **X-Content-Type-Options**: `nosniff`
+- **X-Frame-Options**: `DENY`
+- **Strict-Transport-Security**: `max-age=31536000; includeSubDomains`
+- **X-XSS-Protection**: `1; mode=block`
+- **Referrer-Policy**: `strict-origin-when-cross-origin`
+- **Permissions-Policy**: `camera=(), microphone=(), geolocation=()`
+- **Cache-Control**: `no-store, no-cache, must-revalidate`
 
-#### 3.10.6 Dependencies & Security
-- **Dependabot** for automated security updates
-- **Regular security audits**
-- **License compliance** checks
-- **Vulnerability monitoring**
-- **Automated dependency scanning**
-- **Security headers** implementation
-- **Regular dependency updates**
-- **Security patches** applied promptly
-- **Security scanning** tools integration
+#### 3.10.6 Dependency Management
+- **Automated Scans**:
+  - Dependabot for dependency updates
+  - OWASP Dependency-Check
+  - License compliance checks
+  - Regular security audits
+- **Patching**:
+  - Critical patches within 24 hours
+  - Regular dependency updates
+  - Vulnerability monitoring
 
-#### 3.10.7 Security Best Practices
-- **Never trust user input**
-- **Validate all inputs**
-- **Sanitize all outputs**
-- **Use parameterized queries**
-- **Implement proper error handling**
-- **Log security events**
-- **Regular security testing**
-- **Keep dependencies updated**
-- **Follow principle of least privilege**
-- **Implement proper session management**
-- **Regular security code reviews**
+#### 3.10.7 Security Testing
+- **SAST**: Static Application Security Testing
+- **DAST**: Dynamic Application Security Testing
+- **IAST**: Interactive Application Security Testing
+- **SCA**: Software Composition Analysis
+- **Penetration Testing**: Regular security assessments
+- **Red Team Exercises**: Simulated attacks
+
+#### 3.10.8 Incident Response
+- **Monitoring**:
+  - Real-time security event monitoring
+  - Automated alerting for suspicious activities
+  - Log analysis for security events
+- **Response Plan**:
+  - Documented incident response procedures
+  - Designated security contacts
+  - Post-incident review process
+  - Communication plan for breaches
+
+#### 3.10.9 Secure Development Lifecycle
+- **Threat Modeling**: During design phase
+- **Secure Code Reviews**: Mandatory for all changes
+- **Security Testing**: Integrated in CI/CD
+- **Deployment Security**: Infrastructure as Code scanning
+- **Compliance Checks**: Regular security audits
+
+#### 3.10.10 Security Awareness
+- **Training**: Regular security training for developers
+- **Documentation**: Security guidelines and best practices
+- **Code Examples**: Secure coding patterns
+- **Security Champions**: Designated team members
 
 ### 3.11 Deployment
 
