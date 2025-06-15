@@ -63,6 +63,6 @@
 <!-- - Rental renewals -->
 
 ## 5. Future Features
-
-....
-
+Add a book recommendation feature based on rental history
+Add automated reminders for rental expiration
+Add automated monthly subscription of book rental within a category

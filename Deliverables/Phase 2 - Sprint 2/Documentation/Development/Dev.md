@@ -31,6 +31,13 @@ In addition, we can also see a list of the schemas used.
 
 ## Keycloak
 
+During the requirements gathering we thought it was a good idea to have roles in the database but once we started configuring keycloak we realized this was redundant since keycloak already provides role features out of the box. We've removed role table from the app and all logic related with roles other than those configured within the keycloak instance.
+
+We've faced some issues while using a shared database for multiple keycloak instances while developing and testing.
+Overwritten settings and database locks are some examples of the issues faced.
+
+"
+2025-06-15 01:09:03,043 WARN  [org.keycloak.connections.jpa.updater.liquibase.lock.CustomLockService] (main) Lock didn't yet acquired. Will possibly retry to acquire lock. Details: Lock wait timeout exceeded; try restarting transaction [Failed SQL: (1205) SELECT ID FROM keycloak.databasechangeloglock WHERE ID=1000 FOR UPDATE]: liquibase.exception.DatabaseException: Lock wait timeout exceeded; try restarting transaction [Failed SQL: (1205) SELECT ID FROM keycloak.databasechangeloglock WHERE ID=1000 FOR UPDATE]"
 
 
 
