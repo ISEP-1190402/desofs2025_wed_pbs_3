@@ -1,16 +1,5 @@
 #!/bin/bash
 set -e
-
-# Load environment variables from .env file
-if [ -f .env ]; then
-    set -a
-    source .env
-    set +a
-else
-    echo "Missing .env file. Exiting."
-    exit 1
-fi
-
 check_error() {
     if [ $? -ne 0 ]; then
         echo "Error: $1"
@@ -19,19 +8,39 @@ check_error() {
 }
 
 echo "Getting admin token..."
-ADMIN_TOKEN=$(curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/realms/master/protocol/openid-connect/token \
-    -H "Content-Type: application/x-www-form-urlencoded" \
-    -d "username=${KEYCLOAK_ADMIN}" \
-    -d "password=${KEYCLOAK_ADMIN_PASSWORD}" \
-    -d "grant_type=password" \
--d "client_id=admin-cli" | jq -r '.access_token')
+ADMIN_TOKEN=$(curl -X POST http://localhost:8080/realms/master/protocol/openid-connect/token \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "username=${KEYCLOAK_ADMIN}" \
+  -d "password=${KEYCLOAK_ADMIN_PASSWORD}" \
+  -d "grant_type=password" \
+  -d "client_id=admin-cli" | jq -r '.access_token')
 check_error "Failed to get admin token"
 
+echo "Updating master realm admin user email and verification status..."
+
+
+MASTER_ADMIN_ID=$(curl -s -X GET "http://localhost:8080/admin/realms/master/users?username=${KEYCLOAK_ADMIN}" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
+
+check_error "Failed to get master admin user ID"
+
+
+curl -X PUT "http://localhost:8080/admin/realms/master/users/${MASTER_ADMIN_ID}" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "examplegogsi@gmail.com",
+    "emailVerified": true
+  }'
+
+check_error "Failed to update admin user in master realm"
+
+
 echo "Creating realm..."
-curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d '{
+curl -X POST http://localhost:8080/admin/realms \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
     "realm": "library",
     "enabled": true,
     "roles": {
@@ -50,87 +59,81 @@ curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/adm
         }
       ]
     }
-}'
+  }'
 check_error "Failed to create realm"
 
 echo "Waiting for Admin role to be available..."
 until curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-"http://localhost:8082/admin/realms/library/roles/Admin" | grep -q '"name":"Admin"'; do
+  "http://localhost:8080/admin/realms/library/roles/Admin" | grep -q '"name":"Admin"'; do
     sleep 2
     echo "Still waiting for Admin role..."
 done
 echo "Admin role is now available."
 
-echo "Creating client..."
-curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/clients \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d '{
+echo "Creating public client..."
+curl -X POST http://localhost:8080/admin/realms/library/clients \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
     "clientId": "library-client",
-    "secret": "'${KEYCLOAK_CLIENT_SECRET}'",
     "redirectUris": ["http://localhost:8081/*"],
     "webOrigins": ["http://localhost:8081"],
-    "publicClient": false,
+    "publicClient": true,
     "directAccessGrantsEnabled": true,
-    "serviceAccountsEnabled": true,
-    "authorizationServicesEnabled": true,
     "standardFlowEnabled": true,
     "implicitFlowEnabled": true,
-    "protocol": "openid-connect",
-    "clientAuthenticatorType": "client-secret"
-}'
+    "protocol": "openid-connect"
+  }'
 check_error "Failed to create client"
 
+
+
 echo "Creating admin user..."
-curl -ks -X POST https://keycloak-desofs3.westeurope.cloudapp.azure.com:8443/admin/realms/library/users \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d '{
+curl -X POST http://localhost:8080/admin/realms/library/users \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
     "username": "admin",
     "email": "examplegogsi@gmail.com",
-    "enabled": true,
+    "enabled": true,    
     "emailVerified": true,
     "credentials": [{
       "type": "password",
       "value": "'${KEYCLOAK_ADMIN_PASSWORD}'",
       "temporary": false
     }]
-}'
+  }'
 check_error "Failed to create admin user"
 
 echo "Getting admin user ID..."
-ADMIN_USER_ID=$(curl -X GET "http://localhost:8082/admin/realms/library/users?username=admin" \
--H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
+ADMIN_USER_ID=$(curl -X GET "http://localhost:8080/admin/realms/library/users?username=admin" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" | jq -r '.[0].id')
 check_error "Failed to get admin user ID"
 
 echo "Fetching Admin role object..."
 ADMIN_ROLE=$(curl -H "Authorization: Bearer $ADMIN_TOKEN" \
-"http://localhost:8082/admin/realms/library/roles/Admin")
+  "http://localhost:8080/admin/realms/library/roles/Admin")
 check_error "Failed to fetch Admin role"
 
 echo "Assigning admin role to admin user..."
-curl -X POST "http://localhost:8082/admin/realms/library/users/${ADMIN_USER_ID}/role-mappings/realm" \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d "[$ADMIN_ROLE]"
+curl -X POST "http://localhost:8080/admin/realms/library/users/${ADMIN_USER_ID}/role-mappings/realm" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "[$ADMIN_ROLE]"
 check_error "Failed to assign admin role"
 
 echo "Keycloak initialization completed successfully!"
 
 
 
-
-
-
 echo "Updating realm settings..."
 
-curl -X PUT "http://localhost:8082/admin/realms/library" \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d '{
-    "accessTokenLifespan": 7200,              # 2h in seconds
+curl -X PUT "http://localhost:8080/admin/realms/library" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "accessTokenLifespan": 7200,
     "verifyEmail": true,
-    "registrationAllowed": true,
     "smtpServer": {
       "host": "smtp.gmail.com",
       "port": "587",
@@ -142,109 +145,79 @@ curl -X PUT "http://localhost:8082/admin/realms/library" \
       "ssl": false,
       "starttls": true
     }
-}'
+  }'
 check_error "Failed to update realm settings"
 
 echo "Setting password policy..."
 
-curl -X PUT "http://localhost:8082/admin/realms/library" \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d '{
-    "passwordPolicy": "length(12) and upperCase(1) and digits(1) and specialChars(1) and notUsername() and notEmail() and passwordHistory(5)"
-}'
+REALM_JSON=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
+  "http://localhost:8080/admin/realms/library")
+
+echo "Updating password policy..."
+UPDATED_JSON=$(echo "$REALM_JSON" | jq '
+  .passwordPolicy = "length(12) and maxLength(128) and upperCase(1) and digits(1) and specialChars(1) and notUsername() and notEmail() and passwordHistory(5)"
+')
+
+curl -X PUT "http://localhost:8080/admin/realms/library" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$UPDATED_JSON"
+
 check_error "Failed to set password policy"
 
-echo "Enabling brute force protection..."
-
-curl -X PUT "http://localhost:8082/admin/realms/library/attack-detection/brute-force" \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d '{
-    "enabled": true,
-    "failureFactor": 6,
+echo "Updating brute force..."
+curl -X PUT "http://localhost:8080/admin/realms/library" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bruteForceProtected": true,
+    "permanentLockout": false,
+    "failureFactor": 5,
     "waitIncrementSeconds": 60,
-    "maxWaitSeconds": 900,
-    "quickLoginCheckMilliSeconds": 1000,
-    "permanentLockout": false
-}'
-check_error "Failed to enable brute force protection"
+    "maxFailureWaitSeconds": 600,
+    "minimumQuickLoginWaitSeconds": 60,
+    "maxDeltaTimeSeconds": 43200
+    
+  }'
+  
+ echo " Enable event logging"
+curl -X PUT "http://localhost:8080/admin/realms/library" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "eventsEnabled": true,
+    "adminEventsEnabled": true,
+    "adminEventsDetailsEnabled": true,
+    "eventsListeners": ["jboss-logging"],
+    "enabledEventTypes": [
+      "LOGIN",
+      "LOGIN_ERROR",
+      "REGISTER",
+      "UPDATE_PROFILE",
+      "UPDATE_EMAIL",
+      "UPDATE_PASSWORD",
+      "SEND_RESET_PASSWORD",
+      "SEND_VERIFY_EMAIL",
+      "REMOVE_TOTP",
+      "VERIFY_EMAIL",
+      "DELETE_ACCOUNT"
+    ],
+    "eventsExpiration": 0  # Never expire events
+  }'
 
-echo "Configuring required actions (VERIFY_EMAIL and CONFIGURE_TOTP)..."
+echo "Updating themes in realm settings..."
+UPDATED_JSON=$(echo "$REALM_JSON" | jq '
+  .loginTheme = "keycloak" |
+  .accountTheme = "keycloak.v3" |
+  .adminTheme = "keycloak.v2" |
+  .emailTheme = "keycloak"
+')
 
-# Enable VERIFY_EMAIL and set defaultAction=true
-curl -X PUT "http://localhost:8082/admin/realms/library/authentication/required-actions/VERIFY_EMAIL" \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d '{"enabled": true, "defaultAction": true}'
-check_error "Failed to enable VERIFY_EMAIL required action"
-
-# Enable CONFIGURE_TOTP and set defaultAction=true
-curl -X PUT "http://localhost:8082/admin/realms/library/authentication/required-actions/CONFIGURE_TOTP" \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d '{"enabled": true, "defaultAction": true}'
-check_error "Failed to enable CONFIGURE_TOTP required action"
-
-
-echo "Updating user profile to remove required firstName and lastName, and setting default role User..."
-
-# 1. Get current realm config
-REALM_CONFIG=$(curl -s -H "Authorization: Bearer $ADMIN_TOKEN" \
-"http://localhost:8082/admin/realms/library")
-
-# 2. Create updated userProfile config JSON, removing firstName and lastName required
-
-# This example assumes the realm has a "userProfile" field in config (Keycloak >= 17).
-# We override the attributes array to remove required from firstName and lastName.
-
-# Prepare a JSON patch or full updated config.
-
-# For simplicity, just patch defaultRoles to include "User" and assume firstName/lastName not required.
-
-# Extract current defaultRoles
-CURRENT_DEFAULT_ROLES=$(echo "$REALM_CONFIG" | jq '.defaultRoles')
-
-# Update defaultRoles adding "User" if not present
-if ! echo "$CURRENT_DEFAULT_ROLES" | grep -q '"User"'; then
-    UPDATED_DEFAULT_ROLES=$(echo "$CURRENT_DEFAULT_ROLES" | jq '. + ["User"]')
-else
-    UPDATED_DEFAULT_ROLES=$CURRENT_DEFAULT_ROLES
-fi
-
-# Minimal payload: update defaultRoles (to set User as default) and userProfile config to remove required firstName/lastName
-
-# You will need to manually create or update userProfile config JSON based on your current realm setup.
-# Example userProfile JSON disabling required on firstName and lastName:
-
-USER_PROFILE_JSON='{
-    "attributes": [
-        {
-            "name": "firstName",
-            "required": false
-        },
-        {
-            "name": "lastName",
-            "required": false
-        }
-    ]
-}'
-
-# Note: Keycloak does not support partial updates for userProfile via REST API, so you typically need to set the entire userProfile config.
-
-# For now, let's patch defaultRoles only (safe and simpler):
-
-curl -X PUT "http://localhost:8082/admin/realms/library" \
--H "Authorization: Bearer $ADMIN_TOKEN" \
--H "Content-Type: application/json" \
--d "$(echo "$REALM_CONFIG" | jq --argjson roles "$UPDATED_DEFAULT_ROLES" '.defaultRoles = $roles | del(.userProfile)')"
-
-check_error "Failed to update default roles"
-
-echo "IMPORTANT: To fully remove firstName and lastName as required user profile attributes, you must edit the user profile config JSON in Keycloak UI or via the full userProfile API (complex)."
-
-echo "Set default role User for new registrations."
-
+curl -s -X PUT "http://localhost:8080/admin/realms/library" \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d "$UPDATED_JSON"
+check_error "Failed to set realm themes"
 
 echo "Keycloak additional configuration done!"
 
