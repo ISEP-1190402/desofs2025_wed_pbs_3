@@ -1,3 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text.Json;
 using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Domain.Rentals;
@@ -51,26 +54,90 @@ namespace LibraryOnlineRentalSystem
             ConfigureMyServices(services);
             ConfigureCors(services);
 
+            // Clear default claim mappings
+            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+            JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
+
             // Add Keycloak Authentication
             services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.Authority = Environment.GetEnvironmentVariable("Keycloak__Authority");
+                options.Audience = Environment.GetEnvironmentVariable("Keycloak__Audience");
+                options.RequireHttpsMetadata = false; // Set to true in production
+                
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(options =>
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    NameClaimType = "preferred_username",  // Map username from preferred_username claim
+                    RoleClaimType = ClaimTypes.Role  // Will be mapped from realm_access.roles
+                };
+
+                // Handle Keycloak's claims mapping
+                options.Events = new JwtBearerEvents
                 {
-                    options.Authority = Environment.GetEnvironmentVariable("Keycloak__Authority");
-                    options.Audience = Environment.GetEnvironmentVariable("Keycloak__Audience");
-                    options.RequireHttpsMetadata = false; // Set to true in production
-                    options.TokenValidationParameters = new TokenValidationParameters
+                    OnTokenValidated = context =>
                     {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        RoleClaimType = "realm_access.roles"
-                    };
-                });
+                        var identity = context.Principal.Identity as ClaimsIdentity;
+                        
+                        // Map roles from realm_access.roles
+                        var realmAccessClaim = context.Principal.FindFirst("realm_access")?.Value;
+                        if (!string.IsNullOrEmpty(realmAccessClaim))
+                        {
+                            try
+                            {
+                                var realmAccess = JsonDocument.Parse(realmAccessClaim);
+                                if (realmAccess.RootElement.TryGetProperty("roles", out var rolesElement))
+                                {
+                                    foreach (var role in rolesElement.EnumerateArray())
+                                    {
+                                        var roleValue = role.GetString();
+                                        if (!string.IsNullOrEmpty(roleValue))
+                                        {
+                                            identity?.AddClaim(new Claim(ClaimTypes.Role, roleValue));
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                context.Fail($"Failed to parse realm_access claim: {ex.Message}");
+                                return Task.CompletedTask;
+                            }
+                        }
+
+                        // Map email claim if present
+                        var email = context.Principal.FindFirst("email")?.Value;
+                        if (!string.IsNullOrEmpty(email))
+                        {
+                            identity?.AddClaim(new Claim(ClaimTypes.Email, email));
+                        }
+
+                        // Map name identifier (sub claim)
+                        var sub = context.Principal.FindFirst("sub")?.Value;
+                        if (!string.IsNullOrEmpty(sub) && !identity.HasClaim(c => c.Type == ClaimTypes.NameIdentifier))
+                        {
+                            identity?.AddClaim(new Claim(ClaimTypes.NameIdentifier, sub));
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        var errorMessage = $"Token validation failed: {context.Exception.Message}";
+                        Console.WriteLine(errorMessage);
+                        context.Response.Headers.Add("Token-Validation-Error", errorMessage);
+                        return Task.CompletedTask;
+                    }
+                };
+            });
             //services.UseAuthentication(); 
             services.AddAuthorization();
             Console.WriteLine(Environment.GetEnvironmentVariable("Keycloak__Username"));
