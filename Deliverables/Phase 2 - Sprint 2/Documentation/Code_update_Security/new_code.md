@@ -249,7 +249,7 @@ Upgrade Microsoft.IdentityModel.JsonWebTokens to version 5.7.0, 6.34.0, 7.1.2 or
 
 Affected versions of this package are vulnerable to Resource Exhaustion when processing JSON Web Encryption (JWE) tokens with high compression ratio. An attacker can cause excessive memory allocation and processing time during decompression, leading to a denial of service condition. This is only exploitable if the attacker has access to the public encryption key registered with the IDP (Entra ID).
 
-CVE-2024-21319
+CVE-2024--21319
 
 Note: These were the vulnerabilities found in the backend, identified by sonar and snky. Given that it contains part of the source code and dependencies. In the pipelines we will also see that some were identified that belong to the frontend. However, we are not using the frontend in this project.
 
