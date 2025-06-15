@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using LibraryOnlineRentalSystem.Domain.Common;
 
 namespace LibraryOnlineRentalSystem.Domain.User;
@@ -13,22 +15,26 @@ public class Name : ICloneable, IValueObject
 
         name = name.Trim();
 
-        if (name.Any(char.IsDigit))
-            throw new BusinessRulesException("The name cannot contain digits.");
-
-        if (name.Any(char.IsSymbol) || name.Any(char.IsPunctuation))
-            throw new BusinessRulesException("The name cannot contain special characters.");
+        if (name.Length < 1)
+            throw new BusinessRulesException("Name must be at least 1 character long.");
 
         if (name.Length > 40)
-            throw new BusinessRulesException("The name cannot exceed 40 characters.");
+            throw new BusinessRulesException("Name cannot be longer than 40 characters.");
+
+        if (name.Any(char.IsDigit))
+            throw new BusinessRulesException("Name cannot contain digits.");
+
+        if (name.Any(c => !char.IsLetter(c) && !char.IsWhiteSpace(c) && c != '-' && c != '\''))
+            throw new BusinessRulesException("Name can only contain letters, spaces, hyphens, and apostrophes.");
 
         FullName = name;
     }
+
     public string FullName { get; }
 
     public object Clone()
     {
-        return new Name(this.FullName);
+        return new Name(FullName);
     }
 
     public override string ToString()
@@ -40,12 +46,11 @@ public class Name : ICloneable, IValueObject
     {
         if (this == obj) return true;
         if (obj is not Name other) return false;
-
-        return FullName.Equals(other.FullName, StringComparison.InvariantCultureIgnoreCase);
+        return string.Equals(FullName, other.FullName, StringComparison.OrdinalIgnoreCase);
     }
 
     public override int GetHashCode()
     {
-        return FullName.ToLowerInvariant().GetHashCode();
+        return StringComparer.OrdinalIgnoreCase.GetHashCode(FullName);
     }
 }

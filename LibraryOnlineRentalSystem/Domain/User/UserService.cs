@@ -13,7 +13,6 @@ public class UserService
     private readonly IUserRepository _userRepository;
     private readonly IWorkUnity _workUnit;
     private readonly IAuditLogger _auditLogger;
-    private readonly PasswordService _passwordService;
     private readonly HttpClient _httpClient;
     private readonly IConfiguration _configuration;
     private const string DEFAULT_USER_ROLE_NAME = "User";
@@ -22,14 +21,12 @@ public class UserService
         IUserRepository userRepository,
         IWorkUnity workUnit,
         IAuditLogger auditLogger,
-        PasswordService passwordService,
         HttpClient httpClient,
         IConfiguration configuration)
     {
         _userRepository = userRepository;
         _workUnit = workUnit;
         _auditLogger = auditLogger;
-        _passwordService = passwordService;
         _httpClient = httpClient;
         _configuration = configuration;
     }
@@ -41,21 +38,16 @@ public class UserService
 
         if (await _userRepository.GetByUsernameAsync(req.UserName) != null)
             throw new BusinessRulesException("Username already in use");
+            
+        if (await _userRepository.GetByNifAsync(req.Nif) != null)
+            throw new BusinessRulesException("NIF is already registered");
+            
+        if (await _userRepository.GetByPhoneNumberAsync(req.PhoneNumber) != null)
+            throw new BusinessRulesException("Phone number is already in use");
 
         try
         {
-            // Validate user data before creating in Keycloak
-            var user = new User(
-                Guid.NewGuid().ToString(),
-                req.Name,
-                req.Email,
-                req.UserName,
-                req.PhoneNumber,
-                req.Nif,
-                req.Biography,
-                _passwordService.HashPassword(req.Password)
-            );
-
+            // First create user in Keycloak
             var adminToken = await GetAdminTokenAsync();
             var keycloakUser = new
             {
@@ -73,13 +65,25 @@ public class UserService
                 },
                 requiredActions = new string[] { }
             };
+            
+            // Create local user without password (handled by Keycloak)
+            var user = new User(
+                Guid.NewGuid().ToString(),
+                req.Name,
+                req.Email,
+                req.UserName,
+                req.PhoneNumber,
+                req.Nif,
+                req.Biography,
+                hashedPassword: null // No need to store password locally
+            );
 
             var content = new StringContent(
                 JsonSerializer.Serialize(keycloakUser),
                 Encoding.UTF8,
                 "application/json");
 
-            var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
+            var authority = Environment.GetEnvironmentVariable("Keycloak__Authority")?.TrimEnd('/');
             var keycloakUrl = authority.Replace("/realms/library", "");
 
             _httpClient.DefaultRequestHeaders.Authorization =
@@ -130,25 +134,37 @@ public class UserService
 
     private async Task<string> GetAdminTokenAsync()
     {
-        var authority = _configuration["Keycloak:Authority"].TrimEnd('/');
-        var keycloakUrl = authority.Replace("/realms/library", "");
+        var authority = Environment.GetEnvironmentVariable("Keycloak__Authority")?.TrimEnd('/');
+        var keycloakUrl = authority?.Replace("/realms/library", "");
+
+        var username = Environment.GetEnvironmentVariable("Keycloak__Username")?.Trim();
+        var password = Environment.GetEnvironmentVariable("Keycloak__Password")?.Trim();
+
+        Console.WriteLine($"[DEBUG] Keycloak__Authority: {authority}");
+        Console.WriteLine($"[DEBUG] Keycloak URL: {keycloakUrl}");
+        Console.WriteLine($"[DEBUG] Username: {username}");
+        Console.WriteLine($"[DEBUG] Password: {(string.IsNullOrEmpty(password) ? "<null or empty>" : "<provided>")}");
+
         var content = new FormUrlEncodedContent(new[]
         {
             new KeyValuePair<string, string>("grant_type", "password"),
             new KeyValuePair<string, string>("client_id", "admin-cli"),
-            new KeyValuePair<string, string>("username", "admin"),
-            new KeyValuePair<string, string>("password", "admin")
+            new KeyValuePair<string, string>("username", username),
+            new KeyValuePair<string, string>("password", password),
         });
 
         var response =
             await _httpClient.PostAsync($"{keycloakUrl}/realms/master/protocol/openid-connect/token", content);
-        if (!response.IsSuccessStatusCode)
-        {
-            var error = await response.Content.ReadAsStringAsync();
-            throw new BusinessRulesException($"Failed to get admin token: {error}");
-        }
 
         var responseContent = await response.Content.ReadAsStringAsync();
+        Console.WriteLine($"[DEBUG] Token response status: {response.StatusCode}");
+        Console.WriteLine($"[DEBUG] Token response body: {responseContent}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            throw new BusinessRulesException($"Failed to get admin token: {responseContent}");
+        }
+
         var tokenResponse = JsonSerializer.Deserialize<KeycloakTokenResponse>(
             responseContent,
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
@@ -214,20 +230,55 @@ public class UserService
         if (user == null)
             throw new BusinessRulesException("User not found");
 
+        await UpdateUserInternal(user, request);
+    }
+
+    public async Task UpdateUserByUsernameAsync(string username, UpdateUserRequest request)
+    {
+        var user = await _userRepository.GetByUsernameAsync(username);
+        if (user == null)
+            throw new BusinessRulesException("User not found");
+
+        await UpdateUserInternal(user, request);
+    }
+
+    private async Task UpdateUserInternal(User user, UpdateUserRequest request)
+    {
         if (request.Biography != null)
             user.ChangeBiography(request.Biography);
 
         if (request.PhoneNumber != null)
+        {
+            var existingUserWithPhone = await _userRepository.GetByPhoneNumberAsync(request.PhoneNumber);
+            if (existingUserWithPhone != null && existingUserWithPhone.Id.AsString() != user.Id.AsString())
+                throw new BusinessRulesException("Phone number is already in use");
+
             user.ChangePhoneNumber(request.PhoneNumber);
+        }
 
         if (request.Name != null)
             user.ChangeName(request.Name);
-
+            
         if (request.Email != null)
+        {
+            var existingUserWithEmail = await _userRepository.GetByEmailAsync(request.Email);
+            if (existingUserWithEmail != null && existingUserWithEmail.Id.AsString() != user.Id.AsString())
+                throw new BusinessRulesException("Email is already in use by another user");
+                
             user.ChangeEmail(request.Email);
+        }
+
+        if (request.Nif != null)
+        {
+            var existingUserWithNif = await _userRepository.GetByNifAsync(request.Nif);
+            if (existingUserWithNif != null && existingUserWithNif.Id.AsString() != user.Id.AsString())
+                throw new BusinessRulesException("NIF is already registered to another user");
+
+            user.ChangeNif(request.Nif);
+        }
 
         await _workUnit.CommitAsync();
-        await _auditLogger.LogAsync($"User {id} updated profile.", "ProfileUpdate");
+        await _auditLogger.LogAsync($"User {user.Id.AsString()} updated profile.", "ProfileUpdate");
     }
 
     public bool UserExists(string userEmail)

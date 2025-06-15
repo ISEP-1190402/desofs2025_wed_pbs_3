@@ -42,5 +42,53 @@ Overwritten settings and database locks are some examples of the issues faced.
 
 
 
+## Logging Implementation
+
+Logging is a core part of our application observability strategy. It is implemented using the built-in `ILogger<T>` interface in ASP.NET Core and is integrated with **Azure Application Insights** for centralized monitoring and diagnostics.
+
+### Configuration
+
+Logging is configured in `Startup.cs`, `appsettings.json` and `appsettings.Development.json`. We enabled Application Insights via:
+
+```csharp
+builder.Services.AddApplicationInsightsTelemetry(builder.Configuration["ApplicationInsights:ConnectionString"]);
+```
+
+## Usage Example
+We used structured logging to capture useful information about application behavior, especially during user registration:
+
+```csharp
+[HttpPost("register")]
+    public async Task<IActionResult> Register([FromBody] NewUserDTO request)
+    {
+        _logger.LogInformation("=== Register User Start ===");
+        _logger.LogInformation("New user registration attempt for email {Email}", request.Email);
+
+        try
+        {
+            await _userService.CreateUserAsync(request);
+            _logger.LogInformation("User {Email} registered successfully at {Time}",
+                request.Email, DateTime.UtcNow);
+
+            return Ok(new { message = "User registered successfully" });
+        }
+        catch (BusinessRulesException ex)
+        {
+            _logger.LogWarning("User registration failed for {Email}: {Message}",
+                request.Email, ex.Message);
+            return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during registration for {Email}", request.Email);
+            return StatusCode(500, new { message = "An error occurred during registration" });
+        }
+    }
+```
+
+## Verifying Logs in Application Insights
+Logs can be queried using Log Analytics in Azure Portal with Kusto Query Language (KQL). Example querie:
+
+![Logs_example.png](Pictures/Logs_example.PNG)
 
 

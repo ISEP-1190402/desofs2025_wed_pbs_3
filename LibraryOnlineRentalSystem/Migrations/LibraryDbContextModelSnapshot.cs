@@ -50,9 +50,10 @@ namespace LibraryOnlineRentalSystem.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("char(36)");
 
-                    b.Property<string>("HashedPassword")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<bool>("Active")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("tinyint(1)")
+                        .HasDefaultValue(true);
 
                     b.HasKey("Id");
 
@@ -83,6 +84,23 @@ namespace LibraryOnlineRentalSystem.Migrations
                                 .HasColumnType("varchar(255)");
 
                             b1.Property<string>("BookAuthor")
+                                .IsRequired()
+                                .HasColumnType("longtext");
+
+                            b1.HasKey("BookId");
+
+                            b1.ToTable("Books");
+
+                            b1.WithOwner()
+                                .HasForeignKey("BookId");
+                        });
+
+                    b.OwnsOne("LibraryOnlineRentalSystem.Domain.Book.BookName", "Name", b1 =>
+                        {
+                            b1.Property<string>("BookId")
+                                .HasColumnType("varchar(255)");
+
+                            b1.Property<string>("NameBook")
                                 .IsRequired()
                                 .HasColumnType("longtext");
 
@@ -175,6 +193,9 @@ namespace LibraryOnlineRentalSystem.Migrations
                         .IsRequired();
 
                     b.Navigation("Isbn")
+                        .IsRequired();
+
+                    b.Navigation("Name")
                         .IsRequired();
 
                     b.Navigation("Publisher")

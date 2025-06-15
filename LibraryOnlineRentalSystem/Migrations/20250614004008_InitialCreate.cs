@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace LibraryOnlineRentalSystem.Migrations
 {
     /// <inheritdoc />
-    public partial class LibraryOnlineRentalSystem : Migration
+    public partial class InitialCreate : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -19,6 +19,8 @@ namespace LibraryOnlineRentalSystem.Migrations
                 columns: table => new
                 {
                     Id = table.Column<string>(type: "varchar(255)", nullable: false)
+                        .Annotation("MySql:CharSet", "utf8mb4"),
+                    Name_NameBook = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     AmountOfCopies_BookAmountOfCopies = table.Column<int>(type: "int", nullable: false),
                     Author_BookAuthor = table.Column<string>(type: "longtext", nullable: false)
@@ -76,8 +78,7 @@ namespace LibraryOnlineRentalSystem.Migrations
                         .Annotation("MySql:CharSet", "utf8mb4"),
                     Biography = table.Column<string>(type: "longtext", nullable: false)
                         .Annotation("MySql:CharSet", "utf8mb4"),
-                    HashedPassword = table.Column<string>(type: "longtext", nullable: false)
-                        .Annotation("MySql:CharSet", "utf8mb4")
+                    Active = table.Column<bool>(type: "tinyint(1)", nullable: false, defaultValue: true)
                 },
                 constraints: table =>
                 {

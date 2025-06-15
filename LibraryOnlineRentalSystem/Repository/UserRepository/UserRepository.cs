@@ -28,6 +28,16 @@ public class UserRepository : GeneralRepository<User, UserID>, IUserRepository
         return await _context.Users.FirstOrDefaultAsync(u => u.UserName.Tag == username);
     }
 
+    public async Task<User?> GetByNifAsync(string nif)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.Nif.TaxID == nif);
+    }
+
+    public async Task<User?> GetByPhoneNumberAsync(string phoneNumber)
+    {
+        return await _context.Users.FirstOrDefaultAsync(u => u.PhoneNumber.Number == phoneNumber);
+    }
+
     public async Task<List<User>> GetAllAsync()
     {
         return await _context.Users.ToListAsync();

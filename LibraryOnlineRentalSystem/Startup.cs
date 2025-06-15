@@ -29,11 +29,7 @@ namespace LibraryOnlineRentalSystem
 
         public void ConfigureServices(IServiceCollection services)
         {
-
-            services.AddLogging(loggingBuilder =>
-           {
-               loggingBuilder.AddConsole();
-           });
+            services.AddLogging(loggingBuilder => { loggingBuilder.AddConsole(); });
 
             /*services.AddApplicationInsightsTelemetry(options =>
             {
@@ -43,12 +39,14 @@ namespace LibraryOnlineRentalSystem
             services.AddControllersWithViews();
 
             services.AddDbContext<LibraryDbContext>(opt =>
+            {
+                var serverVersion = ServerVersion.AutoDetect(Environment.GetEnvironmentVariable("LibraryDatabase"));
                 opt.UseMySql(
-                        Configuration["LibraryDatabase"],
-                        ServerVersion.AutoDetect(Configuration["LibraryDatabase"])
-                    )
-                    .ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>()
-            );
+                    Environment.GetEnvironmentVariable("LibraryDatabase"),
+                    serverVersion);
+                
+                opt.ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>();
+            });
 
             ConfigureMyServices(services);
             ConfigureCors(services);
@@ -61,18 +59,22 @@ namespace LibraryOnlineRentalSystem
                 })
                 .AddJwtBearer(options =>
                 {
-                    options.Authority = Configuration["Keycloak__Authority"];
-                    options.Audience = Configuration["Keycloak__Audience"];
+                    options.Authority = Environment.GetEnvironmentVariable("Keycloak__Authority");
+                    options.Audience = Environment.GetEnvironmentVariable("Keycloak__Audience");
                     options.RequireHttpsMetadata = false; // Set to true in production
                     options.TokenValidationParameters = new TokenValidationParameters
                     {
                         ValidateIssuer = true,
                         ValidateAudience = true,
                         ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true
+                        ValidateIssuerSigningKey = true,
+                        RoleClaimType = "realm_access.roles"
                     };
                 });
-
+            //services.UseAuthentication(); 
+            services.AddAuthorization();
+            Console.WriteLine(Environment.GetEnvironmentVariable("Keycloak__Username"));
+            Console.WriteLine("there");
             services.AddHttpClient();
             services.AddControllers().AddNewtonsoftJson();
             services.AddSwaggerGen();
@@ -103,6 +105,7 @@ namespace LibraryOnlineRentalSystem
 
         public void ConfigureMyServices(IServiceCollection services)
         {
+            // Register services
             services.AddTransient<IWorkUnity, WorkUnity>();
             services.AddTransient<BookService>();
             services.AddTransient<IBookRepository, BookRepository>();
@@ -111,9 +114,35 @@ namespace LibraryOnlineRentalSystem
             services.AddTransient<UserService>();
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<IAuditLogger, AuditLogger>();
-            services.AddTransient<PasswordService>();
             services.AddTransient<AuthService>();
             services.AddHttpClient<AuthService>();
+            
+            // Configure ISBN validation with repository
+            services.AddTransient(provider => 
+            {
+                var repository = provider.GetRequiredService<IBookRepository>();
+                return new Action<string>(isbn => 
+                {
+                    var existingBook = repository.GetBookByIsbnAsync(isbn).Result;
+                    if (existingBook != null)
+                    {
+                        throw new BusinessRulesException($"A book with ISBN {isbn} already exists.");
+                    }
+                });
+            });
+            
+            // Configure ISBN validation
+            services.AddTransient(provider => 
+            {
+                var validateAction = provider.GetRequiredService<Action<string>>();
+                return new Action<IServiceProvider>(sp => 
+                {
+                    ISBN.Configure(validateAction);
+                });
+            });
+            
+            // Initialize ISBN validation
+            services.BuildServiceProvider().GetService<Action<IServiceProvider>>()?.Invoke(services.BuildServiceProvider());
         }
 
         public void ConfigureCors(IServiceCollection services)

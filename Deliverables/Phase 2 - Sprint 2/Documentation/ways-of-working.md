@@ -30,7 +30,7 @@
 - **camelCase** for:
   - Method parameters (e.g., `userId`, `bookTitle`)
   - Private fields (e.g., `_userRepository`)
-  - Local variables
+  - Local variables (e.g., `response` in `BookController.GetAllBooks`, `currentUserId` in `UserController`, `guid` in `UserIdTest`)
 
 - **UPPER_CASE** for constants (e.g., `MAX_RETRY_ATTEMPTS`)
 
@@ -61,10 +61,17 @@
   {}
   ```
 
-- **Value Objects**: Immutable objects with validation
+- **Value Objects**: Immutable objects with validation (e.g., `Email`, `PhoneNumber`, `UserName`)
   ```csharp
-  public class Email : IValueObject
-  {}
+  // Email value object with comprehensive validation
+  public class Email : ICloneable, IValueObject
+  {
+      public string EmailAddress { get; }
+
+      public Email() { }
+      
+      // To see full implementation, see Email.cs
+  }
   ```
 
 - **Aggregates**: Transactional boundaries
@@ -201,9 +208,9 @@
 #### 3.4.1 Key Files
 - `Program.cs`: Application startup
 - `appsettings.json`: Configuration
-- `Dockerfile`: Container configuration
-- `docker-compose.yml`: Service definitions
+- `appsettings.Development.json`: Development-specific settings
 - `init-keycloak-db.sql`: Initial database setup
+- `init-keycloak.sh`: Keycloak initialization script
 
 #### 3.4.2 Directory Structure
 ```
@@ -245,13 +252,21 @@ LibraryOnlineRentalSystem/
 │   ├── BookRepository/       # Book repository implementation
 │   └── UserRepository/       # User repository implementation
 │
+├── Files/                   # File storage
+│   └── ...                   # Uploaded files and documents
+│
+├── Migrations/             # Database migrations
+│   └── ...                   # EF Core migration files
+│
 ├── Properties/              # Assembly metadata and launch settings
-├── appsettings.json          # Application configuration
-├── appsettings.Development.json # Development-specific settings
-├── Dockerfile                # Container configuration
-├── docker-compose.yml        # Service definitions
-├── init-keycloak-db.sql      # Keycloak database setup
-└── Program.cs                # Application entry point and service configuration
+├── Utils/                   # Utility classes and helpers
+├── appsettings.json         # Application configuration
+├── appsettings.Development.json # Development settings
+├── init-keycloak-db.sql     # Keycloak database setup
+├── init-keycloak.sh         # Keycloak initialization script
+├── LibraryOnlineRentalSystem.csproj # Project file
+├── LibraryOnlineRentalSystem.sln    # Solution file
+└── Program.cs               # Application entry point
 ```
 
 ### 3.5 Database and ORM
@@ -326,15 +341,18 @@ LibraryOnlineRentalSystem/
 #### 3.6.2 Roles and Authorization
 - **Admin**: Full system access
   ```csharp
+  [Authorize]
   [Authorize(Roles = "Admin")]
   ```
 - **LibraryManager**: Manage books and users
   ```csharp
-  [Authorize(Roles = "Admin,LibraryManager")]
+  [Authorize]
+  [Authorize(Roles = "LibraryManager")]
   ```
 - **User**: Regular authenticated users
   ```csharp
   [Authorize]
+  [Authorize(Roles = "User")]
   ```
 - **Guest**: Unauthenticated access (limited endpoints)
 
@@ -461,44 +479,181 @@ public class UpdateUserRequest
 
 ### 3.10 Security Guidelines
 
-#### 3.10.1 Authentication
-- **JWT with Keycloak** integration
-- **Secure token** storage in HTTP-only cookies
-- **Token refresh** mechanism
-- **Password hashing** with BCrypt
+#### 3.10.1 Authentication & Authorization
+- **Keycloak Integration**:
+  - Centralized authentication using Keycloak
+  - OAuth 2.0 and OpenID Connect protocols
+  - Role-based access control (RBAC)
+  - JWT token validation for all API endpoints
+  - Token refresh mechanism implementation
+  - Secure token storage
+  - Short-lived access tokens with secure refresh tokens
+  - Token revocation on logout
+  - Multi-factor authentication (MFA) support
+  - Account lockout after failed attempts
 
-#### 3.10.2 Authorization
-- **Role-based access control (RBAC)**
-- **Policy-based** authorization
-- **Resource-based** checks
-<!-- - **Claims-based** authorization -->
-- **Secure token** validation
+#### 3.10.2 Input Validation
+- **Multi-layer Validation**:
+  - Client-side validation for UX
+  - Server-side validation in controllers using Data Annotations
+  - Domain-level validation in value objects
+  - Database constraints as final safety net
+- **Validation Rules**:
+  - Regex-based validation for all inputs
+  - Character whitelisting for specific fields
+  - Length validation with min/max constraints
+  - Format validation for emails, phones, NIFs
+  - NoSQL injection prevention
+  - File upload validation (type, size, content)
+  - Input sanitization before processing
 
 #### 3.10.3 Data Protection
-- **Encryption** of sensitive data at REST endpoints
-- **HTTPS** enforced
-- **CSRF protection**
-- **CORS** policy configuration
+- **Encryption**:
+  - Data at rest encryption
+  - TLS 1.2+ for data in transit
+  - Secure key management
+  - Certificate management
+- **Database Security**:
+  - Principle of least privilege for DB users
+  - Encrypted database connections
+  - Sensitive data encryption
+  - Regular security patches
 
-#### 3.10.4 Dependencies and Security
-- **Dependabot** for automated security updates
-- **Regular security audits**
-- **License compliance** checks
-- **Vulnerability monitoring**
-- **Automated dependency scanning**
-- **Security headers** implementation
+#### 3.10.4 API Security
+- **HTTPS**: Enforced in all environments
+- **CORS**: Strict origin validation
+- **Headers**: Security headers (HSTS, CSP, XSS-Protection)
+- **Rate Limiting**: Protection against brute force attacks
+- **Request Validation**: All input sanitized and validated
+- **API Versioning**: Clear versioning strategy
+- **Request/Response Logging**: Sensitive data redaction
+- **API Gateway**: WAF integration
+
+#### 3.10.5 Security Headers
+- **Content-Security-Policy**: `default-src 'self'`
+- **X-Content-Type-Options**: `nosniff`
+- **X-Frame-Options**: `DENY`
+- **Strict-Transport-Security**: `max-age=31536000; includeSubDomains`
+- **X-XSS-Protection**: `1; mode=block`
+- **Referrer-Policy**: `strict-origin-when-cross-origin`
+- **Permissions-Policy**: `camera=(), microphone=(), geolocation=()`
+- **Cache-Control**: `no-store, no-cache, must-revalidate`
+
+#### 3.10.6 Dependency Management
+- **Automated Scans**:
+  - Dependabot for dependency updates
+  - OWASP Dependency-Check
+  - License compliance checks
+  - Regular security audits
+- **Patching**:
+  - Critical patches within 24 hours
+  - Regular dependency updates
+  - Vulnerability monitoring
+
+#### 3.10.7 Security Testing
+- **SAST**: Static Application Security Testing
+- **DAST**: Dynamic Application Security Testing
+- **IAST**: Interactive Application Security Testing
+- **SCA**: Software Composition Analysis
+- **Penetration Testing**: Regular security assessments
+- **Red Team Exercises**: Simulated attacks
+
+#### 3.10.8 Incident Response
+- **Monitoring**:
+  - Real-time security event monitoring
+  - Automated alerting for suspicious activities
+  - Log analysis for security events
+- **Response Plan**:
+  - Documented incident response procedures
+  - Designated security contacts
+  - Post-incident review process
+  - Communication plan for breaches
+
+#### 3.10.9 Email Security and Warning System
+- **Development Email Handling**:
+  - All emails in development are redirected to a single development email address
+  - Real user emails are never used in development
+  - Comprehensive logging of all email sending attempts and failures
+- **Configuration**:
+  - SMTP settings configured in `appsettings.Development.json`
+  - Sensitive credentials stored in environment variables or user secrets
+  - Development email redirection is automatically disabled in production
+- **Security Measures**:
+  - No hardcoded email credentials in source control
+  - Input validation for all email addresses
+  - Rate limiting to prevent email abuse
+  - Secure storage of SMTP credentials
+
+#### 3.10.10 Secure Development Lifecycle
+- **Threat Modeling**: During design phase
+- **Secure Code Reviews**: Mandatory for all changes
+- **Security Testing**: Integrated in CI/CD
+- **Deployment Security**: Infrastructure as Code scanning
+- **Compliance Checks**: Regular security audits
+
+#### 3.10.10 Security Awareness
+- **Training**: Regular security training for developers
+- **Documentation**: Security guidelines and best practices
+- **Code Examples**: Secure coding patterns
+- **Security Champions**: Designated team members
 
 ### 3.11 Deployment
 
 #### 3.11.1 Environments
-- **Development** - Local and CI testing
-- **Staging** - Pre-production testing
-- **Production** - Live environment
+- **Development** - Local development environment on Windows Server 2022 Virtual Machine
+  - Local MySQL Server 8.0+
+  - Local Keycloak 26.2.5 instance
+  - Accessible at `http://localhost:8080`
+- **Production** - Azure VM with IIS 10.0
+  - MySQL Server 8.0+
+  - Keycloak 26.2.5
+  - Windows Server 2022
 
 #### 3.11.2 CI/CD Pipeline
-- **GitHub Actions** for automation
-- **Automated testing** on every push
-- **Docker** containerization
-- **Rollback** strategy in place
-- **Environment-specific** configurations
+- **GitHub Actions** workflow for automation
+- **IIS Deployment** to Azure VM using self-hosted runner
+- **Zero-downtime** deployment strategy
 
+**Security Pipelines**:
+- **SAST (Static Application Security Testing)**: Automated code analysis with Snyk to identify security vulnerabilities in the source code.
+- **DAST (Dynamic Application Security Testing)**: Automated security testing of the running application using OWASP ZAP to find runtime vulnerabilities.
+- **IAST (Interactive Application Security Testing)**: Combines Snyk and ZAP for interactive security testing during runtime.
+- **CSA (Combined Security Analysis)**: Comprehensive pipeline integrating SonarCloud, Snyk, and ZAP for complete security coverage.
+- **Deployment Pipeline**: Automated build and deployment to IIS with artifact management and environment configuration.
+
+Detailed documentation for each pipeline is available in the `Documentation/Pipeline/` directory.
+
+#### 3.11.3 Deployment Process
+
+Detailed deployment documentation is available in [Deploy Pipeline Documentation](./Pipeline/Deploy%20Pipeline/Deploy-Pipeline.md).
+
+1. **Build Stage** (GitHub-hosted runner):
+   - .NET 8.x SDK setup
+   - Solution build in Release configuration
+   - Application publish to working directory
+   - Artifact upload
+
+2. **Deploy Stage** (Self-hosted runner):
+   - Artifact download
+   - Clean target directory (`C:/inetpub/wwwroot/LibraryOnlineRentalSystem/`)
+   - File copy to IIS directory
+   - Application pool recycle
+
+For infrastructure setup and configuration details, including IIS and GitHub runner setup, refer to the [Infrastructure Documentation](./Infrastructure/Infrastructure.md).
+
+#### 3.11.4 Access Points
+- **Production API**: http://51.105.240.143/
+- **Swagger UI**: http://51.105.240.143/index.html
+- **Keycloak Admin**: http://localhost:8080/admin/
+
+#### 3.11.5 Rollback Procedure
+1. Revert the last commit in `main` branch
+2. Push changes to trigger a new deployment
+3. Or manually deploy a previous version from GitHub Actions artifacts
+
+#### 3.11.6 Database Migrations
+- Run migrations manually after deployment if needed:
+  ```bash
+  dotnet ef database update --project LibraryOnlineRentalSystem
+  ```
+- Ensure database user has proper permissions on both `librarydb` and `keycloak` databases
