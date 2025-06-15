@@ -6,13 +6,16 @@ services:
     ports:
       - "9001:5000"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
-      - ASPNETCORE_URLS=http://+:5000
-      - ConnectionStrings__LibraryDatabase=Server=libraryorsdb-desofs.mysql.database.azure.com;Port=3306;Database=${MYSQL_DATABASE};User=${DB_USER};Password=${DB_PASSWORD};sslmode=Preferred;tlsversion=TLSv1.2;
-      - Keycloak__Authority=http://keycloak:8080/realms/library
-      - Keycloak__Audience=library-client
-      - Keycloak__ClientId=library-client
-      - Keycloak__ClientSecret=${KEYCLOAK_CLIENT_SECRET}
+      JAVA_HOME: "${{ secrets.JAVA_HOME }}"
+      Keycloak_Audience: "${{ secrets.KEYCLOAK_AUDIENCE }}"
+      Keycloak_Authority: "${{ secrets.KEYCLOAK_AUTHORITY }}"
+      Keycloak_ClientId: "${{ secrets.KEYCLOAK_CLIENTID }}"
+      Keycloak_Password: "${{ secrets.KEYCLOAK_PASSWORD }}"
+      Keycloak_URL: "${{ secrets.KEYCLOAK_URL }}"
+      Keycloak_Username: "${{ secrets.KEYCLOAK_USERNAME }}"
+      KEYCLOAK_ADMIN: "${{ secrets.KEYCLOAK_ADMIN }}"
+      KEYCLOAK_ADMIN_PASSWORD: "${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}"
+      LibraryDatabase: "${{ secrets.LIBRARYDATABASE }}"
     depends_on:
       - keycloak
 
