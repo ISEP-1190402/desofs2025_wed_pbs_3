@@ -532,7 +532,7 @@ done
 - **HTTPS Required:** All external traffic (port 8443)
 - **Default Role:** User
 - **Token lifespan:** 2h
-- **Self-Registration:** Disabled
+- **Self-Registration:** Enabled
 - **Login with Email:** Disabled
 - **First/Last Name Required:** Removed
 
@@ -542,7 +542,7 @@ curl -X PUT "http://localhost:8080/admin/realms/library" \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "registrationAllowed": false,
+    "registrationAllowed": true,
     "loginWithEmailAllowed": false
   }'
 ```
