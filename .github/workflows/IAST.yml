@@ -14,7 +14,7 @@ env:
 jobs:
   iast-security:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && success()
+   # if: github.event_name == 'pull_request' && success()
     timeout-minutes: 25
 
     steps:
