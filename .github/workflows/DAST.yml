@@ -11,11 +11,20 @@ env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 5000
   PROJECT_DIR: ./LibraryOnlineRentalSystem
+  JAVA_HOME: "${{ secrets.JAVA_HOME }}"
+  Keycloak_Audience: "${{ secrets.KEYCLOAK_AUDIENCE }}"
+  Keycloak_Authority: "${{ secrets.KEYCLOAK_AUTHORITY }}"
+  Keycloak_ClientId: "${{ secrets.KEYCLOAK_CLIENTID }}"
+  Keycloak_Password: "${{ secrets.KEYCLOAK_PASSWORD }}"
+  Keycloak_URL: "${{ secrets.KEYCLOAK_URL }}"
+  Keycloak_Username: "${{ secrets.KEYCLOAK_USERNAME }}"
+  KEYCLOAK_ADMIN: "${{ secrets.KEYCLOAK_ADMIN }}"
+  KEYCLOAK_ADMIN_PASSWORD: "${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}"
+  LibraryDatabase: "${{ secrets.LIBRARYDATABASE }}"
 
 jobs:
   dast-zap:
     runs-on: ubuntu-latest
-   # if: github.event_name == 'pull_request' && success()
     timeout-minutes: 20
 
     steps:
@@ -36,65 +45,54 @@ jobs:
 
       - name: Run API Container
         run: |
-          # First, let's try to determine what port the API actually uses
           echo "Building and starting API container..."
-          
+
           docker run -d \
             --name api \
             --network zap-net \
             -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
             -e ASPNETCORE_URLS=http://+:${{ env.API_PORT }} \
             -e ASPNETCORE_ENVIRONMENT=Development \
+            -e JAVA_HOME="${{ env.JAVA_HOME }}" \
+            -e Keycloak_Audience="${{ env.Keycloak_Audience }}" \
+            -e Keycloak_Authority="${{ env.Keycloak_Authority }}" \
+            -e Keycloak_ClientId="${{ env.Keycloak_ClientId }}" \
+            -e Keycloak_Password="${{ env.Keycloak_Password }}" \
+            -e Keycloak_URL="${{ env.Keycloak_URL }}" \
+            -e Keycloak_Username="${{ env.Keycloak_Username }}" \
+            -e KEYCLOAK_ADMIN="${{ env.KEYCLOAK_ADMIN }}" \
+            -e KEYCLOAK_ADMIN_PASSWORD="${{ env.KEYCLOAK_ADMIN_PASSWORD }}" \
+            -e LibraryDatabase="${{ env.LibraryDatabase }}" \
             ${{ env.DOCKER_IMAGE_NAME }}
-          
-          echo "Container started, checking status..."
-          docker ps | grep api
 
       - name: Wait for API to be ready and get network info
         run: |
           echo "Waiting for API to start..."
           sleep 15
-          
-          # Get container network information
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
           echo "API Container IP: $API_IP"
-          
-          # Show container status
           docker ps | grep api
           docker logs api --tail 20
-          
-          # Test network connectivity
-          echo "Testing network connectivity..."
           docker run --rm --network zap-net alpine:latest ping -c 3 $API_IP || echo "Ping failed"
 
       - name: Test API connectivity with retries
         run: |
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
           echo "Testing API connectivity at: http://$API_IP:${{ env.API_PORT }}"
-          
-          # Try multiple endpoints and methods
           for endpoint in "" "/" "/health" "/swagger"; do
             echo "Testing endpoint: $endpoint"
             docker run --rm --network zap-net curlimages/curl:latest \
               curl -v --connect-timeout 10 --max-time 30 \
               http://$API_IP:${{ env.API_PORT }}$endpoint || echo "Failed to connect to $endpoint"
           done
-          
-          # Final connectivity test with detailed output
-          echo "Final connectivity test..."
-          docker run --rm --network zap-net curlimages/curl:latest \
-            curl -I --connect-timeout 10 --max-time 30 \
-            http://$API_IP:${{ env.API_PORT }} && echo "API is accessible!" || echo "API is not accessible"
 
       - name: Run OWASP ZAP Scan with enhanced configuration
         run: |
           API_IP=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' api)
           echo "Starting ZAP scan against API at: http://$API_IP:${{ env.API_PORT }}"
-          
           mkdir -p zap-work
           chmod -R 777 zap-work
-          
-          # Create a ZAP automation configuration file
+
           cat > zap-work/automation.yaml << 'EOF'
           env:
             contexts:
@@ -107,7 +105,6 @@ jobs:
               failOnError: false
               failOnWarning: false
               progressToStdout: true
-          
           jobs:
             - type: spider
               parameters:
@@ -115,80 +112,34 @@ jobs:
                 url: "http://TARGET_URL:TARGET_PORT"
                 maxDuration: 5
                 maxDepth: 5
-                numberOfThreads: 5
-                delayInMs: 0
-                acceptCookies: true
-                handleODataParametersVisited: false
-                handleParameters: "USE_ALL"
-                maxParseSizeBytes: 2621440
-                parseComments: true
-                parseGit: false
-                parseRobotsTxt: true
-                parseSitemapXml: true
-                parseSVNEntries: false
-                postForm: true
-                processForm: true
-                requestWaitTime: 200
-                sendRefererHeader: true
-                threadCount: 2
-            
             - type: activeScan  
               parameters:
                 context: "Default"
                 policy: "Default Policy"
                 maxDuration: 10
-                maxRuleDurationInMins: 0
-                maxScanDurationInMins: 0
-                addQueryParam: false
-                defaultPolicy: "Default Policy"
-                delayInMs: 0
-                handleAntiCSRFTokens: false
-                hostPerScan: 0
-                inScopeOnly: true
-                maxAlertsPerRule: 10
-                maxBodySizeInBytesToScan: 10000
-                maxResultsToScan: 0
-                threadPerHost: 2
-          
             - type: report
               parameters:
                 template: "traditional-json"
                 reportDir: "/zap/wrk"
                 reportFile: "report_json.json"
-              risks:
-                - high
-                - medium
-                - low
-                - info
-          
+              risks: [high, medium, low, info]
             - type: report
               parameters:
                 template: "traditional-html"
                 reportDir: "/zap/wrk"
                 reportFile: "report_html.html"
-              risks:
-                - high
-                - medium
-                - low
-                - info
-          
+              risks: [high, medium, low, info]
             - type: report
               parameters:
                 template: "traditional-md"
                 reportDir: "/zap/wrk"
                 reportFile: "report_md.md"
-              risks:
-                - high
-                - medium
-                - low
-                - info
+              risks: [high, medium, low, info]
           EOF
-          
-          # Replace placeholders in the config
+
           sed -i "s/TARGET_URL/$API_IP/g" zap-work/automation.yaml
           sed -i "s/TARGET_PORT/${{ env.API_PORT }}/g" zap-work/automation.yaml
-          
-          # Run ZAP with the automation file
+
           docker run --rm \
             --network zap-net \
             -v ${{ github.workspace }}/zap-work:/zap/wrk/:rw \
