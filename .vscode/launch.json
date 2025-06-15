@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET Launch",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/LibraryOnlineRentalSystem/bin/Debug/net8.0/LibraryOnlineRentalSystem.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "stopAtEntry": false,
+      "env": {
+            "Keycloak__Audience": "library-client",
+            "Keycloak__Authority": "http://localhost:8080/realms/library",
+            "Keycloak__ClientId": "library-client",
+            "Keycloak__Password": "xc.uUrqxbz6tDYyQryhK",
+            "Keycloak__URL": "http://localhost:8080/",
+            "Keycloak__Username": "desofs-kc",
+            "KEYCLOAK_ADMIN": "desofs-kc",
+            "KEYCLOAK_ADMIN_PASSWORD": "xc.uUrqxbz6tDYyQryhK",
+            "LibraryDatabase": "Server=51.105.240.143;Port=3306;Database=librarydb;User=desofs;Password=E*bCRJ_ijo*N3u_kMMZb;"
+      }
+    }
+  ]
+}
