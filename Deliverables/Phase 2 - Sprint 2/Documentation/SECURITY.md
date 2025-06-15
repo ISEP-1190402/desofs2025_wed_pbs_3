@@ -294,6 +294,60 @@
 - Authorization failures
 - Sensitive operations
 
+## Email Security and Warning System
+
+### Development Email Handling
+- **Email Redirection**: All emails in development are redirected to a single development email address
+- **Real User Protection**: Actual user emails are never used in development environment
+- **Logging**: All email sending attempts and failures are logged for debugging
+
+### Configuration
+Email settings are configured in `appsettings.Development.json`:
+
+```csharp
+"Email": {
+  "SmtpServer": "smtp.gmail.com",
+  "Port": 587,
+  "Username": "",  
+  "Password": "", 
+  "FromEmail": "noreply@yourdomain.com",
+  "DevelopmentEmail": "dev-email@yourdomain.com",
+  "EnableSsl": true
+}
+```
+
+### Security Measures
+- **No Hardcoded Credentials**: Email credentials are never committed to version control
+- **Environment Variables**: Sensitive data is loaded from environment variables or user secrets
+- **Development-Only**: The development email system is never active in production
+- **Input Validation**: All email addresses are validated before processing
+
+### Setting Up Environment Variables
+For local development, use one of these methods:
+
+1. **Environment Variables**:
+   ```bash
+   # Windows
+   setx EMAIL_USERNAME "your-email@gmail.com"
+   setx EMAIL_PASSWORD "your-app-specific-password"
+   
+   # Linux/macOS
+   export EMAIL_USERNAME=your-email@gmail.com
+   export EMAIL_PASSWORD=your-app-specific-password
+   ```
+
+2. **.NET User Secrets** (recommended):
+   ```bash
+   dotnet user-secrets set "Email:Username" "your-email@gmail.com"
+   dotnet user-secrets set "Email:Password" "your-app-specific-password"
+   ```
+
+### Production Considerations
+- The system automatically disables email redirection in production
+- Production requires valid SMTP server configuration
+- Email sending failures are logged and monitored
+- Rate limiting is applied to prevent email abuse
+
 ## Best Practices
 
 ### Code Quality

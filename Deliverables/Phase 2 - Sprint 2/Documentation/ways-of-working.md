@@ -68,83 +68,48 @@
   {
       public string EmailAddress { get; }
       
+      public Email(string email)
+      {
+          email = email.Trim();
+          ValidateEmail(email);
+          EmailAddress = email;
+      }
+      
+      private void ValidateEmail(string email)
+      {
+          var detectPattern = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]{2,}$";
+          if (string.IsNullOrWhiteSpace(email) || !Regex.IsMatch(email, detectPattern, RegexOptions.IgnoreCase))
+              throw new BusinessRulesException("The email is not valid.");
+      }
   }
-  
+
+
   public class PhoneNumber : IValueObject, ICloneable
   {
       public string Number { get; }
       
-  }
-  ```
-
-- **Aggregates**: Transactional boundaries that ensure consistency and enforce business rules
-  ```csharp
-  // Rental aggregate root with transactional boundaries
-  public class Rental : Entity<RentalID>, IAggregateRoot
-  {
-      public RentalID Id { get; private set; }
-      public RentalStartDate StartDate { get; private set; }
-      public RentalEndDate EndDate { get; private set; }
-      public RentedBookID RentedBookIdentifier { get; private set; }
-      public RentalStatus StatusOfRental { get; private set; }
-      public UserEmail EmailUser { get; private set; }
-
-  }
-  ```
-  
-  **Key Points**:
-  - The aggregate root (Rental) controls all modifications to its state
-  - Business rules are enforced within the aggregate
-  - External access to the aggregate's state is read-only (private setters)
-  - All operations that modify state are explicit methods with validation
-
-- **Repositories**: Persistence abstraction for aggregates
-  ```csharp
-  public interface IRentalRepository
-  {
-      Task<Rental> GetByIdAsync(string id);
-      Task<List<Rental>> GetAllAsync();
-      Task AddAsync(Rental rental);
-      Task UpdateAsync(Rental rental);
-      Task<int> GetBusyAmmountOfBooks(RentedBookID bookId, RentalStartDate startDate, RentalEndDate endDate);
-  }
-  ```
-  
-  **Usage in Application Service**:
-  ```csharp
-  public class RentalService
-  {
-      private readonly IRentalRepository _rentalRepository;
-      private readonly IWorkUnity _workUnity;
-
-      public async Task<RentalDTO> CreateRentalAsync(CreatedRentalDTO rentalDto)
+      public PhoneNumber(string number)
       {
-          // Transaction boundary starts
-          using (var transaction = await _workUnity.BeginTransactionAsync())
-          {
-              try
-              {
-                  var rental = new Rental(
-                      Guid.NewGuid().ToString(),
-                      rentalDto.StartDate,
-                      rentalDto.EndDate,
-                      rentalDto.ReservedBookId,
-                      rentalDto.UserEmail
-                  );
-
-                  await _rentalRepository.AddAsync(rental);
-                  await _workUnity.CommitAsync();
-                  
-                  return rental.ToDTO();
-              }
-              catch (Exception)
-              {
-                  await _workUnity.RollbackAsync();
-                  throw;
-              }
-          }
+          if (string.IsNullOrWhiteSpace(number))
+              throw new ArgumentNullException(nameof(number));
+              
+          number = number.Trim();
+          if (number.Length != 9 || !number.All(char.IsDigit))
+              throw new BusinessRulesException("The phone number must contain exactly 9 digits.");
+              
+          if (!Regex.IsMatch(number, @"^(9[1236]\d{7}|2\d{8}|3[123589]\d{7})$"))
+              throw new BusinessRulesException("Invalid Portuguese phone number format.");
+              
+          Number = number;
       }
   }
+  ```
+
+- **Aggregates**: Transactional boundaries
+- **Repositories**: Persistence abstraction
+  ```csharp
+  public interface IUserRepository
+  {}
   ```
 
 - **Domain Services**: Cross-aggregate operations
@@ -624,7 +589,22 @@ public class UpdateUserRequest
   - Post-incident review process
   - Communication plan for breaches
 
-#### 3.10.9 Secure Development Lifecycle
+#### 3.10.9 Email Security and Warning System
+- **Development Email Handling**:
+  - All emails in development are redirected to a single development email address
+  - Real user emails are never used in development
+  - Comprehensive logging of all email sending attempts and failures
+- **Configuration**:
+  - SMTP settings configured in `appsettings.Development.json`
+  - Sensitive credentials stored in environment variables or user secrets
+  - Development email redirection is automatically disabled in production
+- **Security Measures**:
+  - No hardcoded email credentials in source control
+  - Input validation for all email addresses
+  - Rate limiting to prevent email abuse
+  - Secure storage of SMTP credentials
+
+#### 3.10.10 Secure Development Lifecycle
 - **Threat Modeling**: During design phase
 - **Secure Code Reviews**: Mandatory for all changes
 - **Security Testing**: Integrated in CI/CD
