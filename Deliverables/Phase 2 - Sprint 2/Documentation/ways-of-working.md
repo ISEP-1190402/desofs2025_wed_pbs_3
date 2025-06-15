@@ -63,45 +63,14 @@
 
 - **Value Objects**: Immutable objects with validation (e.g., `Email`, `PhoneNumber`, `UserName`)
   ```csharp
-
-  public class Email : IValueObject, ICloneable
+  // Email value object with comprehensive validation
+  public class Email : ICloneable, IValueObject
   {
       public string EmailAddress { get; }
-      
-      public Email(string email)
-      {
-          email = email.Trim();
-          ValidateEmail(email);
-          EmailAddress = email;
-      }
-      
-      private void ValidateEmail(string email)
-      {
-          var detectPattern = @"^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]{2,}$";
-          if (string.IsNullOrWhiteSpace(email) || !Regex.IsMatch(email, detectPattern, RegexOptions.IgnoreCase))
-              throw new BusinessRulesException("The email is not valid.");
-      }
-  }
 
-
-  public class PhoneNumber : IValueObject, ICloneable
-  {
-      public string Number { get; }
+      public Email() { }
       
-      public PhoneNumber(string number)
-      {
-          if (string.IsNullOrWhiteSpace(number))
-              throw new ArgumentNullException(nameof(number));
-              
-          number = number.Trim();
-          if (number.Length != 9 || !number.All(char.IsDigit))
-              throw new BusinessRulesException("The phone number must contain exactly 9 digits.");
-              
-          if (!Regex.IsMatch(number, @"^(9[1236]\d{7}|2\d{8}|3[123589]\d{7})$"))
-              throw new BusinessRulesException("Invalid Portuguese phone number format.");
-              
-          Number = number;
-      }
+      // To see full implementation, see Email.cs
   }
   ```
 
@@ -239,9 +208,9 @@
 #### 3.4.1 Key Files
 - `Program.cs`: Application startup
 - `appsettings.json`: Configuration
-- `Dockerfile`: Container configuration
-- `docker-compose.yml`: Service definitions
+- `appsettings.Development.json`: Development-specific settings
 - `init-keycloak-db.sql`: Initial database setup
+- `init-keycloak.sh`: Keycloak initialization script
 
 #### 3.4.2 Directory Structure
 ```
@@ -283,13 +252,21 @@ LibraryOnlineRentalSystem/
 │   ├── BookRepository/       # Book repository implementation
 │   └── UserRepository/       # User repository implementation
 │
+├── Files/                   # File storage
+│   └── ...                   # Uploaded files and documents
+│
+├── Migrations/             # Database migrations
+│   └── ...                   # EF Core migration files
+│
 ├── Properties/              # Assembly metadata and launch settings
-├── appsettings.json          # Application configuration
-├── appsettings.Development.json # Development-specific settings
-├── Dockerfile                # Container configuration
-├── docker-compose.yml        # Service definitions
-├── init-keycloak-db.sql      # Keycloak database setup
-└── Program.cs                # Application entry point and service configuration
+├── Utils/                   # Utility classes and helpers
+├── appsettings.json         # Application configuration
+├── appsettings.Development.json # Development settings
+├── init-keycloak-db.sql     # Keycloak database setup
+├── init-keycloak.sh         # Keycloak initialization script
+├── LibraryOnlineRentalSystem.csproj # Project file
+├── LibraryOnlineRentalSystem.sln    # Solution file
+└── Program.cs               # Application entry point
 ```
 
 ### 3.5 Database and ORM
@@ -364,15 +341,18 @@ LibraryOnlineRentalSystem/
 #### 3.6.2 Roles and Authorization
 - **Admin**: Full system access
   ```csharp
+  [Authorize]
   [Authorize(Roles = "Admin")]
   ```
 - **LibraryManager**: Manage books and users
   ```csharp
-  [Authorize(Roles = "Admin,LibraryManager")]
+  [Authorize]
+  [Authorize(Roles = "LibraryManager")]
   ```
 - **User**: Regular authenticated users
   ```csharp
   [Authorize]
+  [Authorize(Roles = "User")]
   ```
 - **Guest**: Unauthenticated access (limited endpoints)
 
@@ -620,28 +600,37 @@ public class UpdateUserRequest
 ### 3.11 Deployment
 
 #### 3.11.1 Environments
-- **Development** - Local development environment - Windows Server 2022 Virtual Machine
-  - Local database and Keycloak instance
-- **Production** - Azure VM with IIS
+- **Development** - Local development environment on Windows Server 2022 Virtual Machine
+  - Local MySQL Server 8.0+
+  - Local Keycloak 26.2.5 instance
+  - Accessible at `http://localhost:8080`
+- **Production** - Azure VM with IIS 10.0
   - MySQL Server 8.0+
   - Keycloak 26.2.5
-  - Accessible at `http://localhost:8080`
+  - Windows Server 2022
 
 #### 3.11.2 CI/CD Pipeline
 - **GitHub Actions** workflow for automation
-
-[//]: # (- **Automated build and test** on every push to `main`&#41;)
-- **IIS Deployment** to Azure VM
-- **Self-hosted runner** for deployment stage
+- **IIS Deployment** to Azure VM using self-hosted runner
 - **Zero-downtime** deployment strategy
 
-There is explicit documentation for the deployment process and for pipelines IAST DAST and SAST.
+**Security Pipelines**:
+- **SAST (Static Application Security Testing)**: Automated code analysis with Snyk to identify security vulnerabilities in the source code.
+- **DAST (Dynamic Application Security Testing)**: Automated security testing of the running application using OWASP ZAP to find runtime vulnerabilities.
+- **IAST (Interactive Application Security Testing)**: Combines Snyk and ZAP for interactive security testing during runtime.
+- **CSA (Combined Security Analysis)**: Comprehensive pipeline integrating SonarCloud, Snyk, and ZAP for complete security coverage.
+- **Deployment Pipeline**: Automated build and deployment to IIS with artifact management and environment configuration.
+
+Detailed documentation for each pipeline is available in the `Documentation/Pipeline/` directory.
 
 #### 3.11.3 Deployment Process
+
+Detailed deployment documentation is available in [Deploy Pipeline Documentation](./Pipeline/Deploy%20Pipeline/Deploy-Pipeline.md).
+
 1. **Build Stage** (GitHub-hosted runner):
    - .NET 8.x SDK setup
    - Solution build in Release configuration
-   - Application publish to `${{env.DOTNET_ROOT}}/myapp`
+   - Application publish to working directory
    - Artifact upload
 
 2. **Deploy Stage** (Self-hosted runner):
@@ -650,10 +639,12 @@ There is explicit documentation for the deployment process and for pipelines IAS
    - File copy to IIS directory
    - Application pool recycle
 
+For infrastructure setup and configuration details, including IIS and GitHub runner setup, refer to the [Infrastructure Documentation](./Infrastructure/Infrastructure.md).
+
 #### 3.11.4 Access Points
 - **Production API**: http://51.105.240.143/
 - **Swagger UI**: http://51.105.240.143/index.html
-- **Keycloak Admin**: http://[KEYCLOAK_IP]:8080/admin/
+- **Keycloak Admin**: http://localhost:8080/admin/
 
 #### 3.11.5 Rollback Procedure
 1. Revert the last commit in `main` branch
