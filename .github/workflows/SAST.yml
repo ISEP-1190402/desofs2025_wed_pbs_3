@@ -10,12 +10,12 @@ jobs:
   sast-scan:
     name: SAST Snyk Code and Dependency
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' && success()
-    permissions:
-      contents: read
-      security-events: write
-      actions: read
-      id-token: write
+   # if: github.event_name == 'pull_request' && success()
+   # permissions:
+   #   contents: read
+   #   security-events: write
+   #   actions: read
+   #   id-token: write
 
     steps:
     - name: Checkout repository
