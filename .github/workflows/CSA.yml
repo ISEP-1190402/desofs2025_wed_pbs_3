@@ -11,28 +11,21 @@ env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 5000
   PROJECT_DIR: ./LibraryOnlineRentalSystem
-  # Replace these with your actual SonarCloud values
   SONAR_PROJECT_KEY: jorgealmeidadeveloper_LibraryOnlineRentalSystem
   SONAR_ORG: jorgealmeidadeveloper
-  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}           # Set this in GitHub repository secrets
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
   SONAR_HOST_URL: https://sonarcloud.io
 
 jobs:
   csa:
     runs-on: ubuntu-latest
     timeout-minutes: 45
-   # if: github.event_name == 'pull_request' && success()
-  #  permissions:
-  #    contents: read
-  #    security-events: write
-  #    actions: read
-  #    id-token: write
 
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for better analysis
+          fetch-depth: 0
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
@@ -54,7 +47,7 @@ jobs:
 
       - name: Install SonarScanner for MSBuild
         run: dotnet tool install --global dotnet-sonarscanner --version 5.15.0
-        
+
       - name: Add dotnet tools to PATH
         run: echo "${HOME}/.dotnet/tools" >> $GITHUB_PATH
 
@@ -65,12 +58,10 @@ jobs:
           echo "Host URL: ${{ env.SONAR_HOST_URL }}"
           if [[ -z "${{ env.SONAR_PROJECT_KEY }}" ]]; then
             echo "❌ ERROR: SONAR_PROJECT_KEY is not set"
-            echo "Please set SONAR_PROJECT_KEY in your repository variables"
             exit 1
           fi
           if [[ -z "${{ env.SONAR_ORG }}" ]]; then
             echo "❌ ERROR: SONAR_ORG is not set"
-            echo "Please set SONAR_ORG in your repository variables"
             exit 1
           fi
 
@@ -78,7 +69,6 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: dotnet restore
 
-      # SonarCloud Begin (prepare analysis)
       - name: SonarCloud Begin Analysis
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
@@ -104,55 +94,48 @@ jobs:
             --verbosity normal \
             -- DataCollectionRunSettings.DataCollectors.DataCollector.Configuration.Format=opencover
 
-      # SonarCloud End (finalize analysis)
       - name: SonarCloud End Analysis
         working-directory: ${{ env.PROJECT_DIR }}
         run: dotnet sonarscanner end /d:sonar.token="${{ env.SONAR_TOKEN }}"
 
-      # Snyk authentication and setup
       - name: Setup Snyk
         uses: snyk/actions/setup@master
 
-      # Snyk code scan (SAST)
       - name: Snyk Code Scan
-        run: 
-            snyk config set disableSuggestions=true
-            snyk code test --severity-threshold=medium
+        run: |
+          snyk config set disableSuggestions=true
+          snyk code test --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
 
-      # Build Docker image
       - name: Build Docker Image
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
           if [ ! -f Dockerfile ]; then
             echo "⚠️  No Dockerfile found. Creating a basic one..."
             cat > Dockerfile << 'EOF'
-          FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-          WORKDIR /app
-          COPY bin/Release/net8.0/publish/ .
-          EXPOSE 5000
-          ENTRYPOINT ["dotnet", "LibraryOnlineRentalSystem.dll"]
-          EOF
+            FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+            WORKDIR /app
+            COPY bin/Release/net8.0/publish/ .
+            EXPOSE 5000
+            ENTRYPOINT ["dotnet", "LibraryOnlineRentalSystem.dll"]
+           EOF
             dotnet publish --configuration Release --output bin/Release/net8.0/publish/
           fi
           docker build -t $DOCKER_IMAGE_NAME .
 
-      # Snyk container scan
       - name: Snyk Container Scan
-        run: 
-            snyk config set disableSuggestions=true
-            snyk container test ${{ env.DOCKER_IMAGE_NAME }} --severity-threshold=medium
+        run: |
+          snyk config set disableSuggestions=true
+          snyk container test ${{ env.DOCKER_IMAGE_NAME }} --severity-threshold=medium
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         continue-on-error: true
 
-      # Create Docker network for ZAP
       - name: Create Docker Network
         run: docker network create zap-net || true
 
-      # Run API container
       - name: Run API Container
         run: |
           docker run -d --name api --network zap-net -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
@@ -179,70 +162,67 @@ jobs:
           echo "api_ip=$API_IP" >> $GITHUB_OUTPUT
           echo "API IP: $API_IP"
 
-      # OWASP ZAP scan with improved configuration
       - name: Run OWASP ZAP Scan
         run: |
           mkdir -p zap-work
           chmod -R 777 zap-work
-          
-          # Create ZAP automation configuration
-          cat > zap-work/automation.yaml << 'EOF'
-          env:
-            contexts:
-              - name: "Library API"
-                urls: ["http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"]
-                includePaths:
-                  - "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}/.*"
-                excludePaths:
-                  - ".*\\.js$"
-                  - ".*\\.css$"
-                  - ".*\\.png$"
-                  - ".*\\.jpg$"
-            parameters:
-              failOnError: false
-              failOnWarning: false
-              progressToStdout: true
 
-          jobs:
-            - type: spider
-              parameters:
-                context: "Library API"
-                url: "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"
-                maxDuration: 3
-                maxDepth: 3
-                acceptCookies: true
-                handleParameters: "USE_ALL"
+          cat > zap-work/automation.yaml << EOF
+env:
+  contexts:
+    - name: "Library API"
+      urls: ["http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"]
+      includePaths:
+        - "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}/.*"
+      excludePaths:
+        - ".*\\.js$"
+        - ".*\\.css$"
+        - ".*\\.png$"
+        - ".*\\.jpg$"
+  parameters:
+    failOnError: false
+    failOnWarning: false
+    progressToStdout: true
 
-            - type: activeScan
-              parameters:
-                context: "Library API"
-                policy: "Default Policy"
-                threadPerHost: 2
-                delayInMs: 200
+jobs:
+  - type: spider
+    parameters:
+      context: "Library API"
+      url: "http://${{ steps.api_ip.outputs.api_ip }}:${{ env.API_PORT }}"
+      maxDuration: 3
+      maxDepth: 3
+      acceptCookies: true
+      handleParameters: "USE_ALL"
 
-            - type: report
-              parameters:
-                template: "traditional-json"
-                reportDir: "/zap/wrk"
-                reportFile: "zap-report.json"
-              risks:
-                - high
-                - medium
-                - low
-                - info
+  - type: activeScan
+    parameters:
+      context: "Library API"
+      policy: "Default Policy"
+      threadPerHost: 2
+      delayInMs: 200
 
-            - type: report
-              parameters:
-                template: "traditional-html"
-                reportDir: "/zap/wrk"
-                reportFile: "zap-report.html"
-              risks:
-                - high
-                - medium
-                - low
-          EOF
+  - type: report
+    parameters:
+      template: "traditional-json"
+      reportDir: "/zap/wrk"
+      reportFile: "zap-report.json"
+    risks:
+      - high
+      - medium
+      - low
+      - info
 
-          # Run ZAP scan
+  - type: report
+    parameters:
+      template: "traditional-html"
+      reportDir: "/zap/wrk"
+      reportFile: "zap-report.html"
+    risks:
+      - high
+      - medium
+      - low
+        EOF
+
           docker run --rm --network zap-net \
             -v ${{ github.workspace }}/zap-work:/zap/wrk/:rw \
             ghcr.io/zaproxy/zaproxy:stable \
@@ -274,7 +254,6 @@ jobs:
           path: ${{ env.PROJECT_DIR }}/TestResults/
           retention-days: 30
 
-      # Security Summary
       - name: Security Scan Summary
         if: always()
         run: |
@@ -288,7 +267,6 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "📋 Check the uploaded artifacts for detailed reports." >> $GITHUB_STEP_SUMMARY
 
-      # Cleanup
       - name: Cleanup Docker Resources
         if: always()
         run: |
