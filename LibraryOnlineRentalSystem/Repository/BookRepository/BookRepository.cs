@@ -77,4 +77,80 @@ public class BookRepository : GeneralRepository<Book, BookID>,
         return books.FirstOrDefault(b => 
             string.Equals(b.Isbn.BookISBN, isbn, StringComparison.OrdinalIgnoreCase));
     }
+
+    public async Task<List<Book>> GetBooksByNameAsync(string name)
+    {
+        // First try to find exact or partial matches in the database
+        var books = await context()
+            .Where(b => EF.Functions.Like(b.Name.NameBook, $"%{name}%"))
+            .ToListAsync();
+            
+        // If no matches found, try case-insensitive search in memory
+        if (!books.Any())
+        {
+            var allBooks = await context().ToListAsync();
+            books = allBooks
+                .Where(b => b.Name.NameBook.IndexOf(name, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
+        }
+        
+        return books;
+    }
+    
+    public async Task<List<Book>> GetBooksByAuthorAsync(string author)
+    {
+        // First try to find exact or partial matches in the database
+        var books = await context()
+            .Where(b => EF.Functions.Like(b.Author.BookAuthor, $"%{author}%"))
+            .ToListAsync();
+            
+        // If no matches found, try case-insensitive search in memory
+        if (!books.Any())
+        {
+            var allBooks = await context().ToListAsync();
+            books = allBooks
+                .Where(b => b.Author.BookAuthor.IndexOf(author, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
+        }
+        
+        return books;
+    }
+    
+    public async Task<List<Book>> GetBooksByPublisherAsync(string publisher)
+    {
+        // First try to find exact or partial matches in the database
+        var books = await context()
+            .Where(b => EF.Functions.Like(b.Publisher.PublisherName, $"%{publisher}%"))
+            .ToListAsync();
+            
+        // If no matches found, try case-insensitive search in memory
+        if (!books.Any())
+        {
+            var allBooks = await context().ToListAsync();
+            books = allBooks
+                .Where(b => b.Publisher.PublisherName.IndexOf(publisher, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
+        }
+        
+        return books;
+    }
+    
+    public async Task<List<Book>> GetBooksByCategoryAsync(string category)
+    {
+        // First try to find exact or partial matches in the database
+        var books = await context()
+            .Where(b => EF.Functions.Like(b.Category.BookCategoryName, $"%{category}%"))
+            .ToListAsync();
+            
+        // If no matches found, try case-insensitive search in memory
+        if (!books.Any())
+        {
+            var allBooks = await context().ToListAsync();
+            books = allBooks
+                .Where(b => b.Category.BookCategoryName.IndexOf(category, StringComparison.OrdinalIgnoreCase) >= 0)
+                .ToList();
+        }
+        
+        return books;
+    }
 }

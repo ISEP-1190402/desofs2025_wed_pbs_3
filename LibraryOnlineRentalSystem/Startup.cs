@@ -1,7 +1,12 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text.Json;
 using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Common;
+using LibraryOnlineRentalSystem.Domain.Common.Interfaces;
 using LibraryOnlineRentalSystem.Domain.Rentals;
 using LibraryOnlineRentalSystem.Domain.User;
+using LibraryOnlineRentalSystem.Infrastructure.Services;
 using LibraryOnlineRentalSystem.Repository.BookRepository;
 using LibraryOnlineRentalSystem.Repository.Common;
 using LibraryOnlineRentalSystem.Repository.RentalRepository;
@@ -20,9 +25,21 @@ namespace LibraryOnlineRentalSystem
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        private readonly ILogger<Startup> _logger;
+
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
+            
+            // Create logger for startup
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+                builder.AddDebug();
+            });
+            _logger = loggerFactory.CreateLogger<Startup>();
+            
+            _logger.LogInformation("Starting application in {Environment} environment", env.EnvironmentName);
         }
 
         public IConfiguration Configuration { get; }
@@ -48,29 +65,119 @@ namespace LibraryOnlineRentalSystem
                 opt.ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>();
             });
 
+            // Configure email options from appsettings and user secrets
+            services.Configure<EmailOptions>(options =>
+            {
+                Configuration.GetSection("Email").Bind(options);
+                
+                // Override from environment variables if available
+                var smtpUser = Configuration["EMAIL_USERNAME"];
+                var smtpPass = Configuration["EMAIL_PASSWORD"];
+                
+                if (!string.IsNullOrEmpty(smtpUser)) options.SmtpUsername = smtpUser;
+                if (!string.IsNullOrEmpty(smtpPass)) options.SmtpPassword = smtpPass;
+                
+                // Log the configuration (without password)
+                _logger.LogInformation("Email Configuration - Server: {Server}:{Port}, From: {FromEmail}, DevEmail: {DevEmail}",
+                    options.SmtpServer, options.SmtpPort, options.FromEmail, options.DevEmail);
+                
+                // Log if using environment variables
+                if (!string.IsNullOrEmpty(smtpUser))
+                {
+                    _logger.LogInformation("Using SMTP username from environment variable");
+                }
+            });
+            
+            // Register email service
+            services.AddScoped<IEmailService, DevelopmentEmailService>();
+
             ConfigureMyServices(services);
             ConfigureCors(services);
 
+            // Clear default claim mappings
+            JwtSecurityTokenHandler.DefaultInboundClaimTypeMap.Clear();
+            JwtSecurityTokenHandler.DefaultOutboundClaimTypeMap.Clear();
+
             // Add Keycloak Authentication
             services.AddAuthentication(options =>
+            {
+                options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+                options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+            })
+            .AddJwtBearer(options =>
+            {
+                options.Authority = Environment.GetEnvironmentVariable("Keycloak__Authority");
+                options.Audience = Environment.GetEnvironmentVariable("Keycloak__Audience");
+                options.RequireHttpsMetadata = false; // Set to true in production
+                
+                options.TokenValidationParameters = new TokenValidationParameters
                 {
-                    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-                    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                })
-                .AddJwtBearer(options =>
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
+                    ValidateIssuerSigningKey = true,
+                    NameClaimType = "preferred_username",  // Map username from preferred_username claim
+                    RoleClaimType = ClaimTypes.Role  // Will be mapped from realm_access.roles
+                };
+
+                // Handle Keycloak's claims mapping
+                options.Events = new JwtBearerEvents
                 {
-                    options.Authority = Environment.GetEnvironmentVariable("Keycloak__Authority");
-                    options.Audience = Environment.GetEnvironmentVariable("Keycloak__Audience");
-                    options.RequireHttpsMetadata = false; // Set to true in production
-                    options.TokenValidationParameters = new TokenValidationParameters
+                    OnTokenValidated = context =>
                     {
-                        ValidateIssuer = true,
-                        ValidateAudience = true,
-                        ValidateLifetime = true,
-                        ValidateIssuerSigningKey = true,
-                        RoleClaimType = "realm_access.roles"
-                    };
-                });
+                        var identity = context.Principal.Identity as ClaimsIdentity;
+                        
+                        // Map roles from realm_access.roles
+                        var realmAccessClaim = context.Principal.FindFirst("realm_access")?.Value;
+                        if (!string.IsNullOrEmpty(realmAccessClaim))
+                        {
+                            try
+                            {
+                                var realmAccess = JsonDocument.Parse(realmAccessClaim);
+                                if (realmAccess.RootElement.TryGetProperty("roles", out var rolesElement))
+                                {
+                                    foreach (var role in rolesElement.EnumerateArray())
+                                    {
+                                        var roleValue = role.GetString();
+                                        if (!string.IsNullOrEmpty(roleValue))
+                                        {
+                                            identity?.AddClaim(new Claim(ClaimTypes.Role, roleValue));
+                                        }
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                context.Fail($"Failed to parse realm_access claim: {ex.Message}");
+                                return Task.CompletedTask;
+                            }
+                        }
+
+                        // Map email claim if present
+                        var email = context.Principal.FindFirst("email")?.Value;
+                        if (!string.IsNullOrEmpty(email))
+                        {
+                            identity?.AddClaim(new Claim(ClaimTypes.Email, email));
+                        }
+
+                        // Map name identifier (sub claim)
+                        var sub = context.Principal.FindFirst("sub")?.Value;
+                        if (!string.IsNullOrEmpty(sub) && !identity.HasClaim(c => c.Type == ClaimTypes.NameIdentifier))
+                        {
+                            identity?.AddClaim(new Claim(ClaimTypes.NameIdentifier, sub));
+                        }
+
+                        return Task.CompletedTask;
+                    },
+                    OnAuthenticationFailed = context =>
+                    {
+                        var errorMessage = $"Token validation failed: {context.Exception.Message}";
+                        Console.WriteLine(errorMessage);
+                        context.Response.Headers.Add("Token-Validation-Error", errorMessage);
+                        return Task.CompletedTask;
+                    }
+                };
+            });
             //services.UseAuthentication(); 
             services.AddAuthorization();
             Console.WriteLine(Environment.GetEnvironmentVariable("Keycloak__Username"));
@@ -111,7 +218,28 @@ namespace LibraryOnlineRentalSystem
             services.AddTransient<IBookRepository, BookRepository>();
             services.AddTransient<RentalService>();
             services.AddTransient<IRentalRepository, RentalRepository>();
-            services.AddTransient<UserService>();
+            
+            // Register UserService with all its dependencies
+            services.AddTransient<UserService>(sp =>
+            {
+                var userRepository = sp.GetRequiredService<IUserRepository>();
+                var workUnit = sp.GetRequiredService<IWorkUnity>();
+                var auditLogger = sp.GetRequiredService<IAuditLogger>();
+                var httpClient = sp.GetRequiredService<HttpClient>();
+                var configuration = sp.GetRequiredService<IConfiguration>();
+                var emailService = sp.GetRequiredService<IEmailService>();
+                var logger = sp.GetRequiredService<ILogger<UserService>>();
+
+                return new UserService(
+                    userRepository,
+                    workUnit,
+                    auditLogger,
+                    httpClient,
+                    configuration,
+                    emailService,
+                    logger);
+            });
+            
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<IAuditLogger, AuditLogger>();
             services.AddTransient<AuthService>();

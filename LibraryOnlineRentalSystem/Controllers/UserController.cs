@@ -27,7 +27,15 @@ public class UserController : ControllerBase
     [Authorize(Roles = "Admin,LibraryManager")]
     public async Task<IActionResult> GetUserById(Guid id)
     {
+        _logger.LogInformation("=== GetUserById Start ===");
         _logger.LogInformation("User lookup by ID {Id} requested at {Time}", id, DateTime.UtcNow);
+        
+        var currentUser = await GetCurrentUserInfo();
+        _logger.LogDebug("Current user - Username: {Username}, UserId: {UserId}, Roles: {Roles}", 
+            currentUser.Username, 
+            currentUser.UserId,
+            string.Join(", ", currentUser.Roles));
+
         var user = await _userService.GetUserByIdAsync(id);
         if (user == null)
         {
@@ -35,21 +43,30 @@ public class UserController : ControllerBase
             return NotFound(new { message = "User not found" });
         }
 
-        _logger.LogInformation("User with ID {Id} returned successfully at {Time}", id, DateTime.UtcNow);
+        _logger.LogInformation("User with ID {Id} returned successfully to {Requester} at {Time}", 
+            id, currentUser.Username, DateTime.UtcNow);
         return Ok(user);
     }
 
-    // GET: api/user/username/{username}  - 401 unathorized
+    // GET: api/user/username/{username} working
     // Access: Any authenticated user (own profile), Admin/LibraryManager (any profile)
     [HttpGet("username/{username}")]
     [Authorize]
     public async Task<IActionResult> GetUserByUsername(string username)
     {
-        var currentUsername = User.FindFirstValue(ClaimTypes.Name);
+        _logger.LogInformation("=== GetUserByUsername Start ===");
+        _logger.LogInformation("Requested username: {RequestedUsername}", username);
+        
+        // Using preferred_username from token (mapped in Startup.cs)
+        var currentUsername = User.Identity?.Name;
+        _logger.LogDebug("Current username from token: {TokenUsername}", currentUsername);
+        _logger.LogDebug("Current user roles: {Roles}", 
+            string.Join(", ", User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value)));
+            
         if (string.IsNullOrEmpty(currentUsername))
         {
-            _logger.LogWarning("Username claim is missing in the token");
-            return Unauthorized(new { message = "Invalid user identity" });
+            _logger.LogWarning("Username (preferred_username) claim is missing in the token");
+            return Unauthorized(new { message = "Invalid user identity: Username claim missing" });
         }
 
         var isAdmin = User.IsInRole("Admin") || User.IsInRole("LibraryManager");
@@ -59,7 +76,7 @@ public class UserController : ControllerBase
         {
             _logger.LogWarning("Unauthorized profile access attempt by {User} for {Username}", 
                 currentUsername, username);
-            return Forbid("You can only view your own profile");
+            return StatusCode(403, new { message = "You can only view your own profile" });
         }
 
         _logger.LogInformation("User lookup by username {Username} requested by {User} at {Time}", 
@@ -78,15 +95,23 @@ public class UserController : ControllerBase
         return Ok(userProfile);
     }
 
-    // GET: api/user working
+    // GET: api/user working 
     // Access: Admin, LibraryManager
     [HttpGet]
     [Authorize(Roles = "Admin,LibraryManager")]
     public async Task<IActionResult> GetAllUsers()
     {
-        _logger.LogInformation("All users fetch initiated at {Time}", DateTime.UtcNow);
+        _logger.LogInformation("=== GetAllUsers Start ===");
+        var currentUser = await GetCurrentUserInfo();
+        
+        _logger.LogInformation("User list requested by {Username} at {Time}", 
+            currentUser.Username, DateTime.UtcNow);
+            
         var users = await _userService.GetAllUsersAsync();
-        _logger.LogInformation("Returned {Count} users at {Time}", users.Count, DateTime.UtcNow);
+        
+        _logger.LogInformation("Returned {Count} users to {Requester} at {Time}", 
+            users.Count, currentUser.Username, DateTime.UtcNow);
+            
         return Ok(users);
     }
 
@@ -95,30 +120,48 @@ public class UserController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] NewUserDTO request)
     {
-        _logger.LogInformation("New user registration attempt for email {Email} at {Time}", request.Email, DateTime.UtcNow);
+        _logger.LogInformation("=== Register User Start ===");
+        _logger.LogInformation("New user registration attempt for email {Email}", request.Email);
+        
         try
         {
             await _userService.CreateUserAsync(request);
-            _logger.LogInformation("User {Email} registered successfully at {Time}", request.Email, DateTime.UtcNow);
+            _logger.LogInformation("User {Email} registered successfully at {Time}", 
+                request.Email, DateTime.UtcNow);
+                
             return Ok(new { message = "User registered successfully" });
         }
         catch (BusinessRulesException ex)
         {
-            _logger.LogWarning("User registration failed for {Email}: {Message} at {Time}", request.Email, ex.Message, DateTime.UtcNow);
+            _logger.LogWarning("User registration failed for {Email}: {Message}", 
+                request.Email, ex.Message);
             return BadRequest(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected error during registration for {Email}", request.Email);
+            return StatusCode(500, new { message = "An error occurred during registration" });
         }
     }
 
-    // PUT: api/user/profile/{username}
+    // PUT: api/user/profile/{username} working
     // Access: Any authenticated user (own profile only)
     [HttpPut("profile/{username}")]
     [Authorize]
     public async Task<IActionResult> UpdateMyProfile(string username, [FromBody] UpdateUserRequest request)
     {
-        var tokenUsername = User.FindFirstValue(ClaimTypes.Name);
+        _logger.LogInformation("=== UpdateMyProfile Start ===");
+        _logger.LogInformation("Updating profile for username: {Username}", username);
+        _logger.LogDebug("Request data: {@RequestData}", request);
+        
+        // Using preferred_username from token (mapped in Startup.cs)
+        var tokenUsername = User.Identity?.Name;
+        _logger.LogDebug("Current user from token - Username: {TokenUsername}, UserId: {UserId}", 
+            tokenUsername, 
+            User.FindFirstValue(ClaimTypes.NameIdentifier));
         if (string.IsNullOrEmpty(tokenUsername))
         {
-            _logger.LogWarning("Username not found in token claims");
+            _logger.LogWarning("Username (preferred_username) not found in token claims");
             return Unauthorized("Username not found in token");
         }
 
@@ -150,15 +193,21 @@ public class UserController : ControllerBase
         }
     }
     
-    // PUT: api/user/{id}
+    // PUT: api/user/{id} working
     // Access: Admin
     [HttpPut("{id}")]
-    //[Authorize(Roles = "Admin")]
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> UpdateUser(Guid id, [FromBody] UpdateUserRequest request)
     {
+        _logger.LogInformation("=== Admin UpdateUser Start ===");
         var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        _logger.LogInformation("Admin user {AdminId} updating user ID {TargetId} at {Time}", 
-            currentUserId, id, DateTime.UtcNow);
+        var currentUsername = User.Identity?.Name;
+        
+        _logger.LogInformation("Admin user {AdminUsername} (ID: {AdminId}) updating user ID {TargetId} at {Time}", 
+            currentUsername, currentUserId, id, DateTime.UtcNow);
+        _logger.LogDebug("Update request data: {@RequestData}", request);
+        _logger.LogDebug("Current user roles: {Roles}", 
+            string.Join(", ", User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(c => c.Value)));
 
         try
         {
@@ -177,6 +226,24 @@ public class UserController : ControllerBase
             _logger.LogError(ex, "Error updating user ID {Id}", id);
             return StatusCode(500, new { message = "An error occurred while updating the user" });
         }
+    }
+    
+    private async Task<(string Username, string UserId, IList<string> Roles)> GetCurrentUserInfo()
+    {
+        var username = User.Identity?.Name;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var roles = User.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
+            
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(userId))
+        {
+            _logger.LogWarning("Missing required claims in token");
+            throw new UnauthorizedAccessException("Invalid user identity: Missing required claims");
+        }
+        
+        return (username, userId, roles);
     }
 
     public class UpdateUserRequest
