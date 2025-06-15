@@ -1,0 +1,1 @@
+CreatedRentalDTO [StartDate=2024-6-08T14:30:00, EndDate=2024-06-10T15:00:00, ReservedBookId=BOOK123, UserEmail=user@email.com]
