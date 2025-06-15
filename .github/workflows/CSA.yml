@@ -37,29 +37,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for better analysis
-
-      - name: Run API Container
-        run: |
-          echo "Building and starting API container..."
-
-          docker run -d \
-            --name api \
-            --network zap-net \
-            -p ${{ env.API_PORT }}:${{ env.API_PORT }} \
-            -e ASPNETCORE_URLS=http://+:${{ env.API_PORT }} \
-            -e ASPNETCORE_ENVIRONMENT=Development \
-            -e JAVA_HOME="${JAVA_HOME}" \
-            -e Keycloak_Audience="${Keycloak_Audience:-dev}" \
-            -e Keycloak_Authority="${Keycloak_Authority:-dev}" \
-            -e Keycloak_ClientId="${Keycloak_ClientId:-dev}" \
-            -e Keycloak_Password="${Keycloak_Password:-dev}" \
-            -e Keycloak_URL="${Keycloak_URL:-dev}" \
-            -e Keycloak_Username="${Keycloak_Username:-dev}" \
-            -e KEYCLOAK_ADMIN="${KEYCLOAK_ADMIN:-admin}" \
-            -e KEYCLOAK_ADMIN_PASSWORD="${KEYCLOAK_ADMIN_PASSWORD:-admin}" \
-            -e LibraryDatabase="${LibraryDatabase:-dev}" \
-            ${{ env.DOCKER_IMAGE_NAME }}    
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis 
 
       - name: Setup .NET SDK
         uses: actions/setup-dotnet@v4
