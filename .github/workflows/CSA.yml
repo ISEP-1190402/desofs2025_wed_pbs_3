@@ -11,16 +11,20 @@ env:
   DOCKER_IMAGE_NAME: library-api
   API_PORT: 5000
   PROJECT_DIR: ./LibraryOnlineRentalSystem
-  JAVA_HOME: ${{ secrets.JAVA_HOME }}
-  Keycloak_Audience: ${{ secrets.KEYCLOAK_AUDIENCE }}
-  Keycloak_Authority: ${{ secrets.KEYCLOAK_AUTHORITY }}
-  Keycloak_ClientId: ${{ secrets.KEYCLOAK_CLIENTID }}
-  Keycloak_Password: ${{ secrets.KEYCLOAK_PASSWORD }}
-  Keycloak_URL: ${{ secrets.KEYCLOAK_URL }}
-  Keycloak_Username: ${{ secrets.KEYCLOAK_USERNAME }}
-  KEYCLOAK_ADMIN: ${{ secrets.KEYCLOAK_ADMIN }}
-  KEYCLOAK_ADMIN_PASSWORD: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
-  LibraryDatabase: ${{ secrets.LIBRARYDATABASE }}
+  SONAR_PROJECT_KEY: jorgealmeidadeveloper_LibraryOnlineRentalSystem
+  SONAR_ORG: jorgealmeidadeveloper
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  SONAR_HOST_URL: https://sonarcloud.io
+  JAVA_HOME: "${{ secrets.JAVA_HOME }}"
+  Keycloak_Audience: "${{ secrets.KEYCLOAK_AUDIENCE }}"
+  Keycloak_Authority: "${{ secrets.KEYCLOAK_AUTHORITY }}"
+  Keycloak_ClientId: "${{ secrets.KEYCLOAK_CLIENTID }}"
+  Keycloak_Password: "${{ secrets.KEYCLOAK_PASSWORD }}"
+  Keycloak_URL: "${{ secrets.KEYCLOAK_URL }}"
+  Keycloak_Username: "${{ secrets.KEYCLOAK_USERNAME }}"
+  KEYCLOAK_ADMIN: "${{ secrets.KEYCLOAK_ADMIN }}"
+  KEYCLOAK_ADMIN_PASSWORD: "${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}"
+  LibraryDatabase: "${{ secrets.LIBRARYDATABASE }}"
 
 jobs:
   csa:
