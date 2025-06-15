@@ -157,7 +157,7 @@ public class AuthIntegrationTests
         var duplicateUser = new NewUserDTO
         {
             Name = "Another User",
-            Email = newUser.Email, // Same email
+            Email = newUser.Email,
             UserName = $"anotheruser{uniqueId}",
             Password = "TestPassword123!",
             PhoneNumber = $"91{uniquePhoneNumber}",
