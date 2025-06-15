@@ -2,12 +2,14 @@ using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Common;
 using LibraryOnlineRentalSystem.Domain.Rentals;
 using LibraryOnlineRentalSystem.Domain.User;
+using LibraryOnlineRentalSystem.Repository.RentalRepository;
 using LibraryOnlineRentalSystem.Utils;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace LibraryOnlineRentalSystem.Controllers;
 
@@ -15,29 +17,62 @@ namespace LibraryOnlineRentalSystem.Controllers;
 [ApiController]
 public class RentalController : ControllerBase
 {
-    private readonly RentalService _rentalService;
-    private readonly UserService _userService;
-    private readonly BookService _bookService;
+    private readonly IRentalRepository _rentalRepository;
+    private readonly IUserRepository _userRepository;
+    private readonly IBookRepository _bookRepository;
+    private readonly IWorkUnity _workUnit;
     private readonly ILogger<RentalController> _logger;
+    private readonly RentalService _rentalService;
 
     public RentalController(
-        RentalService rentalService, 
-        UserService userService, 
-        BookService bookService, 
-        ILogger<RentalController> logger)
+        IRentalRepository rentalRepository,
+        IUserRepository userRepository,
+        IBookRepository bookRepository,
+        IWorkUnity workUnit,
+        ILogger<RentalController> logger,
+        RentalService rentalService)
     {
-        _rentalService = rentalService;
-        _userService = userService;
-        _bookService = bookService;
-        _logger = logger;
+        _rentalRepository = rentalRepository ?? throw new ArgumentNullException(nameof(rentalRepository));
+        _userRepository = userRepository ?? throw new ArgumentNullException(nameof(userRepository));
+        _bookRepository = bookRepository ?? throw new ArgumentNullException(nameof(bookRepository));
+        _workUnit = workUnit ?? throw new ArgumentNullException(nameof(workUnit));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _rentalService = rentalService ?? throw new ArgumentNullException(nameof(rentalService));
     }
     
-    // POST: api/rental
-    // Access: Regular Users and LibraryManagers, but not Admins
-    [HttpPost]
-    //[Authorize(Roles = "User,LibraryManager")]
-    public async Task<IActionResult> CreateRental(CreatedRentalDTO dto)
+    private async Task<(string Username, string UserId, IList<string> Roles, string Email)> GetCurrentUserInfo()
     {
+        var username = User.Identity?.Name;
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var email = User.FindFirstValue(ClaimTypes.Email);
+        var roles = User.Claims
+            .Where(c => c.Type == ClaimTypes.Role)
+            .Select(c => c.Value)
+            .ToList();
+            
+        if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(email))
+        {
+            _logger.LogWarning("Missing required claims in token");
+            throw new UnauthorizedAccessException("Invalid user identity: Missing required claims");
+        }
+        
+        return (username, userId, roles, email);
+    }
+
+    public class CreateRentalRequestDto
+    {
+        public string StartDate { get; set; }
+        public string EndDate { get; set; }
+        public string Isbn { get; set; }
+    }
+
+    // POST: api/rental working
+    // Access: User, LibraryManager
+    [HttpPost]
+    [Authorize(Roles = "User,LibraryManager")]
+    public async Task<IActionResult> CreateRental([FromBody] CreateRentalRequestDto dto)
+    {
+        _logger.LogInformation("=== CreateRental Start ===");
         
         if (User.IsInRole("Admin"))
         {
@@ -48,122 +83,166 @@ public class RentalController : ControllerBase
         if (dto == null)
         {
             _logger.LogWarning("Create rental failed: Request body is null");
-            return BadRequest("Rental data is required");
+            return BadRequest(new { message = "Rental data is required" });
         }
+
+        _logger.LogInformation("Request data: {Data}", JsonSerializer.Serialize(dto));
 
         try
         {
-            _logger.LogInformation("Rental creation requested by {UserEmail} for book {BookId}", 
-                dto.UserEmail, dto.ReservedBookId);
+        
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogInformation("Current user: {Email}, Roles: {Roles}", 
+                currentUser.Email, string.Join(", ", currentUser.Roles));
 
-            // Parse dates
+            // Validate dates
             if (!DateTime.TryParse(dto.StartDate, out var startDate) || 
                 !DateTime.TryParse(dto.EndDate, out var endDate))
             {
-                _logger.LogWarning("Invalid date format in rental request");
-                return BadRequest("Invalid date format. Please use ISO 8601 format (e.g., 2023-01-01T00:00:00Z)");
+                _logger.LogWarning("Invalid date format. Start: {StartDate}, End: {EndDate}", 
+                    dto.StartDate, dto.EndDate);
+                return BadRequest(new { message = "Invalid date format. Use ISO 8601 format (e.g., 2023-01-01T00:00:00)" });
             }
 
-            // Basic date validation
-            if (endDate < startDate)
+            if (endDate <= startDate)
             {
-                _logger.LogWarning("End date {EndDate} is before start date {StartDate}", endDate, startDate);
-                return BadRequest("End date cannot be before start date");
+                _logger.LogWarning("End date {EndDate} is before or equal to start date {StartDate}", 
+                    endDate, startDate);
+                return BadRequest(new { message = "End date cannot be before or equal to start date" });
             }
 
-            try
+            var book = await _bookRepository.GetBookByIsbnAsync(dto.Isbn);
+            if (book == null)
             {
-                // Create the rental (all validations are handled in the service layer)
-                var rental = await _rentalService.CreateARentalAsync(dto);
-
-                // Log the successful rental creation
-                _logger.LogInformation("Rental created with ID {RentalId} for user {UserEmail}", 
-                    rental.IdRentalValue, dto.UserEmail);
-
-                // Log to file with formatted rental details
-                var rentalDetails = $"Rental Created\n" +
-                    $"--------INVOICE--------\n" +
-                    $"Rental ID: {rental.IdRentalValue}\n" +
-                    $"User Email: {rental.UserEmail}\n" +
-                    $"Book ID: {rental.ReservedBookId}\n" +
-                    $"Start Date: {rental.StartDate}\n" +
-                    $"End Date: {rental.EndDate}\n" +
-                    $"Status: {rental.RentalStatus}\n" +
-                    $"Created At: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\n" +
-                    $"----------------";
-                FilePrint.RentalFilePrint(rentalDetails);
-
-                return Ok(new { Message = "Rental created successfully" });
+                _logger.LogWarning("Book with ISBN {Isbn} not found", dto.Isbn);
+                return NotFound(new { message = $"Book with ISBN {dto.Isbn} not found" });
             }
-            catch (BusinessRulesException ex) when (ex.Message.Contains("No available copies", StringComparison.OrdinalIgnoreCase))
+
+            var user = await _userRepository.GetByEmailAsync(currentUser.Email);
+            if (user == null)
             {
-                _logger.LogWarning("Failed to create rental - {Message}", ex.Message);
-                return Conflict(ex.Message);
+                _logger.LogWarning("User with email {Email} not found", currentUser.Email);
+                return NotFound(new { message = $"User with email {currentUser.Email} not found" });
             }
+
+            // Check if there are available copies
+            var availableCopies = book.AmountOfCopies.GetBookAmountOfCopies();
+            if (availableCopies <= 0)
+            {
+                _logger.LogWarning("No available copies of book with ISBN {Isbn}", dto.Isbn);
+                return BadRequest(new { message = "No available copies of the book" });
+            }
+
+            var rentalDto = new CreatedRentalDTO(
+                dto.StartDate,
+                dto.EndDate,
+                book.Id.Value, 
+                currentUser.Email
+            );
+            var updatedBook = _bookRepository.UpdateBookStock(book.Id.Value, availableCopies - 1);
+            if (updatedBook == null)
+            {
+                _logger.LogError("Failed to update book stock for book with ISBN {Isbn}", dto.Isbn);
+                return StatusCode(500, new { message = "Failed to update book stock" });
+            }
+            
+            var rental = await _rentalService.CreateARentalAsync(rentalDto);
+
+            // Log the successful rental creation
+            _logger.LogInformation("Rental created with ID {RentalId} for user {UserEmail}", 
+                rental.IdRentalValue, currentUser.Email);
+
+            // Log to file with formatted rental details
+            var rentalDetails = $"Rental Created\n" +
+                $"--------INVOICE--------\n" +
+                $"Rental ID: {rental.IdRentalValue}\n" +
+                $"User Email: {currentUser.Email}\n" +
+                $"Book ID: {dto.Isbn}\n" +
+                $"Start Date: {dto.StartDate}\n" +
+                $"End Date: {dto.EndDate}\n" +
+                $"Status: {rental.RentalStatus}\n" +
+                $"Created At: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss} UTC\n" +
+                $"----------------";
+            FilePrint.RentalFilePrint(rentalDetails);
+
+            return Ok(rental);
         }
-        catch (BusinessRulesException ex)
+        catch (Exception ex) when (ex is JsonException || ex is ArgumentException)
         {
-            _logger.LogWarning(ex, "Business rule violation: {Message}", ex.Message);
-            return BadRequest(ex.Message);
+            _logger.LogWarning(ex, "Invalid request data");
+            return BadRequest(new { message = "Invalid request data" });
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "An error occurred while creating rental");
-            return StatusCode(500, "An unexpected error occurred while processing your request");
+            return StatusCode(500, new { message = "An unexpected error occurred while processing your request" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== CreateRental End ===");
         }
     }
     
-    // GET: api/rental/user/{username}/rentals
-    // Access: Any authenticated user (own rentals only)
+    
+    // GET: api/rental/user/{username}/rentals working get all rentals of user
+    // Access: Any authenticated user (own rentals), Admin/LibraryManager (any rentals)
     [HttpGet("user/{username}/rentals")]
-    //[Authorize]
+    [Authorize]
     public async Task<ActionResult<List<RentalDTO>>> GetRentalsByUsername(string username)
     {
+        _logger.LogInformation("=== GetRentalsByUsername Start ===");
         _logger.LogInformation("Fetching rentals for username: {Username}", username);
         
         if (string.IsNullOrWhiteSpace(username))
         {
-            _logger.LogWarning("Empty username provided in the request");
+            _logger.LogWarning("Username cannot be empty");
             return BadRequest(new { message = "Username is required" });
         }
-
+        
         try
         {
-            // Get username from token
-            var tokenUsername = User.FindFirst(ClaimTypes.Name)?.Value;
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogDebug("Current user: {CurrentUser}, Requested username: {RequestedUser}", 
+                currentUser.Username, username);
             
-            // Verify username in URL matches token (users can only view their own rentals)
-            if (!string.Equals(tokenUsername, username, StringComparison.OrdinalIgnoreCase))
+            // Users can only view their own rentals unless they are admins or library managers
+            if (!User.IsInRole("Admin") && !User.IsInRole("LibraryManager") && 
+                !string.Equals(currentUser.Username, username, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogWarning("Access denied - Username mismatch. Token: {TokenUser}, URL: {UrlUser}", 
-                    tokenUsername, username);
+                _logger.LogWarning("User {CurrentUser} is not authorized to view rentals for {RequestedUser}", 
+                    currentUser.Username, username);
                 return Forbid("You can only view your own rentals");
             }
             
-            // Get user by username to get their email
-            var user = await _userService.GetUserByUsernameAsync(username);
+            // Get user by username to verify they exist and get their email
+            var user = await _userRepository.GetByUsernameAsync(username);
             if (user == null)
             {
                 _logger.LogWarning("User with username {Username} not found", username);
                 return NotFound(new { message = $"User with username {username} not found" });
             }
             
-            // Get rentals by user's email
-            var rentals = await _rentalService.GetAllRentalsOfUserAsync(user.Email);
-            
-            if (rentals == null || !rentals.Any())
-            {
-                _logger.LogInformation("No rentals found for user: {Username}", username);
-                return Ok(new { message = $"No rentals found for user {username}" });
-            }
-            
-            _logger.LogInformation("Successfully retrieved {Count} rentals for user {Username}", rentals.Count, username);
-            return rentals;
+            // Get rentals for the user by email
+            var rentals = await _rentalRepository.GetAllAsyncOfUser(user.Email.EmailAddress);
+            _logger.LogInformation("Found {Count} rentals for user {Username}", 
+                rentals.Count, username);
+                
+            // Convert to DTOs
+            var rentalDtos = rentals.Select(r => new RentalDTO(
+                r.Id.Value,
+                r.StartDate.StartDateTime.ToString("o"),
+                r.EndDate.EndDateTime.ToString("o"),
+                r.RentedBookIdentifier.BookId,
+                r.StatusOfRental.RentStatus.ToString(),
+                r.EmailUser.EmailAddress
+            )).ToList();
+                
+            return Ok(rentalDtos);
         }
-        catch (BusinessRulesException ex)
+        catch (UnauthorizedAccessException ex)
         {
-            _logger.LogWarning(ex, "Business rule violation while fetching rentals for {Username}", username);
-            return BadRequest(new { message = ex.Message });
+            _logger.LogWarning(ex, "Unauthorized access while fetching rentals for {Username}", username);
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
@@ -173,308 +252,592 @@ public class RentalController : ControllerBase
         }
     }
     
-    // GET: api/rental/user/{username}/rentals/{id}
-    // Get a specific rental by ID for a user (users can only see their own)
-    // Access: Any authenticated user (own rentals only)
+    
+    // GET: api/rental/user/{username}/rentals/{id} working
+    // Access: Regular users (own rental only) get specific rental of user
     [HttpGet("user/{username}/rentals/{id}")]
-    //[Authorize]
+    [Authorize(Roles = "User")]
     public async Task<ActionResult<RentalDTO>> GetUserRental(string username, string id)
     {
-        _logger.LogInformation("User {Username} fetching rental {RentalId}", username, id);
-        
+        _logger.LogInformation("=== GetUserRental Start ===");
+        _logger.LogInformation("Fetching rental with ID {RentalId} for user: {Username}", id, username);
+            
         if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(id))
         {
-            return BadRequest("Username and rental ID are required");
+            _logger.LogWarning("Username and rental ID are required");
+            return BadRequest(new { message = "Username and rental ID are required" });
         }
-
-        try
-        {
-            // Get username from token (using Name claim which is standard for JWT)
-            var tokenUsername = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Name)?.Value;
-            
-            // Verify username in URL matches token
-            if (!string.Equals(tokenUsername, username, StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("Username mismatch - Token: {TokenUser}, URL: {UrlUser}", tokenUsername, username);
-                return Forbid("You can only view your own rentals");
-            }
-            
-            // Get the rental
-            var rental = await _rentalService.GetRentalByIdAsync(id);
-            if (rental == null)
-            {
-                return NotFound($"Rental with ID {id} not found");
-            }
-            
-            // Verify rental belongs to the user
-            if (!string.Equals(rental.UserEmail, User.FindFirst(ClaimTypes.Email)?.Value, StringComparison.OrdinalIgnoreCase))
-            {
-                _logger.LogWarning("Rental {RentalId} does not belong to user {Username}", id, username);
-                return Forbid("This rental does not belong to you");
-            }
-            
-            return rental;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error fetching rental with ID {Id} for user {Username} at {Time}. Error: {ErrorMessage}", 
-                id, username, DateTime.UtcNow, ex.Message);
-            return BadRequest($"An error occurred while fetching rental: {ex.Message}");
-        }
-    }
-    
-    // GET: api/rental/{id}
-    // Get a rental by ID (Admin/LibraryManager only)
-    // Access: Admin, LibraryManager
-    [HttpGet("{id}")]
-    //[Authorize(Roles = "Admin,LibraryManager")]
-    public async Task<ActionResult<RentalDTO>> GetRentalById(string id)
-    {
-        _logger.LogInformation("Admin/LibraryManager is fetching rental with ID {Id} at {Time}", id, DateTime.UtcNow);
         
         try
         {
-            _logger.LogDebug("Calling _rentalService.GetRentalByIdAsync with ID: {Id}", id);
-            var rental = await _rentalService.GetRentalByIdAsync(id);
-            
-            if (rental == null)
+            // Immediately block Admin/LibraryManager access
+            if (User.IsInRole("Admin") || User.IsInRole("LibraryManager"))
             {
-                _logger.LogWarning("Rental with ID {Id} not found at {Time}", id, DateTime.UtcNow);
-                return NotFound($"Rental with ID {id} not found");
+                _logger.LogWarning("Admin/LibraryManager access denied to GetUserRental");
+                return BadRequest(new { message = "Not allowed" });
             }
             
-            _logger.LogInformation("Successfully retrieved rental with ID {Id} at {Time}", id, DateTime.UtcNow);
-            return rental;
+            var currentUser = await GetCurrentUserInfo();
+            
+            // Verify the requesting user is accessing their own rentals
+            if (!string.Equals(currentUser.Username, username, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("User {CurrentUser} is not authorized to access rentals for {RequestedUser}", 
+                    currentUser.Username, username);
+                return NotFound(new { message = "Cannot find" });
+            }
+            
+            // Get the rental by ID
+            var rental = await _rentalRepository.GetByIdAsync(new RentalID(id));
+            if (rental == null)
+            {
+                _logger.LogWarning("Rental with ID {RentalId} not found", id);
+                return NotFound(new { message = $"Rental with ID {id} not found" });
+            }
+            
+            // Verify the rental belongs to the requesting user
+            if (!string.Equals(rental.EmailUser.EmailAddress, currentUser.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("User {CurrentUser} attempted to access rental {RentalId} belonging to {RentalUser}",
+                    currentUser.Username, id, rental.EmailUser.EmailAddress);
+                return NotFound(new { message = "Cannot find" });
+            }
+            
+            _logger.LogInformation("Successfully retrieved rental with ID: {RentalId} for user: {Username}", 
+                id, username);
+                
+            var rentalDto = new RentalDTO(
+                rental.Id.Value,
+                rental.StartDate.StartDateTime.ToString("o"),
+                rental.EndDate.EndDateTime.ToString("o"),
+                rental.RentedBookIdentifier.BookId,
+                rental.StatusOfRental.RentStatus.ToString(),
+                rental.EmailUser.EmailAddress
+            );
+            
+            return Ok(rentalDto);
+        }
+        catch (Exception ex) when (ex is ArgumentException || ex is FormatException)
+        {
+            _logger.LogWarning(ex, "Invalid rental ID format: {RentalId}", id);
+            return BadRequest(new { message = "Invalid rental ID format" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to rental with ID: {RentalId}", id);
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching rental with ID {Id} at {Time}. Error: {ErrorMessage}", 
-                id, DateTime.UtcNow, ex.Message);
-            return BadRequest($"An error occurred while fetching rental: {ex.Message}");
+            _logger.LogError(ex, "Error fetching rental with ID: {RentalId} for user: {Username}", 
+                id, username);
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { message = "An error occurred while fetching the rental" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== GetUserRental End ===");
         }
     }
 
-    // PUT: api/rental/{id}/status
-    // Update rental status (LibraryManager only)
-    // Access: LibraryManager
-    [HttpPut("{id}/status")]
-    //[Authorize(Roles = "LibraryManager")]
-    public async Task<IActionResult> UpdateRentalStatus(string id, [FromBody] UpdateRentalStatusDTO statusDto)
+    // GET: api/rental/{id} working
+    // Access: Admin, LibraryManager
+    [HttpGet("{id}")]
+    [Authorize(Roles = "Admin,LibraryManager")]
+    public async Task<ActionResult<RentalDTO>> GetRentalById(string id)
     {
-        _logger.LogInformation("Updating status for rental ID {Id} at {Time}", id, DateTime.UtcNow);
+        _logger.LogInformation("=== GetRentalById Start ===");
+        _logger.LogInformation("Fetching rental with ID: {RentalId}", id);
         
         if (string.IsNullOrWhiteSpace(id))
         {
-            _logger.LogWarning("Attempted to update status with null or empty rental ID");
+            _logger.LogWarning("Rental ID cannot be empty");
+            return BadRequest(new { message = "Rental ID is required" });
+        }
+
+        try
+        {
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogDebug("User {Username} is fetching rental with ID: {RentalId}", 
+                currentUser.Username, id);
+            
+            var rental = await _rentalRepository.GetByIdAsync(new RentalID(id));
+            
+            if (rental == null)
+            {
+                _logger.LogWarning("Rental with ID {RentalId} not found", id);
+                return NotFound(new { message = $"Rental with ID {id} not found" });
+            }
+            
+            _logger.LogInformation("Successfully retrieved rental with ID: {RentalId}", id);
+            
+            var rentalDto = new RentalDTO(
+                rental.Id.Value,
+                rental.StartDate.StartDateTime.ToString("o"),
+                rental.EndDate.EndDateTime.ToString("o"),
+                rental.RentedBookIdentifier.BookId,
+                rental.StatusOfRental.RentStatus.ToString(),
+                rental.EmailUser.EmailAddress
+            );
+            
+            return Ok(rentalDto);
+        }
+        catch (Exception ex) when (ex is ArgumentException || ex is FormatException)
+        {
+            _logger.LogWarning(ex, "Invalid rental ID format: {RentalId}", id);
+            return BadRequest(new { message = "Invalid rental ID format" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to rental with ID: {RentalId}", id);
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching rental with ID: {RentalId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { message = "An error occurred while fetching the rental" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== GetRentalById End ===");
+        }
+    }
+    
+    // PUT: api/rental/{id}/status working
+    // Access: LibraryManager
+    [HttpPut("{id}/status")]
+    [Authorize(Roles = "LibraryManager")]
+    public async Task<IActionResult> UpdateRentalStatus(string id, [FromBody] UpdateRentalStatusDTO statusDto)
+    {
+        _logger.LogInformation("=== UpdateRentalStatus Start ===");
+        _logger.LogInformation("Updating status for rental ID: {RentalId}", id);
+        
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            _logger.LogWarning("Rental ID cannot be empty");
             return BadRequest(new { message = "Rental ID is required" });
         }
 
         if (statusDto == null || string.IsNullOrWhiteSpace(statusDto.Status))
         {
-            _logger.LogWarning("Attempted to update rental {RentalId} with empty status", id);
+            _logger.LogWarning("Status is required");
             return BadRequest(new { message = "Status is required" });
         }
         
         // Validate status value
         var validStatuses = new[] { "active", "pending", "completed", "cancelled" };
-        if (!validStatuses.Contains(statusDto.Status.ToLower()))
+        var status = statusDto.Status.ToLower();
+        if (!validStatuses.Contains(status))
         {
-            _logger.LogWarning("Attempted to update rental {RentalId} with invalid status: {Status}", id, statusDto.Status);
-            return BadRequest(new { message = $"Invalid status. Valid statuses are: {string.Join(", ", validStatuses)}" });
+            _logger.LogWarning("Invalid status value: {Status}", status);
+            return BadRequest(new { 
+                message = $"Invalid status. Valid statuses are: {string.Join(", ", validStatuses)}" 
+            });
         }
         
         try
         {
-            await _rentalService.UpdateRentalStatusAsync(id, statusDto.Status);
-            _logger.LogInformation("Successfully updated status for rental ID {Id} to {Status}", id, statusDto.Status);
-            return Ok(new { message = $"Status of rental with id {id} changed to {statusDto.Status.ToLower()}" });
-        }
-        catch (BusinessRulesException ex)
-        {
-            _logger.LogWarning("Status update failed for rental {RentalId}: {Message}", id, ex.Message);
-            return BadRequest(new { message = ex.Message });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error updating status for rental ID {Id}", id);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while updating the rental status" });
-        }
-    }
-
-    // GET: api/rental/user/{email}
-    // Access: Admin, LibraryManager
-    [HttpGet("user/{email}")]
-    //[Authorize(Roles = "Admin,LibraryManager")]
-    public async Task<ActionResult<List<RentalDTO>>> GetAllRentalsOfUser(string email)
-    {
-        _logger.LogInformation("Fetching rentals for user {Email} at {Time}", email, DateTime.UtcNow);
-        
-        try
-        {
-            var rentals = await _rentalService.GetAllRentalsOfUserAsync(email);
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogDebug("User {Username} is updating status of rental {RentalId} to {Status}", 
+                currentUser.Username, id, status);
             
-            if (rentals == null || !rentals.Any())
+            var rental = await _rentalRepository.GetByIdAsync(new RentalID(id));
+            if (rental == null)
             {
-                _logger.LogInformation("No rentals found for user {Email}", email);
-                return Ok(new { message = $"No rentals found for user {email}" });
+                _logger.LogWarning("Rental with ID {RentalId} not found", id);
+                return NotFound(new { message = $"Rental with ID {id} not found" });
             }
             
-            return rentals;
+            // Update status based on the provided value
+            switch (status)
+            {
+                case "active":
+                    rental.MarkAsActive();
+                    break;
+                case "pending":
+                    rental.MarkAsPending();
+                    break;
+                case "completed":
+                    rental.MarkAsCompleted();
+                    break;
+                case "cancelled":
+                    rental.CancelBooking();
+                    break;
+            }
+            
+            _rentalRepository.Update(rental);
+            await _workUnit.CommitAsync();
+            
+            _logger.LogInformation("Successfully updated status of rental {RentalId} to {Status}", id, status);
+            
+            var rentalDto = new RentalDTO(
+                rental.Id.Value,
+                rental.StartDate.StartDateTime.ToString("o"),
+                rental.EndDate.EndDateTime.ToString("o"),
+                rental.RentedBookIdentifier.BookId,
+                rental.StatusOfRental.RentStatus.ToString(),
+                rental.EmailUser.EmailAddress
+            );
+            
+            return Ok(new { 
+                message = $"Status of rental with ID {id} updated to {status}",
+                rental = rentalDto
+            });
         }
-        catch (BusinessRulesException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        catch (Exception ex) when (ex is ArgumentException || ex is FormatException)
         {
-            _logger.LogWarning("User not found: {Email}", email);
-            return NotFound(new { message = $"User with email {email} not found" });
+            _logger.LogWarning(ex, "Invalid rental ID format: {RentalId}", id);
+            return BadRequest(new { message = "Invalid rental ID format" });
         }
-        catch (ArgumentException ex)
+        catch (UnauthorizedAccessException ex)
         {
-            _logger.LogWarning("Invalid email format: {Email}", email);
-            return BadRequest(new { message = ex.Message });
+            _logger.LogWarning(ex, "Unauthorized access to update rental with ID: {RentalId}", id);
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching rentals for user {Email}", email);
-            return StatusCode(StatusCodes.Status500InternalServerError, new { message = "An error occurred while fetching rentals" });
+            _logger.LogError(ex, "Error updating status for rental ID: {RentalId}", id);
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { message = "An error occurred while updating the rental status" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== UpdateRentalStatus End ===");
         }
     }
-
-    // GET: api/rental/user/{email}/active
-    // Get all active rentals for a user by email (Admin/LibraryManager only)
+    
+    // GET: api/rental/user/{email} working
     // Access: Admin, LibraryManager
-    [HttpGet("user/{email}/active")]
-    //[Authorize(Roles = "Admin,LibraryManager")]
-    public async Task<ActionResult<List<RentalDTO>>> GetAllActiveRentalsOfUser(string email)
+    [HttpGet("user/{email}")]
+    [Authorize(Roles = "Admin,LibraryManager")]
+    public async Task<ActionResult<List<RentalDTO>>> GetRentalsByUserEmail(string email)
+    {
+        return await HandleUserRentalsRequest(email, "all", 
+            rentals => rentals.ToList());
+    }
+    
+    // GET: api/rental/user/{email}/active working
+    // Access: Admin, LibraryManager
+    [HttpGet("user/{email}/active")] 
+    [Authorize(Roles = "Admin,LibraryManager")]
+    public async Task<ActionResult<List<RentalDTO>>> GetActiveRentalsByUserEmail(string email)
     {
         return await HandleUserRentalsRequest(email, "active", 
-            () => _rentalService.GetAllActiveRentalsOfUserAsync(email));
+            rentals => rentals.Where(r => r.GetCurrentStatus().RentStatus == Status.Active).ToList());
     }
 
-    // GET: api/rental/user/{email}/cancelled
-    // Get all cancelled rentals for a user by email (Admin/LibraryManager only)
+    // GET: api/rental/user/{email}/cancelled working
     // Access: Admin, LibraryManager
     [HttpGet("user/{email}/cancelled")]
     [Authorize(Roles = "Admin,LibraryManager")]
-    public async Task<ActionResult<List<RentalDTO>>> GetAllCancelledRentalsOfUser(string email)
+    public async Task<ActionResult<List<RentalDTO>>> GetCancelledRentalsByUserEmail(string email)
     {
         return await HandleUserRentalsRequest(email, "cancelled", 
-            () => _rentalService.GetAllCancelledRentalsOfUserAsync(email));
+            rentals => rentals.Where(r => r.GetCurrentStatus().RentStatus == Status.Cancelled).ToList());
     }
 
-    // GET: api/rental/user/{email}/pending
-    // Get all pending rentals for a user by email (Admin/LibraryManager only)
+    // GET: api/rental/user/{email}/pending working
     // Access: Admin, LibraryManager
     [HttpGet("user/{email}/pending")]
-    //[Authorize(Roles = "Admin,LibraryManager")]
-    public async Task<ActionResult<List<RentalDTO>>> GetAllPendingRentalsOfUser(string email)
+    [Authorize(Roles = "Admin,LibraryManager")]
+    public async Task<ActionResult<List<RentalDTO>>> GetPendingRentalsByUserEmail(string email)
     {
         return await HandleUserRentalsRequest(email, "pending", 
-            () => _rentalService.GetAllPendingRentalsOfUserAsync(email));
+            rentals => rentals.Where(r => r.GetCurrentStatus().RentStatus == Status.Pending).ToList());
     }
-
-    // GET: api/rental/user/{email}/completed
-    // Get all completed rentals for a user by email (Admin/LibraryManager only)
+    
+    // GET: api/rental/user/{email}/completed working
     // Access: Admin, LibraryManager
     [HttpGet("user/{email}/completed")]
-    //[Authorize(Roles = "Admin,LibraryManager")]
-    public async Task<ActionResult<List<RentalDTO>>> GetAllCompletedRentalsOfUser(string email)
+    [Authorize(Roles = "Admin,LibraryManager")]
+    public async Task<ActionResult<List<RentalDTO>>> GetCompletedRentalsByUserEmail(string email)
     {
         return await HandleUserRentalsRequest(email, "completed", 
-            () => _rentalService.GetAllCompletedRentalsOfUserAsync(email));
+            rentals => rentals.Where(r => r.GetCurrentStatus().RentStatus == Status.Completed).ToList());
     }
     
     private async Task<ActionResult<List<RentalDTO>>> HandleUserRentalsRequest(string email, string rentalType, 
-        Func<Task<List<RentalDTO>>> getRentalsFunc)
+        Func<List<Domain.Rentals.Rental>, List<Domain.Rentals.Rental>> filterRentals)
     {
-        _logger.LogInformation("Fetching {RentalType} rentals for user {Email} at {Time}", 
-            rentalType, email, DateTime.UtcNow);
+        _logger.LogInformation("=== HandleUserRentalsRequest Start ===");
+        _logger.LogInformation("Fetching {RentalType} rentals for user: {Email}", rentalType, email);
             
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            _logger.LogWarning("Email is required");
+            return BadRequest(new { message = "Email is required" });
+        }
+        
         try
         {
-            var rentals = await getRentalsFunc();
+            var currentUser = await GetCurrentUserInfo();
             
-            if (rentals == null || !rentals.Any())
+            // Only allow admins/library managers to view other users' rentals
+            if (!User.IsInRole("Admin") && !User.IsInRole("LibraryManager") && 
+                !string.Equals(currentUser.Email, email, StringComparison.OrdinalIgnoreCase))
             {
-                _logger.LogInformation("No {RentalType} rentals found for user {Email}", rentalType, email);
-                return Ok(new { message = $"No {rentalType} rentals found for user {email}" });
+                _logger.LogWarning("User {CurrentUser} is not authorized to access {RentalType} rentals for {Email}", 
+                    currentUser.Email, rentalType, email);
+                return Forbid("You can only view your own rentals");
             }
             
-            return rentals;
+            // Get user by email to verify they exist
+            var user = await _userRepository.GetByEmailAsync(email);
+            if (user == null)
+            {
+                _logger.LogWarning("User with email {Email} not found", email);
+                return NotFound(new { message = $"User with email {email} not found" });
+            }
+            
+            // Get all rentals for the user and apply the filter
+            var allRentals = await _rentalRepository.GetAllAsyncOfUser(email);
+            var filteredRentals = filterRentals(allRentals);
+            
+            _logger.LogInformation("Found {Count} {RentalType} rentals for user {Email}", 
+                filteredRentals.Count, rentalType, email);
+                
+            var rentalDtos = filteredRentals.Select(r => new RentalDTO(
+                r.Id.Value,
+                r.StartDate.StartDateTime.ToString("o"),
+                r.EndDate.EndDateTime.ToString("o"),
+                r.RentedBookIdentifier.BookId,
+                r.StatusOfRental.RentStatus.ToString(),
+                r.EmailUser.EmailAddress
+            )).ToList();
+            
+            return Ok(rentalDtos);
         }
-        catch (BusinessRulesException ex) when (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+        catch (UnauthorizedAccessException ex)
         {
-            _logger.LogWarning("User not found: {Email}", email);
-            return NotFound(new { message = $"User with email {email} not found" });
-        }
-        catch (ArgumentException ex)
-        {
-            _logger.LogWarning("Invalid email format: {Email}", email);
-            return BadRequest(new { message = ex.Message });
+            _logger.LogWarning(ex, "Unauthorized access to fetch {RentalType} rentals for user: {Email}", 
+                rentalType, email);
+            return Unauthorized(new { message = ex.Message });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error fetching {RentalType} rentals for user {Email}", rentalType, email);
+            _logger.LogError(ex, "Error fetching {RentalType} rentals for user: {Email}", 
+                rentalType, email);
             return StatusCode(StatusCodes.Status500InternalServerError, 
                 new { message = $"An error occurred while fetching {rentalType} rentals" });
         }
+        finally
+        {
+            _logger.LogInformation("=== HandleUserRentalsRequest End ===");
+        }
     }
 
-    // GET: api/rental
-    // Access: LibraryManager
+    // GET: api/rental working
+    // Access: admin, LibraryManager
     [HttpGet]
-    //[Authorize(Roles = "LibraryManager")]
+    [Authorize(Roles = "Admin, LibraryManager")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllRentals()
     {
-        _logger.LogInformation("Fetching all rentals stored at {Time}", DateTime.UtcNow);
+        _logger.LogInformation("=== GetAllRentals Start ===");
+        _logger.LogInformation("Fetching all rentals");
 
-        var rentals = await _rentalService.GetAllRentalsAsync();
-        return rentals;
+        try
+        {
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogDebug("User {Username} is fetching all rentals", currentUser.Username);
+            
+            var rentals = await _rentalRepository.GetAllAsync();
+            _logger.LogInformation("Successfully retrieved {Count} rentals", rentals.Count);
+            
+            return Ok(rentals.Select(r => r.toDTO()).ToList());
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to fetch all rentals");
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching all rentals");
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { message = "An error occurred while fetching all rentals" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== GetAllRentals End ===");
+        }
     }
 
-    // GET: api/rental/active
+    // GET: api/rental/active working
     // Access: LibraryManager
-    [HttpGet("active")]
-    //[Authorize(Roles = "LibraryManager")]
+    [HttpGet("active")] 
+    [Authorize(Roles = "LibraryManager")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllActiveRentals()
     {
-        _logger.LogInformation("Fetching all active rentals at {Time}", DateTime.UtcNow);
+        _logger.LogInformation("=== GetAllActiveRentals Start ===");
+        _logger.LogInformation("Fetching all active rentals");
 
-        var rentals = await _rentalService.GetAllActiveRentalsAsync();
-        return rentals;
+        try
+        {
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogDebug("User {Username} is fetching all active rentals", currentUser.Username);
+            
+            // Get all rentals and filter by status
+            var allRentals = await _rentalRepository.GetAllActiveRentalsAssync();
+            
+            _logger.LogInformation("Successfully retrieved {Count} active rentals", allRentals.Count);
+            
+            // Convert to DTOs
+            var rentalDtos = allRentals.Select(r => new RentalDTO(
+                r.Id.Value,
+                r.StartDate.StartDateTime.ToString("o"),
+                r.EndDate.EndDateTime.ToString("o"),
+                r.RentedBookIdentifier.BookId,
+                r.StatusOfRental.RentStatus.ToString(),
+                r.EmailUser.EmailAddress
+            )).ToList();
+            
+            return Ok(rentalDtos);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to fetch active rentals");
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching active rentals");
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { message = "An error occurred while fetching active rentals" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== GetAllActiveRentals End ===");
+        }
     }
-
-    // GET: api/rental/cancelled
+    
+    // GET: api/rental/cancelled working
     // Access: LibraryManager
     [HttpGet("cancelled")]
-    //[Authorize(Roles = "LibraryManager")]
+    [Authorize(Roles = "LibraryManager")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllCancelledRentals()
     {
-        _logger.LogInformation("Fetching all cancelled rentals at {Time}", DateTime.UtcNow);
+        _logger.LogInformation("=== GetAllCancelledRentals Start ===");
+        _logger.LogInformation("Fetching all cancelled rentals");
 
-        var rentals = await _rentalService.GetAllCancelledRentalsAsync();
-        return rentals;
+        try
+        {
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogDebug("User {Username} is fetching all cancelled rentals", currentUser.Username);
+            
+            var rentals = await _rentalRepository.GetAllCancelledRentalsAssync();
+            var rentalDtos = rentals.Select(r => new RentalDTO(
+                r.Id.Value,
+                r.StartDate.StartDateTime.ToString("o"),
+                r.EndDate.EndDateTime.ToString("o"),
+                r.RentedBookIdentifier.BookId,
+                r.StatusOfRental.RentStatus.ToString(),
+                r.EmailUser.EmailAddress
+            )).ToList();
+            
+            _logger.LogInformation("Successfully retrieved {Count} cancelled rentals", rentalDtos.Count);
+            return Ok(rentalDtos);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to fetch cancelled rentals");
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching cancelled rentals");
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { message = "An error occurred while fetching cancelled rentals" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== GetAllCancelledRentals End ===");
+        }
     }
-
-    // GET: api/rental/pending
+    
+    // GET: api/rental/pending working
     // Access: LibraryManager
     [HttpGet("pending")]
-    //[Authorize(Roles = "LibraryManager")]
+    [Authorize(Roles = "LibraryManager")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllPendingRentals()
     {
-        _logger.LogInformation("Fetching all pending rentals at {Time}", DateTime.UtcNow);
+        _logger.LogInformation("=== GetAllPendingRentals Start ===");
+        _logger.LogInformation("Fetching all pending rentals");
 
-        var rentals = await _rentalService.GetAllPendingRentalsAsync();
-        return rentals;
+        try
+        {
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogDebug("User {Username} is fetching all pending rentals", currentUser.Username);
+            
+            var rentals = await _rentalRepository.GetAllPendingRentalsAssync();
+            var rentalDtos = rentals.Select(r => new RentalDTO(
+                r.Id.Value,
+                r.StartDate.StartDateTime.ToString("o"),
+                r.EndDate.EndDateTime.ToString("o"),
+                r.RentedBookIdentifier.BookId,
+                r.StatusOfRental.RentStatus.ToString(),
+                r.EmailUser.EmailAddress
+            )).ToList();
+            return Ok(rentalDtos);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to fetch pending rentals");
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching pending rentals");
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { message = "An error occurred while fetching pending rentals" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== GetAllPendingRentals End ===");
+        }
     }
-
-    // GET: api/rental/completed
+    
+    // GET: api/rental/completed working
     // Access: Admin, LibraryManager
     [HttpGet("completed")]
-    //[Authorize(Roles = "Admin,LibraryManager")]
+    [Authorize(Roles = "Admin,LibraryManager")]
     public async Task<ActionResult<List<RentalDTO>>> GetAllCompletedRentals()
     {
-        _logger.LogInformation("Fetching all completed rentals at {Time}", DateTime.UtcNow);
+        _logger.LogInformation("=== GetAllCompletedRentals Start ===");
+        _logger.LogInformation("Fetching all completed rentals");
 
-        var rentals = await _rentalService.GetAllCompletedRentalsAsync();
-        return rentals;
+        try
+        {
+            var currentUser = await GetCurrentUserInfo();
+            _logger.LogDebug("User {Username} is fetching all completed rentals", currentUser.Username);
+            
+            var rentals = await _rentalRepository.GetAllCompletedRentalsAssync();
+            var rentalDtos = rentals.Select(r => new RentalDTO(
+                r.Id.Value,
+                r.StartDate.StartDateTime.ToString("o"),
+                r.EndDate.EndDateTime.ToString("o"),
+                r.RentedBookIdentifier.BookId,
+                r.StatusOfRental.RentStatus.ToString(),
+                r.EmailUser.EmailAddress
+            )).ToList();
+            
+            _logger.LogInformation("Successfully retrieved {Count} completed rentals", rentalDtos.Count);
+            return Ok(rentalDtos);
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Unauthorized access to fetch completed rentals");
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error fetching completed rentals");
+            return StatusCode(StatusCodes.Status500InternalServerError, 
+                new { message = "An error occurred while fetching completed rentals" });
+        }
+        finally
+        {
+            _logger.LogInformation("=== GetAllCompletedRentals End ===");
+        }
     }
 }
