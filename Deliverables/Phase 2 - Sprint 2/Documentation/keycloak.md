@@ -1,5 +1,11 @@
 # Keycloak Configuration and Management
 
+> **DISCLAIMER:Important Notice Regarding MFA/Email Verification**
+> 
+> The Multi-Factor Authentication (MFA) and email verification features are fully functional in the current implementation. However, there is a known issue where the system fails to retrieve user tokens after successful MFA and email verification. This prevents the completion of subsequent authentication flows. Our testing indicates that this issue occurs specifically when the authentication flow reaches the MFA step, even when MFA is correctly configured and email verification has been successfully completed.
+> 
+> This document reflects the current state of the implementation and configuration. MFA configuration is working, however, in order to obtain token and do requests on Postman, users/admin/library manager must not have MFA configured.
+
 This document provides comprehensive documentation for the Keycloak identity and access management system used in our application. It covers the initialization script, realm configuration, security settings, and best practices for managing the Keycloak instance.
 
 ## Table of Contents
