@@ -247,4 +247,3 @@ echo "Set default role User for new registrations."
 
 
 echo "Keycloak additional configuration done!"
-

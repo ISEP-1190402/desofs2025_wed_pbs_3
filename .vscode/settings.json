@@ -1,0 +1,13 @@
+{
+  "terminal.integrated.env.osx": {
+    "Keycloak__Audience": "library-client",
+    "Keycloak__Authority": "http://localhost:8080/realms/library",
+    "Keycloak__ClientId": "library-client",
+    "Keycloak__Password": "xc.uUrqxbz6tDYyQryhK",
+    "Keycloak__URL": "http://localhost:8080/",
+    "Keycloak__Username": "desofs-kc",
+    "KEYCLOAK_ADMIN": "desofs-kc",
+    "KEYCLOAK_ADMIN_PASSWORD": "xc.uUrqxbz6tDYyQryhK",
+    "LibraryDatabase": "Server=localhost;Port=3306;Database=librarydb;User=desofs;Password=E*bCRJ_ijo*N3u_kMMZb;"
+  }
+}
