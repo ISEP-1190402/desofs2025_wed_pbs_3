@@ -410,3 +410,5 @@ This document outlines the security measures implemented in the Library Online R
 5. Follow principle of least privilege
 6. No secret keys exposed in code
 7. Password not stored in database, handled by keycloak
+
+
