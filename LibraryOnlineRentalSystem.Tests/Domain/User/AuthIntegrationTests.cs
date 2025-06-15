@@ -24,8 +24,8 @@ public class AuthIntegrationTests
     [OneTimeSetUp]
     public void OneTimeSetUp()
     {
-        var keycloakAuthority = Environment.GetEnvironmentVariable("Keycloak__Authority");
-        var keycloakAudience = Environment.GetEnvironmentVariable("Keycloak__Audience");
+        var keycloakAuthority = Environment.GetEnvironmentVariable("Keycloak__Authority").Replace("\n", "");
+        var keycloakAudience = Environment.GetEnvironmentVariable("Keycloak__Audience").Replace("\n", "");
         var keycloakUsername = Environment.GetEnvironmentVariable("Keycloak__Username");
         var keycloakPassword = Environment.GetEnvironmentVariable("Keycloak__Password");
         var libraryDatabase = Environment.GetEnvironmentVariable("LibraryDatabase");
@@ -34,7 +34,7 @@ public class AuthIntegrationTests
         _factory = new WebApplicationFactory<Program>();
 
         _client = _factory.CreateClient();
-        _baseUrl = Environment.GetEnvironmentVariable("Keycloak__URL");
+        _baseUrl = Environment.GetEnvironmentVariable("APP_URL");
         _client.BaseAddress = new Uri(_baseUrl);
     }
 
@@ -50,16 +50,21 @@ public class AuthIntegrationTests
     {
         //prepare test data
         var uniqueId = new string(Guid.NewGuid().ToString("N")
-            .Where(char.IsLetter)
-            .Take(8)
+            .Where(char.IsDigit)
+            .Take(3)
             .ToArray());
+        var uniquePhoneNumber = new string(Guid.NewGuid().ToString("N")
+            .Where(char.IsDigit)
+            .Take(7)
+            .ToArray());
+
         var newUser = new NewUserDTO
         {
             Name = "Test User",
             Email = $"test{uniqueId}@example.com",
             UserName = $"testuser{uniqueId}",
-            Password = "Test123!",
-            PhoneNumber = "912345678",
+            Password = "TestPassword123!",
+            PhoneNumber = $"91{uniquePhoneNumber}",
             Nif = $"123456{uniqueId}",
             Biography = "Test biography"
         };
@@ -103,12 +108,17 @@ public class AuthIntegrationTests
             "Login should succeed");
 
         var loginResult = await loginResponse.Content.ReadAsStringAsync();
-        var authResponse = JsonSerializer.Deserialize<AuthResponseDTO>(loginResult);
+        var authResponse = JsonSerializer.Deserialize<AuthResponseDTO>(loginResult, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+        if (authResponse == null || string.IsNullOrEmpty(authResponse.TokenType))
+        {
+            Console.WriteLine("Login response content: " + loginResult);
+        }
 
         Assert.That(authResponse, Is.Not.Null, "Auth response should not be null");
         Assert.That(authResponse.AccessToken, Is.Not.Empty, "Access token should not be empty");
         Assert.That(authResponse.RefreshToken, Is.Not.Empty, "Refresh token should not be empty");
-        Assert.That(authResponse.TokenType, Is.EqualTo("bearer"), "Token type should be bearer");
+        Assert.That(authResponse.TokenType, Is.EqualTo("Bearer"), "Token type should be Bearer");
         Assert.That(authResponse.ExpiresIn, Is.GreaterThan(0), "Token should have expiration time");
     }
 
@@ -116,16 +126,21 @@ public class AuthIntegrationTests
     public async Task Register_DuplicateEmail_ReturnsBadRequest()
     {
         var uniqueId = new string(Guid.NewGuid().ToString("N")
-            .Where(char.IsLetter)
-            .Take(8)
+            .Where(char.IsDigit)
+            .Take(3)
             .ToArray());
+        var uniquePhoneNumber = new string(Guid.NewGuid().ToString("N")
+            .Where(char.IsDigit)
+            .Take(7)
+            .ToArray());
+
         var newUser = new NewUserDTO
         {
             Name = "Test User",
             Email = $"test{uniqueId}@example.com",
             UserName = $"testuser{uniqueId}",
-            Password = "Test123!",
-            PhoneNumber = "123456789",
+            Password = "TestPassword123!",
+            PhoneNumber = $"91{uniquePhoneNumber}",
             Nif = $"123456{uniqueId}",
             Biography = "Test biography"
         };
@@ -144,8 +159,8 @@ public class AuthIntegrationTests
             Name = "Another User",
             Email = newUser.Email, // Same email
             UserName = $"anotheruser{uniqueId}",
-            Password = "Test123!",
-            PhoneNumber = "987654321",
+            Password = "TestPassword123!",
+            PhoneNumber = $"91{uniquePhoneNumber}",
             Nif = $"654321{uniqueId}",
             Biography = "Another biography"
         };
