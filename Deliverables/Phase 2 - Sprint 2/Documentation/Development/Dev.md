@@ -76,8 +76,8 @@ We used structured logging to capture useful information about application behav
 ```
 
 ## Verifying Logs in Application Insights
-Logs can be queried using Log Analytics in Azure Portal with Kusto Query Language (KQL). Example queries:
+Logs can be queried using Log Analytics in Azure Portal with Kusto Query Language (KQL). Example querie:
 
-![Logs_example.png](Pictures/Logs_example.png)
+![Logs_example.png](Pictures/Logs_example.PNG)
 
 
