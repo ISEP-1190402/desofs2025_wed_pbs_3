@@ -25,7 +25,7 @@ public class BookRentalIntegrationTests
     private string _accessToken;
     private string _userEmail;
     private string _userName;
-    private string _bookId = "4"; // Predefined book ID for testing
+    private string _bookId = "4"; // predefined book id for testing
     private string _userPassword;
 
     [OneTimeSetUp]
@@ -63,7 +63,7 @@ public class BookRentalIntegrationTests
             .Where(char.IsDigit)
             .Take(7)
             .ToArray());
-        var randomNum new string(Guid.NewGuid().ToString("N")
+        var randomNum = new string(Guid.NewGuid().ToString("N")
             .Where(char.IsDigit)
             .Take(3)
             .ToArray());
@@ -130,7 +130,6 @@ public class BookRentalIntegrationTests
     [Test]
     public async Task CompleteRentalFlow_Success()
     {
-        // Arrange
         var rentalRequest = new CreatedRentalDTO(
             startDate: DateTime.UtcNow.AddDays(1).ToString("o"),
             endDate: DateTime.UtcNow.AddDays(7).ToString("o"),
@@ -138,7 +137,7 @@ public class BookRentalIntegrationTests
             userEmail: _userEmail
         );
 
-        // Act - Create rental
+        // Create rental
         var rentalContent = new StringContent(
             JsonSerializer.Serialize(rentalRequest),
             Encoding.UTF8,
@@ -146,16 +145,16 @@ public class BookRentalIntegrationTests
 
         var rentalResponse = await _client.PostAsync("/api/rental", rentalContent);
         
-        // Assert - Rental creation
+        // Rental creation
         Assert.That(rentalResponse.StatusCode, Is.EqualTo(HttpStatusCode.OK), 
             "Rental creation should succeed");
 
-        // Act - Get user's active rentals
+        // Get users active rentals
         var userRentalsResponse = await _client.GetAsync($"/api/rental/user/{_userName}/rentals");
         var userRentalsContent = await userRentalsResponse.Content.ReadAsStringAsync();
         var userRentals = JsonSerializer.Deserialize<List<RentalDTO>>(userRentalsContent);
 
-        // Assert - Verify rental in user's rentals
+        // Verify rental in user's rentals
         Assert.That(userRentals, Is.Not.Null, "User rentals should not be null");
         Assert.That(userRentals.Count, Is.GreaterThan(0), "User should have at least one rental");
         var createdRental = userRentals.First(r => r.ReservedBookId == _bookId);
@@ -166,7 +165,6 @@ public class BookRentalIntegrationTests
     [Test]
     public async Task RentalFlow_InvalidDates_ReturnsBadRequest()
     {
-        // Arrange
         var rentalRequest = new CreatedRentalDTO(
             startDate: DateTime.UtcNow.AddDays(7).ToString("o"), // End date before start date
             endDate: DateTime.UtcNow.AddDays(1).ToString("o"),
@@ -174,7 +172,6 @@ public class BookRentalIntegrationTests
             userEmail: _userEmail
         );
 
-        // Act
         var rentalContent = new StringContent(
             JsonSerializer.Serialize(rentalRequest),
             Encoding.UTF8,
@@ -182,7 +179,6 @@ public class BookRentalIntegrationTests
 
         var rentalResponse = await _client.PostAsync("/api/rental", rentalContent);
         
-        // Assert
         Assert.That(rentalResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest), 
             "Rental with invalid dates should fail");
     }
@@ -190,7 +186,6 @@ public class BookRentalIntegrationTests
     [Test]
     public async Task RentalFlow_NonExistentBook_ReturnsBadRequest()
     {
-        // Arrange
         var rentalRequest = new CreatedRentalDTO(
             startDate: DateTime.UtcNow.AddDays(1).ToString("o"),
             endDate: DateTime.UtcNow.AddDays(7).ToString("o"),
@@ -198,7 +193,6 @@ public class BookRentalIntegrationTests
             userEmail: _userEmail
         );
 
-        // Act
         var rentalContent = new StringContent(
             JsonSerializer.Serialize(rentalRequest),
             Encoding.UTF8,
@@ -206,7 +200,6 @@ public class BookRentalIntegrationTests
 
         var rentalResponse = await _client.PostAsync("/api/rental", rentalContent);
         
-        // Assert
         Assert.That(rentalResponse.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest), 
             "Rental with non-existent book should fail");
     }
