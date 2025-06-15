@@ -3,8 +3,10 @@ using System.Security.Claims;
 using System.Text.Json;
 using LibraryOnlineRentalSystem.Domain.Book;
 using LibraryOnlineRentalSystem.Domain.Common;
+using LibraryOnlineRentalSystem.Domain.Common.Interfaces;
 using LibraryOnlineRentalSystem.Domain.Rentals;
 using LibraryOnlineRentalSystem.Domain.User;
+using LibraryOnlineRentalSystem.Infrastructure.Services;
 using LibraryOnlineRentalSystem.Repository.BookRepository;
 using LibraryOnlineRentalSystem.Repository.Common;
 using LibraryOnlineRentalSystem.Repository.RentalRepository;
@@ -23,9 +25,21 @@ namespace LibraryOnlineRentalSystem
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration)
+        private readonly ILogger<Startup> _logger;
+
+        public Startup(IConfiguration configuration, IWebHostEnvironment env)
         {
             Configuration = configuration;
+            
+            // Create logger for startup
+            var loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddConsole();
+                builder.AddDebug();
+            });
+            _logger = loggerFactory.CreateLogger<Startup>();
+            
+            _logger.LogInformation("Starting application in {Environment} environment", env.EnvironmentName);
         }
 
         public IConfiguration Configuration { get; }
@@ -50,6 +64,32 @@ namespace LibraryOnlineRentalSystem
                 
                 opt.ReplaceService<IValueConverterSelector, StrongConverterOfIDValue>();
             });
+
+            // Configure email options from appsettings and user secrets
+            services.Configure<EmailOptions>(options =>
+            {
+                Configuration.GetSection("Email").Bind(options);
+                
+                // Override from environment variables if available
+                var smtpUser = Configuration["EMAIL_USERNAME"];
+                var smtpPass = Configuration["EMAIL_PASSWORD"];
+                
+                if (!string.IsNullOrEmpty(smtpUser)) options.SmtpUsername = smtpUser;
+                if (!string.IsNullOrEmpty(smtpPass)) options.SmtpPassword = smtpPass;
+                
+                // Log the configuration (without password)
+                _logger.LogInformation("Email Configuration - Server: {Server}:{Port}, From: {FromEmail}, DevEmail: {DevEmail}",
+                    options.SmtpServer, options.SmtpPort, options.FromEmail, options.DevEmail);
+                
+                // Log if using environment variables
+                if (!string.IsNullOrEmpty(smtpUser))
+                {
+                    _logger.LogInformation("Using SMTP username from environment variable");
+                }
+            });
+            
+            // Register email service
+            services.AddScoped<IEmailService, DevelopmentEmailService>();
 
             ConfigureMyServices(services);
             ConfigureCors(services);
@@ -178,7 +218,28 @@ namespace LibraryOnlineRentalSystem
             services.AddTransient<IBookRepository, BookRepository>();
             services.AddTransient<RentalService>();
             services.AddTransient<IRentalRepository, RentalRepository>();
-            services.AddTransient<UserService>();
+            
+            // Register UserService with all its dependencies
+            services.AddTransient<UserService>(sp =>
+            {
+                var userRepository = sp.GetRequiredService<IUserRepository>();
+                var workUnit = sp.GetRequiredService<IWorkUnity>();
+                var auditLogger = sp.GetRequiredService<IAuditLogger>();
+                var httpClient = sp.GetRequiredService<HttpClient>();
+                var configuration = sp.GetRequiredService<IConfiguration>();
+                var emailService = sp.GetRequiredService<IEmailService>();
+                var logger = sp.GetRequiredService<ILogger<UserService>>();
+
+                return new UserService(
+                    userRepository,
+                    workUnit,
+                    auditLogger,
+                    httpClient,
+                    configuration,
+                    emailService,
+                    logger);
+            });
+            
             services.AddTransient<IUserRepository, UserRepository>();
             services.AddTransient<IAuditLogger, AuditLogger>();
             services.AddTransient<AuthService>();

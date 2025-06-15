@@ -64,6 +64,7 @@ public class RentalController : ControllerBase
         public string StartDate { get; set; }
         public string EndDate { get; set; }
         public string Isbn { get; set; }
+        public string UserEmail { get; set; }
     }
 
     // POST: api/rental working
@@ -95,6 +96,22 @@ public class RentalController : ControllerBase
             _logger.LogInformation("Current user: {Email}, Roles: {Roles}", 
                 currentUser.Email, string.Join(", ", currentUser.Roles));
 
+            // Validate email
+            if (string.IsNullOrEmpty(dto.UserEmail))
+            {
+                _logger.LogWarning("User email is required in the request body");
+                return BadRequest(new { message = "User email is required" });
+            }
+
+            // Check if user has permission to create rental for the specified email
+            if (!User.IsInRole("LibraryManager") && 
+                !dto.UserEmail.Equals(currentUser.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                _logger.LogWarning("User {UserEmail} is not authorized to create rental for {RequestedEmail}", 
+                    currentUser.Email, dto.UserEmail);
+                return Forbid("You can only create rentals for your own account");
+            }
+
             // Validate dates
             if (!DateTime.TryParse(dto.StartDate, out var startDate) || 
                 !DateTime.TryParse(dto.EndDate, out var endDate))
@@ -118,11 +135,11 @@ public class RentalController : ControllerBase
                 return NotFound(new { message = $"Book with ISBN {dto.Isbn} not found" });
             }
 
-            var user = await _userRepository.GetByEmailAsync(currentUser.Email);
+            var user = await _userRepository.GetByEmailAsync(dto.UserEmail);
             if (user == null)
             {
-                _logger.LogWarning("User with email {Email} not found", currentUser.Email);
-                return NotFound(new { message = $"User with email {currentUser.Email} not found" });
+                _logger.LogWarning("User with email {Email} not found", dto.UserEmail);
+                return NotFound(new { message = $"User with email {dto.UserEmail} not found" });
             }
 
             // Check if there are available copies
@@ -137,7 +154,7 @@ public class RentalController : ControllerBase
                 dto.StartDate,
                 dto.EndDate,
                 book.Id.Value, 
-                currentUser.Email
+                dto.UserEmail
             );
             var updatedBook = _bookRepository.UpdateBookStock(book.Id.Value, availableCopies - 1);
             if (updatedBook == null)
