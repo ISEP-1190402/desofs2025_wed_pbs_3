@@ -69,7 +69,7 @@ public class AuthIntegrationTests
             Biography = "Test biography"
         };
 
-        // Act - Register
+        // register
         var registerContent = new StringContent(
             JsonSerializer.Serialize(newUser),
             Encoding.UTF8,
